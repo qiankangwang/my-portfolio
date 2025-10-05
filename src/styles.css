@@ -174,3 +174,66 @@ h2 {
   border-top: 1px solid #e5e7eb;
   background: linear-gradient(90deg, #fafafa, #ffffff);
 }
+
+/* Active nav highlight */
+.navbar a.active {
+  color: #2563eb;
+  font-weight: 600;
+}
+
+/* CTA buttons */
+.cta {
+  margin-top: 1rem;
+  display: flex;
+  gap: 0.75rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+.btn {
+  padding: 0.55rem 1rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 9999px;
+  color: #374151;
+  background: #ffffff;
+  text-decoration: none;
+  font-weight: 500;
+  transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease;
+}
+.btn:hover { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(0,0,0,.06); }
+.btn.primary { background: #2563eb; color: #fff; border-color: #2563eb; }
+.btn.primary:hover { box-shadow: 0 8px 18px rgba(37,99,235,.25); }
+
+/* Project meta mini-tags */
+.proj-meta { margin-top: .5rem; display: flex; gap: .5rem; }
+.proj-meta .tag { background: #eef2ff; color: #1e3a8a; }
+
+/* Back to top */
+.back-to-top {
+  position: fixed; right: 18px; bottom: 22px; width: 40px; height: 40px;
+  border-radius: 9999px; border: 1px solid #e5e7eb; background: #fff;
+  cursor: pointer; box-shadow: 0 8px 20px rgba(0,0,0,.08);
+  font-size: 20px; line-height: 1; color: #111827;
+}
+.back-to-top:hover { transform: translateY(-2px); }
+
+/* Skip link (a11y) */
+.skip-link {
+  position: absolute; left: -999px; top: 0; background: #111827; color: #fff;
+  padding: .5rem .75rem; border-radius: .5rem; z-index: 1000;
+}
+.skip-link:focus { left: 12px; top: 12px; outline: none; }
+
+/* Dark mode tweak */
+@media (prefers-color-scheme: dark) {
+  body { background: #0b1220; color: #e5e7eb; }
+  .navbar, .card, .header, .footer { background: #0d1426; border-color: #1f2a44; }
+  .btn { background: #0d1426; color: #d1d5db; border-color: #1f2a44; }
+  .btn.primary { background: #2563eb; border-color: #2563eb; color: #fff; }
+  .tag { background: linear-gradient(135deg, #0f172a, #0b2a45); color: #c7d2fe; }
+  .footer { background: linear-gradient(90deg, #0b1220, #0d1426); }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; animation: none !important; }
+}

@@ -81,6 +81,12 @@ function BackToTop() {
 
 export default function Portfolio() {
   const reduce = useReducedMotion();
+  const floatingShapes = [
+    { size: 140, top: "8%", left: "6%", duration: 16, delay: 0 },
+    { size: 96, top: "18%", right: "10%", duration: 11, delay: 0.8 },
+    { size: 120, bottom: "12%", left: "14%", duration: 14, delay: 0.4 }
+  ];
+
   const fx = (delay = 0) =>
     reduce
       ? {}
@@ -102,17 +108,76 @@ export default function Portfolio() {
       </nav>
 
       <header className="header">
-        <img src={data.avatar} alt="Qiankang Wang GitHub avatar" />
+        <div className="hero-glow" aria-hidden="true">
+          {floatingShapes.map((shape, index) => (
+            <motion.span
+              key={`shape-${index}`}
+              className="glow-shape"
+              style={{
+                width: shape.size,
+                height: shape.size,
+                top: shape.top,
+                right: shape.right,
+                bottom: shape.bottom,
+                left: shape.left
+              }}
+              animate={
+                reduce
+                  ? {}
+                  : {
+                      y: [0, -18, 10, 0],
+                      x: [0, 10, -8, 0],
+                      rotate: [0, 12, -8, 0]
+                    }
+              }
+              transition={
+                reduce
+                  ? {}
+                  : {
+                      duration: shape.duration,
+                      delay: shape.delay,
+                      repeat: Infinity,
+                      repeatType: "mirror",
+                      ease: "easeInOut"
+                    }
+              }
+            />
+          ))}
+        </div>
+
+        <motion.img
+          src={data.avatar}
+          alt="Qiankang Wang GitHub avatar"
+          {...(reduce
+            ? {}
+            : {
+                initial: { scale: 0.92, opacity: 0 },
+                animate: { scale: 1, opacity: 1 },
+                transition: { duration: 0.65, ease: "easeOut" }
+              })}
+        />
         <h1>{data.name}</h1>
         <p>{data.title}</p>
         <p className="tagline">{data.tagline}</p>
 
         <div className="highlights" aria-label="Career highlights">
-          {data.highlights.map((item) => (
-            <div key={item.label} className="highlight-item">
+          {data.highlights.map((item, idx) => (
+            <motion.div
+              key={item.label}
+              className="highlight-item"
+              whileHover={reduce ? {} : { y: -4, scale: 1.02 }}
+              transition={{ type: "spring", stiffness: 280, damping: 20 }}
+              {...(reduce
+                ? {}
+                : {
+                    initial: { opacity: 0, y: 14 },
+                    animate: { opacity: 1, y: 0 },
+                    transition: { duration: 0.45, delay: 0.15 + idx * 0.1 }
+                  })}
+            >
               <span className="highlight-label">{item.label}</span>
               <strong>{item.value}</strong>
-            </div>
+            </motion.div>
           ))}
         </div>
 
@@ -152,7 +217,7 @@ export default function Portfolio() {
                 whileHover={reduce ? {} : { scale: 1.03 }}
                 transition={{ type: "spring", stiffness: 300 }}
               >
-                <h3>{p.name}</h3>
+                <h3 className="project-title">{p.name}</h3>
                 <p>{p.desc}</p>
                 <div className="proj-meta">
                   {p.stack.map((tech) => (
@@ -170,8 +235,21 @@ export default function Portfolio() {
         <motion.section id="skills" className="card" {...fx(0.6)}>
           <h2>Skills</h2>
           <div className="tags">
-            {data.skills.map((s) => (
-              <span key={s} className="tag">{s}</span>
+            {data.skills.map((s, idx) => (
+              <motion.span
+                key={s}
+                className="tag"
+                {...(reduce
+                  ? {}
+                  : {
+                      initial: { opacity: 0, y: 10 },
+                      whileInView: { opacity: 1, y: 0 },
+                      viewport: { once: true, amount: 0.6 },
+                      transition: { duration: 0.3, delay: idx * 0.04 }
+                    })}
+              >
+                {s}
+              </motion.span>
             ))}
           </div>
         </motion.section>

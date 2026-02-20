@@ -82,6 +82,35 @@ body {
   color: #111827;
 }
 .header p { color: #6b7280; margin-top: 0.5rem; }
+.tagline {
+  max-width: 720px;
+  margin: 0.75rem auto 0;
+  color: #334155;
+}
+
+.highlights {
+  margin: 1rem auto 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 0.75rem;
+  width: min(760px, 100%);
+}
+
+.highlight-item {
+  padding: 0.75rem 0.9rem;
+  border-radius: 12px;
+  border: 1px solid #dbe4f2;
+  background: rgba(255, 255, 255, 0.75);
+  text-align: left;
+}
+
+.highlight-label {
+  display: block;
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #64748b;
+}
 
 /* ===== Header CTA (Email / LinkedIn / GitHub) ===== */
 .cta {
@@ -167,6 +196,16 @@ h2 {
   color: #111827;
 }
 
+.about-points {
+  margin: 0.9rem 0 0;
+  padding-left: 1.2rem;
+  color: #374151;
+}
+
+.about-points li + li {
+  margin-top: 0.35rem;
+}
+
 /* ===== Projects ===== */
 .grid { display: grid; gap: 1rem; }
 @media (min-width: 860px) {
@@ -183,10 +222,34 @@ h2 {
   letter-spacing: .25px;
 }
 .project p { margin: 0; color: #374151; }
+.project-impact {
+  margin-top: 0.55rem;
+  font-size: 0.95rem;
+  color: #1f2937;
+}
+.project {
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 1rem;
+  background: linear-gradient(180deg, #ffffff, #f9fbff);
+}
 
 /* Optional project meta tags (if used) */
-.proj-meta { margin-top: .5rem; display: flex; gap: .5rem; }
+.proj-meta { margin-top: .75rem; display: flex; gap: .5rem; flex-wrap: wrap; }
 .proj-meta .tag { background: #eef2ff; color: #1e3a8a; }
+
+.proj-link {
+  display: inline-block;
+  margin-top: 0.75rem;
+  font-weight: 600;
+  color: #1d4ed8;
+  text-decoration: none;
+}
+
+.proj-link:hover {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
 
 /* ===== Skills ===== */
 .tags { display: flex; flex-wrap: wrap; gap: 0.5rem; }
@@ -247,9 +310,17 @@ h2 {
   .navbar, .card, .header, .footer { border-color: #1f2a44; }
   .header { background: linear-gradient(135deg, #0f1628, #0c1322); }
   .card { background: #0f172a; box-shadow: 0 10px 26px rgba(0,0,0,.35); }
+  .tagline { color: #cbd5e1; }
+  .highlight-item { background: rgba(15, 23, 42, 0.9); border-color: #334155; }
+  .highlight-label { color: #94a3b8; }
   .btn { background: #0d1426; color: #d1d5db; border-color: #1f2a44; }
   .btn.primary { background: linear-gradient(135deg, #3b82f6, #2563eb); border-color: #2563eb; color: #fff; }
+  .project { background: linear-gradient(180deg, #111b31, #0f172a); border-color: #1f2a44; }
+  .project p { color: #d1d5db; }
+  .about-points { color: #cbd5e1; }
+  .project-impact { color: #e2e8f0; }
   .tag { background: linear-gradient(135deg, #0f2240, #0c2b4a); color: #cfe2ff; }
+  .proj-link { color: #93c5fd; }
   .footer { background: linear-gradient(90deg, #0b1220, #0d1426); }
   .navbar a.active { color: #93c5fd; }
   .navbar a:hover { color: #93c5fd; }

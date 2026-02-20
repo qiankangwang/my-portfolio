@@ -10,6 +10,12 @@ const data = {
   linkedin: "https://linkedin.com/in/qiankang-wang-737b97279",
   github: "https://github.com/xiaole5211314",
   avatar: "https://github.com/xiaole5211314.png",
+  tagline: "Turning data and compute into practical, measurable outcomes.",
+  highlights: [
+    { label: "Research", value: "Computational Biophysics" },
+    { label: "Scale", value: "1M+ automated runs" },
+    { label: "Focus", value: "ML + HPC systems" }
+  ],
   about:
     "Hi, I'm Qiankang, a data science undergraduate at UC Berkeley. I enjoy working at the intersection of data, algorithms, and high-performance computing. Outside of class, I spend time building and testing solvers, creating automation pipelines, and exploring research projects.",
   experience: [
@@ -25,8 +31,18 @@ const data = {
     }
   ],
   projects: [
-    { name: "Titanic Predictor", desc: "Decision tree in C++ on Titanic dataset." },
-    { name: "Fuel-Efficiency Classifier", desc: "CNN model served on a Django web app for quick car image prediction." }
+    {
+      name: "Titanic Predictor",
+      desc: "Built a C++ decision-tree pipeline for survival prediction and feature analysis.",
+      stack: ["C++", "ML", "Data Analysis"],
+      link: "https://github.com/xiaole5211314"
+    },
+    {
+      name: "Fuel-Efficiency Classifier",
+      desc: "Trained a CNN and served predictions in a Django app for quick car image inference.",
+      stack: ["TensorFlow", "Django", "Computer Vision"],
+      link: "https://github.com/xiaole5211314"
+    }
   ],
   skills: ["Python", "C++", "PyTorch", "TensorFlow", "Slurm", "Git", "Docker"]
 };
@@ -89,6 +105,16 @@ export default function Portfolio() {
         <img src={data.avatar} alt="Qiankang Wang GitHub avatar" />
         <h1>{data.name}</h1>
         <p>{data.title}</p>
+        <p className="tagline">{data.tagline}</p>
+
+        <div className="highlights" aria-label="Career highlights">
+          {data.highlights.map((item) => (
+            <div key={item.label} className="highlight-item">
+              <span className="highlight-label">{item.label}</span>
+              <strong>{item.value}</strong>
+            </div>
+          ))}
+        </div>
 
         <div className="cta">
           <a className="btn primary" href={`mailto:${data.email}`}>Email Me</a>
@@ -105,12 +131,12 @@ export default function Portfolio() {
 
         <motion.section id="experience" className="card" {...fx(0.2)}>
           <h2>Experience</h2>
-          {data.experience.map((exp, i) => (
-            <div key={i} className="exp">
+          {data.experience.map((exp) => (
+            <div key={`${exp.role}-${exp.org}`} className="exp">
               <h3>{exp.role} · {exp.org}</h3>
               <p className="period">{exp.period}</p>
               <ul>
-                {exp.desc.map((line, j) => <li key={j}>{line}</li>)}
+                {exp.desc.map((line) => <li key={line}>{line}</li>)}
               </ul>
             </div>
           ))}
@@ -119,15 +145,23 @@ export default function Portfolio() {
         <motion.section id="projects" className="card" {...fx(0.4)}>
           <h2>Projects</h2>
           <div className="grid">
-            {data.projects.map((p, i) => (
+            {data.projects.map((p) => (
               <motion.div
-                key={i}
+                key={p.name}
                 className="project"
                 whileHover={reduce ? {} : { scale: 1.03 }}
                 transition={{ type: "spring", stiffness: 300 }}
               >
                 <h3>{p.name}</h3>
                 <p>{p.desc}</p>
+                <div className="proj-meta">
+                  {p.stack.map((tech) => (
+                    <span key={`${p.name}-${tech}`} className="tag">{tech}</span>
+                  ))}
+                </div>
+                <a className="proj-link" href={p.link} target="_blank" rel="noopener noreferrer">
+                  View project →
+                </a>
               </motion.div>
             ))}
           </div>

@@ -1,72 +1,105 @@
 import { useState, useEffect, useRef } from "react";
 
 const D = {
-  name: "Kant Wang",
-  fullName: "Kant (Qiankang) Wang",
-  title: "Data Science · UC Berkeley",
-  email: "qkwang@berkeley.edu",
-  linkedin: "https://linkedin.com/in/qiankang-wang-737b97279",
-  github: "https://github.com/xiaole5211314",
-  avatar: "https://github.com/xiaole5211314.png",
-  tagline: "Machine learning, scientific computing, and research-oriented engineering.",
-  about: "I'm a Data Science student at UC Berkeley with a focus on machine learning, scientific computing, and research-oriented engineering. I enjoy working on technical problems that connect algorithms, systems, and practical experimentation — from GPU-accelerated solvers to self-supervised representation learning.",
-  education: {
-    school: "University of California, Berkeley",
-    degree: "B.A. in Data Science",
-    gpa: "4.0 / 4.0",
-    period: "Expected May 2027",
-    coursework: "Data Science, Probability, Machine Learning, Data Structures",
-  },
-  experience: [
-    {
-      org: "Berkeley AI Research (BAIR)",
-      role: "Research Assistant",
-      period: "Mar 2026 – Present",
-      desc: [
-        "Contributing to research on self-supervised representation learning and pretraining for Cryo-EM data.",
-        "Implementing and studying SimCLR contrastive learning framework, including data augmentation and training pipeline setup.",
-        "Supporting literature review, experiment design, and group discussions on pretraining objectives and model architectures.",
-      ],
+    name: "Qiankang Wang",
+    fullName: "Qiankang (Kant) Wang",
+    title: "UC Berkeley Data Science | Machine Learning & Scientific Computing",
+    email: "qkwang@berkeley.edu",
+    linkedin: "https://linkedin.com/in/qiankang-wang-737b97279",
+    github: "https://github.com/xiaole5211314",
+    avatar: "https://github.com/xiaole5211314.png",
+    tagline: "Machine learning, generative modeling, AI for biology, and scientific computing.",
+    about:
+        "I am Qiankang (Kant) Wang, an undergraduate at UC Berkeley studying Data Science. My interests include machine learning, generative modeling, AI for biology, and scientific computing. I enjoy working on technical problems that connect algorithms, systems, and real research workflows, from GPU-accelerated solvers to biological and scientific data.",
+
+    education: {
+        school: "University of California, Berkeley",
+        degree: "B.A. in Data Science",
+        gpa: "4.0 / 4.0",
+        period: "Expected May 2027",
+        coursework:
+            "Principles and Techniques of Data Science, Probability, Machine Learning, Data Structures",
     },
-    {
-      org: "AMBER pGM — Multi-Institutional Collaboration",
-      role: "Research Assistant",
-      period: "Nov 2025 – Present",
-      desc: [
-        "Contributing to the AMBER pGM acceleration project with code integration, regression testing, and consistency checks.",
-        "Working with the AMBER/PMEMD codebase to analyze numerical discrepancies and stability issues.",
-      ],
+
+    experience: [
+        {
+            org: "Berkeley Artificial Intelligence Research (BAIR)",
+            role: "Research Assistant",
+            period: "Mar 2026 – Present",
+            desc: [
+                "Implemented the SimCLR contrastive learning framework for self-supervised representation learning on scientific data.",
+                "Engaged with research directions in generative modeling and AI for biology, with a focus on scientific data and biological applications.",
+            ],
+        },
+        {
+            org: "AMBER pGM — Multi-Institutional Collaboration",
+            role: "Research Assistant",
+            period: "Nov 2025 – Mar 2026",
+            desc: [
+                "Contributed to the AMBER pGM acceleration project, supporting code integration, regression testing, and output consistency checks across implementations.",
+                "Worked with the AMBER/PMEMD codebase to analyze numerical discrepancies, including stability issues and random seed effects.",
+            ],
+        },
+        {
+            org: "Computational Biophysics Lab, University of California, Irvine",
+            role: "Research Assistant",
+            period: "Jul 2024 – Nov 2025",
+            desc: [
+                "Refactored core CG/BiCG solver modules into a LibTorch tensor-computation framework; achieved 3–5× faster iterative convergence through GPU parallelization, significantly improving PBSA performance and scalability for large biomolecular systems.",
+                "Built a custom Slurm scheduling pipeline and ran 1,000,000+ PBSA energy calculation jobs, improving cluster throughput and increasing average GPU utilization by about 20%.",
+                "Used Python (Pandas/Matplotlib/Seaborn) to conduct PBSA benchmarking and generate heatmaps, runtime curves, and error distribution plots, providing quantitative support for algorithm optimization and paper writing.",
+            ],
+        },
+    ],
+
+    publication: {
+        title:
+            "AmberTorchPB: A Unified Framework for Poisson-Boltzmann-Based Reaction Field Energy Calculation via Tensor Computation",
+        journal: "Journal of Chemical Theory and Computation, 2026",
+        role: "Second author",
     },
-    {
-      org: "Computational Biophysics Lab, UC Irvine",
-      role: "Research Assistant",
-      period: "Jul 2024 – Nov 2025",
-      desc: [
-        "Refactored CG/BiCG solver modules into a LibTorch tensor-computation framework; achieved 3–5× faster iterative convergence via GPU parallelization.",
-        "Built custom Slurm scheduling pipeline for 1,000,000+ PBSA energy calculation jobs, increasing GPU utilization ~20%.",
-        "Conducted PBSA benchmarking with Python (Pandas/Matplotlib/Seaborn), generating heatmaps, runtime curves, and error distribution plots.",
-      ],
+
+    projects: [
+        {
+            name: "Titanic Survival Prediction in C++",
+            desc: "Implemented a decision tree algorithm from scratch in C++ using the Gini criterion, including node splitting, model training, and prediction. Built the project outside mainstream ML frameworks to better understand how AI algorithms are implemented from the ground up.",
+            stack: ["C++", "Machine Learning", "Decision Trees"],
+            link: "https://github.com/xiaole5211314",
+        },
+    ],
+
+    skills: {
+        "Programming Languages": ["Python", "C++", "Java", "MATLAB", "Bash"],
+        "Machine Learning & Scientific Computing": [
+            "PyTorch / LibTorch",
+            "TensorFlow",
+            "scikit-learn",
+            "Pandas",
+            "NumPy",
+            "Matplotlib",
+            "Seaborn",
+            "Transformers",
+            "CNNs",
+            "Self-supervised Learning",
+            "Contrastive Learning",
+            "Representation Learning",
+            "Diffusion Models",
+            "Conjugate Gradient Methods",
+            "Maximum Likelihood Estimation (MLE)",
+            "Cross-validation",
+            "Regularization",
+        ],
+        "Tools & Platforms": [
+            "Linux",
+            "Git",
+            "Docker",
+            "CMake",
+            "Jupyter",
+            "Slurm",
+            "VS Code",
+        ],
+        "Web & Other": ["SQL", "HTML", "CSS", "React", "Django", "LaTeX", "Regex"],
     },
-  ],
-  publication: {
-    title: "AmberTorchPB: A Unified Framework for Poisson-Boltzmann-Based Reaction Field Energy Calculation via Tensor Computation",
-    journal: "Journal of Chemical Theory and Computation, 2026",
-    role: "Second author",
-  },
-  projects: [
-    {
-      name: "Titanic Survival Decision Tree Predictor",
-      desc: "Implemented decision tree algorithm from scratch in C++ using Gini criterion — node splitting, model training, prediction, and feature engineering.",
-      stack: ["C++", "ML", "Feature Engineering"],
-      link: "https://github.com/xiaole5211314",
-    },
-  ],
-  skills: {
-    Languages: ["Python", "C++", "Java", "MATLAB", "Bash"],
-    "ML & Scientific Computing": ["PyTorch / LibTorch", "TensorFlow", "Scikit-learn", "Pandas", "NumPy", "Matplotlib"],
-    "Tools & Platforms": ["Linux", "Git", "Docker", "CMake", "Jupyter", "Slurm"],
-    "Web & Other": ["SQL", "HTML/CSS", "React", "Django", "LaTeX"],
-  },
 };
 
 const NAV = ["About", "Education", "Experience", "Publication", "Projects", "Skills"];

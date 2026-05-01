@@ -25,16 +25,16 @@ const D = {
         {
             org: "Berkeley Artificial Intelligence Research (BAIR)",
             role: "Research Assistant",
-            period: "Mar 2026 – Present",
+            period: "Mar 2026 - Present",
             desc: [
                 "Implemented the SimCLR contrastive learning framework for self-supervised representation learning on scientific data.",
                 "Engaged with research directions in generative modeling and AI for biology, with a focus on scientific data and biological applications.",
             ],
         },
         {
-            org: "AMBER pGM — Multi-Institutional Collaboration",
+            org: "AMBER pGM - Multi-Institutional Collaboration",
             role: "Research Assistant",
-            period: "Nov 2025 – Mar 2026",
+            period: "Nov 2025 - Mar 2026",
             desc: [
                 "Contributed to the AMBER pGM acceleration project, supporting code integration, regression testing, and output consistency checks across implementations.",
                 "Worked with the AMBER/PMEMD codebase to analyze numerical discrepancies, including stability issues and random seed effects.",
@@ -43,9 +43,9 @@ const D = {
         {
             org: "Computational Biophysics Lab, University of California, Irvine",
             role: "Research Assistant",
-            period: "Jul 2024 – Nov 2025",
+            period: "Jul 2024 - Nov 2025",
             desc: [
-                "Refactored core CG/BiCG solver modules into a LibTorch tensor-computation framework; achieved 3–5× faster iterative convergence through GPU parallelization, significantly improving PBSA performance and scalability for large biomolecular systems.",
+                "Refactored core CG/BiCG solver modules into a LibTorch tensor-computation framework; achieved 3-5x faster iterative convergence through GPU parallelization, significantly improving PBSA performance and scalability for large biomolecular systems.",
                 "Built a custom Slurm scheduling pipeline and ran 1,000,000+ PBSA energy calculation jobs, improving cluster throughput and increasing average GPU utilization by about 20%.",
                 "Used Python (Pandas/Matplotlib/Seaborn) to conduct PBSA benchmarking and generate heatmaps, runtime curves, and error distribution plots, providing quantitative support for algorithm optimization and paper writing.",
             ],
@@ -60,6 +60,24 @@ const D = {
     },
 
     projects: [
+        {
+            name: "AmberTorchPB Scientific Computing Pipeline",
+            desc: "Refactored Poisson-Boltzmann solver components into a tensor-computation workflow with LibTorch, GPU acceleration, and benchmarking utilities for large biomolecular systems.",
+            stack: ["LibTorch", "C++", "CUDA", "PBSA", "Scientific Computing"],
+            link: "https://github.com/xiaole5211314",
+        },
+        {
+            name: "Million-Job PBSA Benchmarking Workflow",
+            desc: "Built a Slurm-based scheduling and analysis workflow for large-scale PBSA energy calculations, runtime profiling, and error distribution analysis across scientific workloads.",
+            stack: ["Python", "Slurm", "Pandas", "Matplotlib", "HPC"],
+            link: "https://github.com/xiaole5211314",
+        },
+        {
+            name: "SimCLR for Scientific Representation Learning",
+            desc: "Implemented a self-supervised contrastive learning pipeline inspired by SimCLR to study representation learning workflows for scientific and biological data.",
+            stack: ["PyTorch", "SimCLR", "Self-supervised Learning", "Representation Learning"],
+            link: "https://github.com/xiaole5211314",
+        },
         {
             name: "Titanic Survival Prediction in C++",
             desc: "Implemented a decision tree algorithm from scratch in C++ using the Gini criterion, including node splitting, model training, and prediction. Built the project outside mainstream ML frameworks to better understand how AI algorithms are implemented from the ground up.",
@@ -104,7 +122,7 @@ const D = {
 
 const NAV = ["About", "Education", "Experience", "Publication", "Projects", "Skills"];
 
-/* ═══ NEURAL NETWORK HERO CANVAS ═══ */
+/* Neural network hero canvas */
 function NeuralNetCanvas() {
   const canvasRef = useRef(null);
   const raf = useRef(null);
@@ -277,7 +295,7 @@ function NeuralNetCanvas() {
   return <canvas ref={canvasRef} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", zIndex: 0 }} />;
 }
 
-/* ═══ subtle particle bg ═══ */
+/* Subtle particle background */
 function ParticleBG() {
   const canvasRef = useRef(null);
   const raf = useRef(null);
@@ -303,7 +321,7 @@ function ParticleBG() {
   return <canvas ref={canvasRef} style={{ position: "fixed", inset: 0, zIndex: 0, pointerEvents: "none" }} />;
 }
 
-/* ═══ helpers ═══ */
+/* Helpers */
 function useInView(threshold = 0.12) {
   const ref = useRef(null);
   const [visible, setVisible] = useState(false);
@@ -338,7 +356,7 @@ function TextReveal({ text, tag: Tag = "h1", className }) {
     }}><span style={{ display: "inline-block", transform: vis ? "translateY(0)" : "translateY(110%)", transition: "transform 0.7s " + (0.04 * i) + "s cubic-bezier(.22,1,.36,1)" }}>{w}</span></span>)}</Tag>;
 }
 
-/* ═══ MAIN ═══ */
+/* Main */
 export default function Portfolio() {
   const [scrolled, setScrolled] = useState(false);
   const [active, setActive] = useState("");
@@ -371,7 +389,7 @@ export default function Portfolio() {
       <nav className={"nav" + (scrolled ? " scrolled" : "")}>
         <span className="nav-logo" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}>Kant W.</span>
         <div className={"nav-links" + (menuOpen ? " open" : "")}>
-          {NAV.map((n) => <a key={n} className={active === n ? "active" : ""} onClick={() => scrollTo(n.toLowerCase())}>{n}</a>)}
+          {NAV.map((n) => <a key={n} href={"#" + n.toLowerCase()} className={active === n ? "active" : ""} onClick={(e) => { e.preventDefault(); scrollTo(n.toLowerCase()); }}>{n}</a>)}
         </div>
         <button className="hamburger" onClick={() => setMenuOpen(!menuOpen)} aria-label="Toggle menu">{menuOpen ? "\u2715" : "\u2630"}</button>
       </nav>
@@ -417,7 +435,7 @@ export default function Portfolio() {
         </Section>
 
         <Section id="projects" delay={0.05}>
-          <span className="sect-label">05 PROJECTS</span><h2>Projects</h2>
+          <span className="sect-label">05 SELECTED WORK</span><h2>Selected Work</h2>
           {D.projects.map((p) => <div key={p.name} className="pcard"><h3>{p.name}</h3><p>{p.desc}</p><div className="pcard-tags">{p.stack.map((t) => <span key={t} className="ptag">{t}</span>)}</div><a className="pcard-link" href={p.link} target="_blank" rel="noopener noreferrer">View on GitHub {"\u2192"}</a></div>)}
         </Section>
 
@@ -521,3 +539,4 @@ body{background:var(--bg);color:var(--fg);font-family:var(--sans);line-height:1.
 @media(max-width:640px){.content{gap:3.5rem}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:0s!important;transition-duration:0s!important}canvas{display:none}}
 `;
+

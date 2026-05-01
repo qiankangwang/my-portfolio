@@ -143,10 +143,10 @@ function NeuralNetCanvas() {
       nodes = [];
       edges = [];
       pulses = [];
-      const centerX = w < 720 ? w * 0.5 : w * 0.56;
+      const centerX = w < 720 ? w * 0.5 : w * 0.64;
       const centerY = h * 0.5;
-      const networkW = Math.min(w * 0.9, 1280);
-      const networkH = Math.min(h * 0.72, 640);
+      const networkW = Math.min(w * 0.68, 980);
+      const networkH = Math.min(h * 0.7, 620);
       const startX = centerX - networkW / 2;
       const layerGap = networkW / (layers.length - 1);
 
@@ -239,108 +239,68 @@ function NeuralNetCanvas() {
       if (nodes.length && w >= 720) {
         const inputNodes = nodes.filter((n) => n.layer === 0);
         const streamX = Math.max(40, w * 0.06);
-        const streamW = Math.min(w * 0.36, 520);
-        const streamTop = h * 0.25;
-        const streamGap = Math.min(62, Math.max(42, h * 0.07));
-        const basePairs = [["A", "T"], ["G", "C"], ["T", "A"], ["C", "G"]];
-
-        ctx.font = "500 10px 'JetBrains Mono', monospace";
-        ctx.textAlign = "left";
-        ctx.textBaseline = "middle";
-        ctx.fillStyle = rgba(accent, dark ? 0.7 : 0.54);
-        ctx.fillText("genomic data stream", streamX, streamTop - 28);
+        const streamW = Math.min(w * 0.34, 500);
+        const streamTop = h * 0.28;
+        const streamGap = Math.min(58, Math.max(40, h * 0.065));
+        const basePairs = [["A", "T"], ["G", "C"], ["C", "G"], ["T", "A"]];
 
         inputNodes.forEach((n, i) => {
           const y = streamTop + i * streamGap;
           const endX = Math.min(n.x - 12, streamX + streamW);
+          const rowAlpha = 0.75 - i * 0.07;
+
           ctx.beginPath();
           ctx.moveTo(streamX, y);
           ctx.lineTo(endX, y);
           ctx.lineTo(n.x, n.y);
-          ctx.strokeStyle = rgba(accent, dark ? 0.16 : 0.12);
-          ctx.lineWidth = 0.8;
+          ctx.strokeStyle = rgba(accent, (dark ? 0.12 : 0.08) * rowAlpha);
+          ctx.lineWidth = 0.7;
           ctx.stroke();
 
-          const tickCount = 8;
-          for (let j = 0; j < tickCount; j++) {
-            const progress = (j / tickCount + frame * 0.0025 + i * 0.07) % 1;
-            const x = streamX + progress * (endX - streamX);
+          const glyphCount = 10;
+          for (let j = 0; j < glyphCount; j++) {
+            const x = streamX + (j / (glyphCount - 1)) * (endX - streamX);
             const pair = basePairs[(j + i) % basePairs.length];
-            const alpha = 0.32 + Math.sin(progress * Math.PI) * 0.28;
 
             ctx.beginPath();
-            ctx.moveTo(x, y - 9);
-            ctx.lineTo(x, y + 9);
-            ctx.strokeStyle = rgba(dim, dark ? 0.22 : 0.18);
+            ctx.moveTo(x, y - 7);
+            ctx.lineTo(x, y + 7);
+            ctx.strokeStyle = rgba(dim, dark ? 0.11 : 0.09);
             ctx.lineWidth = 0.6;
             ctx.stroke();
 
-            ctx.font = "600 9px 'JetBrains Mono', monospace";
+            ctx.font = "500 8px 'JetBrains Mono', monospace";
             ctx.textAlign = "center";
-            ctx.fillStyle = rgba(accent, alpha);
-            ctx.fillText(pair[0], x, y - 14);
-            ctx.fillStyle = rgba(warm, alpha);
-            ctx.fillText(pair[1], x, y + 14);
+            ctx.textBaseline = "middle";
+            ctx.fillStyle = rgba(accent, dark ? 0.24 : 0.18);
+            ctx.fillText(pair[0], x, y - 12);
+            ctx.fillStyle = rgba(warm, dark ? 0.2 : 0.16);
+            ctx.fillText(pair[1], x, y + 12);
           }
 
-          const dataT = (frame * 0.006 + i * 0.18) % 1;
-          const dataStartX = streamX + streamW * 0.76;
-          const dataStartY = y;
-          const dataX = dataStartX + (n.x - dataStartX) * dataT;
-          const dataY = dataStartY + (n.y - dataStartY) * dataT;
+          const pairT = (frame * 0.0035 + i * 0.16) % 1;
+          const pairX = streamX + pairT * (endX - streamX);
+          const activePair = basePairs[(i + Math.floor(frame / 90)) % basePairs.length];
           ctx.beginPath();
-          ctx.arc(dataX, dataY, 1.9, 0, Math.PI * 2);
-          ctx.fillStyle = rgba(warm, dark ? 0.58 : 0.44);
+          ctx.moveTo(pairX, y - 10);
+          ctx.lineTo(pairX, y + 10);
+          ctx.strokeStyle = rgba(warm, dark ? 0.42 : 0.28);
+          ctx.lineWidth = 0.9;
+          ctx.stroke();
+          ctx.font = "600 9px 'JetBrains Mono', monospace";
+          ctx.fillStyle = rgba(accent, dark ? 0.68 : 0.5);
+          ctx.fillText(activePair[0], pairX, y - 16);
+          ctx.fillStyle = rgba(warm, dark ? 0.62 : 0.46);
+          ctx.fillText(activePair[1], pairX, y + 16);
+
+          const dataT = (frame * 0.005 + i * 0.17) % 1;
+          const dataX = endX + (n.x - endX) * dataT;
+          const dataY = y + (n.y - y) * dataT;
+          ctx.beginPath();
+          ctx.arc(dataX, dataY, 1.7, 0, Math.PI * 2);
+          ctx.fillStyle = rgba(warm, dark ? 0.36 : 0.26);
           ctx.fill();
         });
-
-        const matrixX = streamX + 8;
-        const matrixY = streamTop + inputNodes.length * streamGap + 20;
-        const cell = 9;
-        for (let row = 0; row < 5; row++) {
-          for (let col = 0; col < 16; col++) {
-            const value = (Math.sin(frame * 0.018 + row * 1.7 + col * 0.8) + 1) / 2;
-            ctx.fillStyle = rgba(row % 2 ? warm : accent, 0.045 + value * 0.18);
-            ctx.fillRect(matrixX + col * cell, matrixY + row * cell, cell - 2, cell - 2);
-          }
-        }
-        ctx.font = "500 9px 'JetBrains Mono', monospace";
-        ctx.textAlign = "left";
-        ctx.fillStyle = rgba(dim, dark ? 0.52 : 0.42);
-        ctx.fillText("expression matrix", matrixX, matrixY + 5 * cell + 16);
-      }
-
-      if (nodes.length && w >= 720) {
-        const foldX = w * 0.82;
-        const foldY = h * 0.22;
-        const foldPhase = reducedMotion ? 0 : frame * 0.018;
-        const foldPoints = [];
-        for (let i = 0; i < 9; i++) {
-          foldPoints.push({
-            x: foldX + Math.cos(i * 0.9 + foldPhase) * (22 + i * 2.5),
-            y: foldY + i * 19 + Math.sin(i * 1.25 + foldPhase) * 14,
-          });
-        }
-        ctx.beginPath();
-        foldPoints.forEach((pt, i) => {
-          if (i === 0) ctx.moveTo(pt.x, pt.y);
-          else ctx.lineTo(pt.x, pt.y);
-        });
-        ctx.strokeStyle = rgba(warm, dark ? 0.36 : 0.26);
-        ctx.lineWidth = 1.25;
-        ctx.stroke();
-        foldPoints.forEach((pt, i) => {
-          ctx.beginPath();
-          ctx.arc(pt.x, pt.y, i % 3 === 0 ? 2.7 : 2.1, 0, Math.PI * 2);
-          ctx.fillStyle = rgba(i % 2 === 0 ? warm : accent, dark ? 0.48 : 0.34);
-          ctx.fill();
-        });
-
-        ctx.font = "500 10px 'JetBrains Mono', monospace";
-        ctx.textAlign = "left";
-        ctx.textBaseline = "middle";
-        ctx.fillStyle = rgba(warm, dark ? 0.6 : 0.46);
-        ctx.fillText("protein structure", foldX - 16, foldY - 18);
       }
       ctx.restore();
 
@@ -621,8 +581,8 @@ body{background:linear-gradient(180deg,var(--bg) 0%,color-mix(in srgb,var(--bg) 
 .hamburger{display:none;background:none;border:none;color:var(--fg);font-size:1.4rem;cursor:pointer;padding:.25rem}
 @media(max-width:700px){.nav-links{position:fixed;top:0;left:0;right:0;bottom:0;flex-direction:column;align-items:center;justify-content:center;gap:.75rem;background:color-mix(in srgb,var(--bg) 97%,transparent);backdrop-filter:blur(24px);opacity:0;pointer-events:none;transition:opacity .3s}.nav-links.open{opacity:1;pointer-events:auto}.nav-links a{font-size:1.2rem;padding:.85rem 1.5rem}.hamburger{display:block}}
 .hero{min-height:92svh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:6rem 1.5rem 4.5rem;position:relative;overflow:hidden;border-bottom:1px solid var(--border)}
-.hero-overlay{position:absolute;inset:0;z-index:1;background:radial-gradient(ellipse at 50% 40%,color-mix(in srgb,var(--bg) 6%,transparent) 0%,color-mix(in srgb,var(--bg) 16%,transparent) 42%,color-mix(in srgb,var(--bg) 42%,transparent) 78%,color-mix(in srgb,var(--bg) 68%,transparent) 100%),linear-gradient(180deg,transparent 0%,color-mix(in srgb,var(--bg) 66%,transparent) 100%);pointer-events:none}
-.hero-content{position:relative;z-index:2;max-width:760px;padding:1.35rem;border-radius:12px;background:color-mix(in srgb,var(--bg) 34%,transparent);box-shadow:0 18px 60px rgba(15,23,42,.06)}
+.hero-overlay{position:absolute;inset:0;z-index:1;background:radial-gradient(ellipse at 50% 42%,color-mix(in srgb,var(--bg) 42%,transparent) 0%,color-mix(in srgb,var(--bg) 28%,transparent) 32%,color-mix(in srgb,var(--bg) 20%,transparent) 58%,color-mix(in srgb,var(--bg) 62%,transparent) 100%),linear-gradient(180deg,transparent 0%,color-mix(in srgb,var(--bg) 68%,transparent) 100%);pointer-events:none}
+.hero-content{position:relative;z-index:2;max-width:760px;padding:0 1rem;text-shadow:0 1px 18px color-mix(in srgb,var(--bg) 78%,transparent)}
 .hero-avatar{width:104px;height:104px;border-radius:50%;object-fit:cover;border:1px solid var(--border);box-shadow:0 10px 32px rgba(15,23,42,.08);margin-bottom:1.75rem;opacity:0;transform:scale(.8);transition:opacity .8s .1s cubic-bezier(.22,1,.36,1),transform .8s .1s cubic-bezier(.22,1,.36,1)}
 .hero-avatar.vis{opacity:1;transform:scale(1)}
 .hero-kicker{display:inline-flex;align-items:center;gap:.5rem;margin-bottom:.7rem;font-family:var(--mono);font-size:.68rem;letter-spacing:.11em;text-transform:uppercase;color:var(--accent);opacity:0;transform:translateY(12px);transition:all .7s .25s cubic-bezier(.22,1,.36,1)}

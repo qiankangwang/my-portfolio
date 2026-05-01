@@ -15,6 +15,8 @@ const D = {
   tagline:
     "Machine learning for biology — representation learning, generative modeling, and scientific computing.",
 
+  focuses: ["Representation Learning", "Generative Models", "Scientific Computing", "Open to Research"],
+
   about:
     "Undergraduate at UC Berkeley studying Data Science. I work at the intersection of modern machine learning and biophysics, with interests in representation learning, scientific software, and reliable computing for biological data.",
 
@@ -579,12 +581,12 @@ export default function Portfolio() {
           <div className={"hero-kicker" + (heroVis ? " vis" : "")}>
             UC Berkeley · Data Science · 2027
           </div>
-          <TextReveal
-            text={D.fullName}
-            tag="h1"
-            wordColors={["var(--fg)", "var(--accent)", "var(--grad-end)"]}
-          />
+          <TextReveal text={D.fullName} tag="h1" />
+          <div className={"hero-rule" + (heroVis ? " vis" : "")} />
           <p className={"hero-tagline" + (heroVis ? " vis" : "")}>{D.tagline}</p>
+          <div className={"hero-focuses" + (heroVis ? " vis" : "")}>
+            {D.focuses.map((f) => <span key={f} className="focus-tag">{f}</span>)}
+          </div>
           <div className={"hero-cta" + (heroVis ? " vis" : "")}>
             <a className="btn primary" href={"mailto:" + D.email}>{"✉"} Email</a>
             <a className="btn" href={D.github}   target="_blank" rel="noopener noreferrer">GitHub</a>
@@ -916,24 +918,55 @@ body::before {
 .hero-kicker.vis { opacity: 1; transform: translateY(0); }
 .hero h1 {
   font-family: var(--serif);
-  font-size: clamp(3.2rem, 7.2vw, 6rem);
+  font-size: clamp(2.4rem, 5.6vw, 5.2rem);
   font-weight: 400;
-  line-height: 1.01;
+  font-style: italic;
+  line-height: 1.05;
   color: var(--fg);
-  letter-spacing: -.025em;
+  letter-spacing: -.015em;
+  white-space: nowrap;
 }
+.hero-rule {
+  width: 0;
+  height: 1.5px;
+  background: linear-gradient(90deg, transparent, var(--accent), transparent);
+  margin: 1.1rem auto 0;
+  transition: width 1s .85s cubic-bezier(.22,1,.36,1);
+}
+.hero-rule.vis { width: 80px; }
 .hero-tagline {
   max-width: 540px; margin: 1.15rem auto 0;
   color: var(--fg2); font-size: 1rem; line-height: 1.72;
   opacity: 0; transform: translateY(14px);
-  transition: all .7s .58s cubic-bezier(.22,1,.36,1);
+  transition: all .7s .62s cubic-bezier(.22,1,.36,1);
 }
 .hero-tagline.vis { opacity: 1; transform: translateY(0); }
+.hero-focuses {
+  display: flex; flex-wrap: wrap; justify-content: center; gap: .45rem;
+  margin-top: 1.4rem;
+  opacity: 0; transform: translateY(10px);
+  transition: all .7s .78s cubic-bezier(.22,1,.36,1);
+}
+.hero-focuses.vis { opacity: 1; transform: translateY(0); }
+.focus-tag {
+  font-family: var(--mono);
+  font-size: .62rem;
+  letter-spacing: .07em;
+  text-transform: uppercase;
+  color: var(--fg3);
+  border: 1px solid var(--border);
+  padding: .3rem .8rem;
+  border-radius: 9999px;
+  background: color-mix(in srgb, var(--card) 55%, transparent);
+  backdrop-filter: blur(10px);
+  transition: color .2s, border-color .2s;
+}
+.focus-tag:hover { color: var(--accent); border-color: var(--accent); }
 .hero-cta {
   display: flex; gap: .6rem; flex-wrap: wrap; justify-content: center;
   margin-top: 2.1rem;
   opacity: 0; transform: translateY(14px);
-  transition: all .7s .74s cubic-bezier(.22,1,.36,1);
+  transition: all .7s .95s cubic-bezier(.22,1,.36,1);
 }
 .hero-cta.vis { opacity: 1; transform: translateY(0); }
 .btn {

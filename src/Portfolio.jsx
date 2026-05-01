@@ -206,9 +206,17 @@ function NeuralNetCanvas() {
           { type: "rna", x: networkLeft + networkW * 0.5, y: networkTop + networkH * 0.72, len: 13, angle: -0.02, phase: 3.1 },
           { type: "rna", x: networkLeft + networkW * 0.28, y: networkBottom - networkH * 0.08, len: 12, angle: 0.05, phase: 4.2 },
           { type: "rna", x: networkLeft + networkW * 0.62, y: networkTop + networkH * 0.42, len: 10, angle: -0.05, phase: 5.1 },
+          { type: "rna", x: networkLeft + networkW * 0.08, y: networkTop + networkH * 0.56, len: 11, angle: 0.08, phase: 6.0 },
+          { type: "rna", x: networkLeft + networkW * 0.68, y: networkTop + networkH * 0.64, len: 9, angle: 0.04, phase: 6.9 },
+          { type: "rna", x: networkLeft + networkW * 0.44, y: networkTop + networkH * 0.18, len: 10, angle: -0.06, phase: 7.6 },
+          { type: "rna", x: networkLeft + networkW * 0.82, y: networkTop + networkH * 0.34, len: 11, angle: -0.1, phase: 8.4 },
+          { type: "rna", x: networkLeft + networkW * 0.14, y: networkTop + networkH * 0.76, len: 10, angle: 0.03, phase: 9.1 },
+          { type: "rna", x: networkLeft + networkW * 0.72, y: networkTop + networkH * 0.78, len: 12, angle: 0.08, phase: 9.8 },
           { type: "protein", x: networkLeft + networkW * 0.74, y: networkTop + networkH * 0.2, len: 10, scale: 1.08, phase: 0.5 },
           { type: "protein", x: networkLeft + networkW * 0.18, y: networkBottom - networkH * 0.16, len: 8, scale: 0.95, phase: 2.4 },
           { type: "protein", x: networkLeft + networkW * 0.78, y: networkBottom - networkH * 0.28, len: 7, scale: 0.84, phase: 3.3 },
+          { type: "protein", x: networkLeft + networkW * 0.55, y: networkBottom - networkH * 0.14, len: 7, scale: 0.72, phase: 4.6 },
+          { type: "protein", x: networkLeft + networkW * 0.38, y: networkTop + networkH * 0.08, len: 6, scale: 0.68, phase: 5.4 },
         ];
       }
     };
@@ -268,12 +276,12 @@ function NeuralNetCanvas() {
               const y = m.y + dy * i + drift + Math.cos(m.angle + Math.PI / 2) * wave * 4;
               const hot = (i / Math.max(1, m.len - 1) + frame * 0.006 + mi * 0.17) % 1;
               const active = hot > 0.42 && hot < 0.58;
-              const alpha = active ? (dark ? 0.72 : 0.56) : (dark ? 0.3 : 0.24);
+              const alpha = active ? (dark ? 0.82 : 0.66) : (dark ? 0.4 : 0.32);
               if (i > 0) {
                 ctx.beginPath();
                 ctx.moveTo(x - dx * 0.72, y - dy * 0.72);
                 ctx.lineTo(x - dx * 0.25, y - dy * 0.25);
-                ctx.strokeStyle = rgba(dim, dark ? 0.22 : 0.16);
+                ctx.strokeStyle = rgba(dim, dark ? 0.3 : 0.22);
                 ctx.lineWidth = active ? 1 : 0.7;
                 ctx.stroke();
               }
@@ -285,7 +293,7 @@ function NeuralNetCanvas() {
                 ctx.beginPath();
                 ctx.moveTo(x, y);
                 ctx.lineTo(x + Math.sin(m.angle + Math.PI / 2) * 8, y + Math.cos(m.angle + Math.PI / 2) * 8);
-                ctx.strokeStyle = rgba(i % 2 ? warm : accent, active ? 0.28 : 0.14);
+                ctx.strokeStyle = rgba(i % 2 ? warm : accent, active ? 0.36 : 0.2);
                 ctx.lineWidth = 0.7;
                 ctx.stroke();
               }
@@ -303,13 +311,13 @@ function NeuralNetCanvas() {
               if (i === 0) ctx.moveTo(pt.x, pt.y);
               else ctx.lineTo(pt.x, pt.y);
             });
-            ctx.strokeStyle = rgba(warm, dark ? 0.25 : 0.18);
+            ctx.strokeStyle = rgba(warm, dark ? 0.34 : 0.26);
             ctx.lineWidth = 0.85;
             ctx.stroke();
             pts.forEach((pt, i) => {
               ctx.beginPath();
               ctx.arc(pt.x, pt.y, i % 3 === 0 ? 2 : 1.45, 0, Math.PI * 2);
-              ctx.fillStyle = rgba(i % 2 ? warm : accent, dark ? 0.34 : 0.24);
+              ctx.fillStyle = rgba(i % 2 ? warm : accent, dark ? 0.44 : 0.32);
               ctx.fill();
             });
           }
@@ -446,8 +454,182 @@ function SideDecorCanvas() {
     const canvas = canvasRef.current;
     const ctx = canvas.getContext("2d");
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     let w = 0;
     let h = 0;
+    let frame = 0;
+
+    const rgba = (rgb, alpha) => "rgba(" + rgb.join(",") + "," + alpha + ")";
+    const isDark = () => window.matchMedia("(prefers-color-scheme: dark)").matches;
+
+    const drawStrand = (x, y, count, angle, scale, phase, accent, warm, dim, alpha) => {
+      let prev = null;
+      const t = frame * 0.012 + phase;
+      for (let i = 0; i < count; i++) {
+        const wave = Math.sin(t + i * 0.76) * 8 * scale;
+        const px = x + Math.cos(angle) * i * 14 * scale + Math.sin(angle + Math.PI / 2) * wave;
+        const py = y + Math.sin(angle) * i * 14 * scale - Math.cos(angle + Math.PI / 2) * wave;
+        if (prev) {
+          ctx.beginPath();
+          ctx.moveTo(prev.x, prev.y);
+          ctx.lineTo(px, py);
+          ctx.strokeStyle = rgba(dim, alpha * 0.55);
+          ctx.lineWidth = 0.75;
+          ctx.stroke();
+        }
+        if (i % 4 === 1) {
+          ctx.beginPath();
+          ctx.moveTo(px, py);
+          ctx.lineTo(px + Math.sin(angle + Math.PI / 2) * 8 * scale, py - Math.cos(angle + Math.PI / 2) * 8 * scale);
+          ctx.strokeStyle = rgba(i % 2 ? warm : accent, alpha * 0.55);
+          ctx.lineWidth = 0.65;
+          ctx.stroke();
+        }
+        ctx.beginPath();
+        ctx.arc(px, py, (i % 5 === 0 ? 2.1 : 1.45) * scale, 0, Math.PI * 2);
+        ctx.fillStyle = rgba(i % 2 ? warm : accent, alpha);
+        ctx.fill();
+        prev = { x: px, y: py };
+      }
+    };
+
+    const drawFold = (x, y, count, scale, phase, accent, warm, dim, alpha) => {
+      const pts = [];
+      const t = frame * 0.01 + phase;
+      for (let i = 0; i < count; i++) {
+        pts.push({
+          x: x + Math.cos(i * 1.14 + t) * (12 + i * 1.8) * scale,
+          y: y + i * 9 * scale + Math.sin(i * 0.9 + t) * 10 * scale,
+        });
+      }
+      ctx.beginPath();
+      pts.forEach((pt, i) => {
+        if (i === 0) ctx.moveTo(pt.x, pt.y);
+        else ctx.lineTo(pt.x, pt.y);
+      });
+      ctx.strokeStyle = rgba(dim, alpha * 0.62);
+      ctx.lineWidth = 0.8;
+      ctx.stroke();
+      pts.forEach((pt, i) => {
+        ctx.beginPath();
+        ctx.arc(pt.x, pt.y, i % 3 === 0 ? 2.2 * scale : 1.35 * scale, 0, Math.PI * 2);
+        ctx.fillStyle = rgba(i % 2 ? warm : accent, alpha);
+        ctx.fill();
+      });
+    };
+
+    const drawAssay = (x, y, cols, rows, cell, dir, accent, warm, alpha) => {
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          const value = (Math.sin(r * 1.7 + c * 0.93 + frame * 0.012) + 1) / 2;
+          ctx.fillStyle = rgba((r + c) % 3 === 0 ? warm : accent, alpha * (0.34 + value * 0.8));
+          ctx.fillRect(x + dir * c * cell, y + r * cell, cell - 2, cell - 2);
+        }
+      }
+    };
+
+    const drawMiniNetwork = (x, y, scale, dir, accent, warm, dim, alpha) => {
+      const pts = [
+        [0, 0], [28, -12], [46, 10], [20, 26], [62, 32], [88, 8],
+      ].map(([px, py], i) => ({
+        x: x + dir * px * scale,
+        y: y + py * scale + Math.sin(frame * 0.011 + i) * 2,
+      }));
+      [[0, 1], [0, 3], [1, 2], [2, 5], [3, 4], [4, 5], [1, 4]].forEach(([a, b]) => {
+        ctx.beginPath();
+        ctx.moveTo(pts[a].x, pts[a].y);
+        ctx.lineTo(pts[b].x, pts[b].y);
+        ctx.strokeStyle = rgba(dim, alpha * 0.48);
+        ctx.lineWidth = 0.75;
+        ctx.stroke();
+      });
+      pts.forEach((pt, i) => {
+        ctx.beginPath();
+        ctx.arc(pt.x, pt.y, (i % 2 ? 1.8 : 2.4) * scale, 0, Math.PI * 2);
+        ctx.fillStyle = rgba(i % 3 === 0 ? warm : accent, alpha);
+        ctx.fill();
+      });
+    };
+
+    const drawField = (side, accent, warm, dim) => {
+      const contentW = Math.min(1180, w - 72);
+      const contentLeft = (w - contentW) / 2;
+      const contentRight = contentLeft + contentW;
+      const zoneW = side === "left" ? contentLeft - 34 : w - contentRight - 34;
+      if (zoneW < 112) return;
+
+      const x0 = side === "left" ? 18 : contentRight + 16;
+      const dir = side === "left" ? 1 : -1;
+      const top = 86;
+      const fieldH = Math.max(360, h - 126);
+      const inner = (xp) => x0 + zoneW * xp;
+      const time = frame * 0.008;
+
+      [0.12, 0.27, 0.43, 0.61, 0.79].forEach((yp, i) => {
+        const y = top + fieldH * yp + Math.sin(time + i) * 4;
+        const xA = side === "left" ? inner(0.08) : inner(0.92);
+        const xB = side === "left" ? inner(0.92) : inner(0.08);
+        ctx.beginPath();
+        ctx.moveTo(xA, y);
+        ctx.lineTo(xB, y + Math.sin(i * 1.2) * 14);
+        ctx.strokeStyle = rgba(i % 2 ? warm : accent, 0.075);
+        ctx.lineWidth = 0.65;
+        ctx.stroke();
+        for (let d = 0; d < 13; d++) {
+          const t = d / 12;
+          const px = xA + (xB - xA) * t;
+          const py = y + Math.sin(i * 1.2) * 14 * t;
+          ctx.beginPath();
+          ctx.arc(px, py, d % 5 === 0 ? 1.45 : 0.8, 0, Math.PI * 2);
+          ctx.fillStyle = rgba(d % 4 === 0 ? warm : accent, 0.11 + (d % 5 === 0 ? 0.06 : 0));
+          ctx.fill();
+        }
+      });
+
+      const motifSet = side === "left"
+        ? [
+          ["strand", 0.18, 0.16, 13, 0.05, 0.82, 0.4],
+          ["assay", 0.7, 0.27, 8, 5, 6, 0],
+          ["fold", 0.36, 0.42, 8, 0.88, 0, 1.5],
+          ["network", 0.62, 0.58, 1, 0, 0, 2.1],
+          ["strand", 0.15, 0.76, 12, -0.08, 0.76, 3.2],
+          ["assay", 0.78, 0.88, 6, 4, 7, 0],
+        ]
+        : [
+          ["assay", 0.28, 0.16, 7, 5, 6, 0],
+          ["strand", 0.68, 0.31, 12, -0.06, 0.82, 1.1],
+          ["network", 0.3, 0.48, 1, 0, 0, 2.8],
+          ["fold", 0.72, 0.62, 9, 0.82, 0, 3.4],
+          ["strand", 0.2, 0.8, 11, 0.08, 0.72, 4.5],
+          ["assay", 0.72, 0.9, 8, 4, 7, 0],
+        ];
+
+      motifSet.forEach((m, i) => {
+        const [type, xp, yp, a, b, c, phase] = m;
+        const x = inner(xp) + Math.sin(time + phase) * 4;
+        const y = top + fieldH * yp + Math.cos(time * 0.8 + phase) * 5;
+        const alpha = 0.18 + i * 0.014;
+        if (type === "strand") drawStrand(x, y, a, b * dir, c, phase, accent, warm, dim, alpha);
+        if (type === "fold") drawFold(x, y, a, b, phase, accent, warm, dim, alpha);
+        if (type === "network") drawMiniNetwork(x, y, 0.82, dir, accent, warm, dim, alpha);
+        if (type === "assay") drawAssay(x, y, a, b, c, dir, accent, warm, alpha * 0.72);
+      });
+    };
+
+    const draw = () => {
+      frame++;
+      ctx.clearRect(0, 0, w, h);
+      if (w >= 1120) {
+        const dark = isDark();
+        const accent = dark ? [139, 173, 230] : [47, 94, 158];
+        const warm = dark ? [214, 154, 112] : [168, 101, 63];
+        const dim = dark ? [72, 80, 92] : [165, 174, 184];
+
+        drawField("left", accent, warm, dim);
+        drawField("right", accent, warm, dim);
+      }
+      if (!reducedMotion) raf.current = requestAnimationFrame(draw);
+    };
 
     const resize = () => {
       w = window.innerWidth;
@@ -457,97 +639,11 @@ function SideDecorCanvas() {
       canvas.style.width = w + "px";
       canvas.style.height = h + "px";
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      if (reducedMotion) draw();
     };
     resize();
     window.addEventListener("resize", resize);
-
-    const rgba = (rgb, alpha) => "rgba(" + rgb.join(",") + "," + alpha + ")";
-    const isDark = () => window.matchMedia("(prefers-color-scheme: dark)").matches;
-
-    const drawRail = (side, accent, warm, dim) => {
-      const contentW = Math.min(980, w - 48);
-      const contentLeft = (w - contentW) / 2;
-      const gap = Math.max(120, contentLeft - 24);
-      const x0 = side === "left" ? 0 : w - gap;
-      const railW = gap;
-      const dir = side === "left" ? 1 : -1;
-      const top = 95;
-      const bottom = h - 28;
-
-      const columns = railW > 300 ? 4 : 3;
-      for (let c = 0; c < columns; c++) {
-        const colX = x0 + railW * ((c + 1) / (columns + 1));
-        ctx.beginPath();
-        ctx.moveTo(colX, top);
-        ctx.lineTo(colX, bottom);
-        ctx.strokeStyle = rgba(dim, 0.08 + c * 0.015);
-        ctx.lineWidth = 0.8;
-        ctx.stroke();
-      }
-
-      for (let i = 0; i < 20; i++) {
-        const y = top + 34 + (i * 72) % (bottom - top);
-        const anchor = x0 + railW * (((i % columns) + 1) / (columns + 1));
-        const reach = 42 + (i % 5) * 18;
-        const x1 = anchor;
-        const x2 = anchor + dir * reach;
-        ctx.beginPath();
-        ctx.moveTo(x1, y);
-        ctx.lineTo(x2, y + Math.sin(i) * 5);
-        ctx.strokeStyle = rgba(i % 2 ? warm : accent, 0.2);
-        ctx.lineWidth = 0.8;
-        ctx.stroke();
-
-        ctx.beginPath();
-        ctx.arc(x1, y, 2.1, 0, Math.PI * 2);
-        ctx.fillStyle = rgba(i % 2 ? warm : accent, 0.3);
-        ctx.fill();
-        ctx.beginPath();
-        ctx.arc(x2, y + Math.sin(i) * 5, 1.65, 0, Math.PI * 2);
-        ctx.fillStyle = rgba(i % 2 ? accent : warm, 0.22);
-        ctx.fill();
-      }
-
-      for (let row = 0; row < 10; row++) {
-        const y = top + 26 + row * 68;
-        const start = side === "left" ? x0 + railW * 0.12 : x0 + railW * 0.88;
-        const len = 8 + (row % 4);
-        for (let i = 0; i < len; i++) {
-          const x = start + dir * i * 14;
-          if (i > 0) {
-            ctx.beginPath();
-            ctx.moveTo(x - dir * 10, y);
-            ctx.lineTo(x - dir * 4, y);
-            ctx.strokeStyle = rgba(dim, 0.095);
-            ctx.lineWidth = 0.65;
-            ctx.stroke();
-          }
-          ctx.beginPath();
-          ctx.arc(x, y, 1.55, 0, Math.PI * 2);
-          ctx.fillStyle = rgba(i % 2 ? warm : accent, 0.2);
-          ctx.fill();
-        }
-      }
-    };
-
-    const draw = () => {
-      ctx.clearRect(0, 0, w, h);
-      if (w < 1080) {
-        raf.current = requestAnimationFrame(draw);
-        return;
-      }
-
-      const dark = isDark();
-      const accent = dark ? [139, 173, 230] : [47, 94, 158];
-      const warm = dark ? [214, 154, 112] : [168, 101, 63];
-      const dim = dark ? [72, 80, 92] : [165, 174, 184];
-
-      drawRail("left", accent, warm, dim);
-      drawRail("right", accent, warm, dim);
-
-      raf.current = requestAnimationFrame(draw);
-    };
-    draw();
+    if (!reducedMotion) draw();
 
     return () => {
       cancelAnimationFrame(raf.current);
@@ -659,12 +755,17 @@ export default function Portfolio() {
 
       <div className="content">
         <Section id="about">
-          <span className="sect-label">01 ABOUT</span><h2>Overview</h2><p className="about-text">{D.about}</p>
-          <div className="snapshot-grid">
-            {D.snapshot.map((item) => <div key={item.label} className="snapshot-item"><span>{item.label}</span><strong>{item.value}</strong></div>)}
-          </div>
-          <div className="focus-grid">
-            {D.focusAreas.map((area) => <article key={area.title} className="focus-card"><h3>{area.title}</h3><p>{area.desc}</p></article>)}
+          <span className="sect-label">01 ABOUT</span><h2>Overview</h2>
+          <div className="overview-panel">
+            <div className="overview-main">
+              <p className="about-text">{D.about}</p>
+              <div className="focus-grid">
+                {D.focusAreas.map((area) => <article key={area.title} className="focus-card"><h3>{area.title}</h3><p>{area.desc}</p></article>)}
+              </div>
+            </div>
+            <aside className="snapshot-grid" aria-label="Profile snapshot">
+              {D.snapshot.map((item) => <div key={item.label} className="snapshot-item"><span>{item.label}</span><strong>{item.value}</strong></div>)}
+            </aside>
           </div>
         </Section>
 
@@ -702,6 +803,7 @@ const CSS_TEXT = `
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
 html{scroll-behavior:smooth;scroll-padding-top:80px}
 body{background:linear-gradient(180deg,var(--bg) 0%,color-mix(in srgb,var(--bg) 88%,var(--bg2)) 100%);color:var(--fg);font-family:var(--sans);line-height:1.65;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;background:linear-gradient(90deg,color-mix(in srgb,var(--border) 42%,transparent) 1px,transparent 1px),linear-gradient(180deg,color-mix(in srgb,var(--border) 34%,transparent) 1px,transparent 1px);background-size:152px 152px;-webkit-mask-image:radial-gradient(ellipse at 50% 18%,transparent 0%,transparent 28%,#000 58%,transparent 100%);mask-image:radial-gradient(ellipse at 50% 18%,transparent 0%,transparent 28%,#000 58%,transparent 100%);opacity:.28}
 ::selection{background:var(--accent);color:#fff}
 .nav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:0 clamp(1.25rem,4vw,3rem);height:60px;background:transparent;transition:background .4s,box-shadow .4s,backdrop-filter .4s}
 .nav.scrolled{background:color-mix(in srgb,var(--bg) 85%,transparent);backdrop-filter:blur(20px) saturate(1.5);-webkit-backdrop-filter:blur(20px) saturate(1.5);box-shadow:0 1px 0 var(--border)}
@@ -715,8 +817,8 @@ body{background:linear-gradient(180deg,var(--bg) 0%,color-mix(in srgb,var(--bg) 
 .hamburger{display:none;background:none;border:none;color:var(--fg);font-size:1.4rem;cursor:pointer;padding:.25rem}
 @media(max-width:700px){.nav-links{position:fixed;top:0;left:0;right:0;bottom:0;flex-direction:column;align-items:center;justify-content:center;gap:.75rem;background:color-mix(in srgb,var(--bg) 97%,transparent);backdrop-filter:blur(24px);opacity:0;pointer-events:none;transition:opacity .3s}.nav-links.open{opacity:1;pointer-events:auto}.nav-links a{font-size:1.2rem;padding:.85rem 1.5rem}.hamburger{display:block}}
 .hero{min-height:92svh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:6rem 1.5rem 4.5rem;position:relative;overflow:hidden;border-bottom:1px solid var(--border)}
-.hero-overlay{position:absolute;inset:0;z-index:1;background:radial-gradient(ellipse at 50% 42%,color-mix(in srgb,var(--bg) 42%,transparent) 0%,color-mix(in srgb,var(--bg) 28%,transparent) 32%,color-mix(in srgb,var(--bg) 20%,transparent) 58%,color-mix(in srgb,var(--bg) 62%,transparent) 100%),linear-gradient(180deg,transparent 0%,color-mix(in srgb,var(--bg) 68%,transparent) 100%);pointer-events:none}
-.hero-content{position:relative;z-index:2;max-width:860px;padding:0 1rem;text-shadow:0 1px 18px color-mix(in srgb,var(--bg) 78%,transparent)}
+.hero-overlay{position:absolute;inset:0;z-index:1;background:radial-gradient(ellipse at 50% 42%,color-mix(in srgb,var(--bg) 36%,transparent) 0%,color-mix(in srgb,var(--bg) 22%,transparent) 34%,color-mix(in srgb,var(--bg) 12%,transparent) 58%,color-mix(in srgb,var(--bg) 58%,transparent) 100%),linear-gradient(180deg,transparent 0%,color-mix(in srgb,var(--bg) 64%,transparent) 100%);pointer-events:none}
+.hero-content{position:relative;z-index:2;max-width:920px;padding:0 1rem;text-shadow:0 1px 14px color-mix(in srgb,var(--bg) 82%,transparent)}
 .hero-avatar{width:112px;height:112px;border-radius:50%;object-fit:cover;border:1px solid var(--border);box-shadow:0 10px 32px rgba(15,23,42,.08);margin-bottom:1.75rem;opacity:0;transform:scale(.8);transition:opacity .8s .1s cubic-bezier(.22,1,.36,1),transform .8s .1s cubic-bezier(.22,1,.36,1)}
 .hero-avatar.vis{opacity:1;transform:scale(1)}
 .hero-kicker{display:inline-flex;align-items:center;gap:.5rem;margin-bottom:.7rem;font-family:var(--mono);font-size:.68rem;letter-spacing:.11em;text-transform:uppercase;color:var(--accent);opacity:0;transform:translateY(12px);transition:all .7s .25s cubic-bezier(.22,1,.36,1)}
@@ -735,7 +837,7 @@ body{background:linear-gradient(180deg,var(--bg) 0%,color-mix(in srgb,var(--bg) 
 .btn:hover{box-shadow:0 5px 18px rgba(15,23,42,.08)}
 .btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
 .btn.primary:hover{background:var(--accent2);box-shadow:0 4px 24px color-mix(in srgb,var(--accent) 30%,transparent)}
-.hero-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.75rem;max-width:520px;margin:1.6rem auto 0;opacity:0;transform:translateY(16px);transition:all .7s .88s cubic-bezier(.22,1,.36,1)}
+.hero-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.75rem;max-width:560px;margin:1.6rem auto 0;opacity:0;transform:translateY(16px);transition:all .7s .88s cubic-bezier(.22,1,.36,1)}
 .hero-stats.vis{opacity:1;transform:translateY(0)}
 .hero-stat{padding:.85rem .7rem;border:1px solid var(--border);border-radius:var(--radius);background:color-mix(in srgb,var(--card) 84%,transparent);backdrop-filter:blur(12px)}
 .hero-stat strong{display:block;font-family:var(--serif);font-size:1.65rem;font-weight:400;line-height:1;color:var(--fg)}
@@ -744,24 +846,28 @@ body{background:linear-gradient(180deg,var(--bg) 0%,color-mix(in srgb,var(--bg) 
 @keyframes fadeIn{to{opacity:1}}
 .scroll-dot{width:5px;height:5px;border-radius:50%;background:var(--accent);animation:bounce 2s ease-in-out infinite}
 @keyframes bounce{0%,100%{transform:translateY(0);opacity:.4}50%{transform:translateY(12px);opacity:1}}
-.content{max-width:980px;margin:0 auto;padding:4rem 1.5rem 6rem;display:flex;flex-direction:column;gap:4rem;position:relative;z-index:2}
+.content{max-width:1180px;margin:0 auto;padding:5rem 1.75rem 6.75rem;display:flex;flex-direction:column;gap:5rem;position:relative;z-index:2}
 .sect-label{font-family:var(--mono);font-size:.68rem;letter-spacing:.1em;color:var(--accent);font-weight:500;margin-bottom:.75rem;display:flex;align-items:center;gap:.6rem}
 .sect-label::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,var(--border),transparent)}
 .sect h2{font-family:var(--serif);font-size:clamp(1.7rem,3vw,2.2rem);font-weight:400;letter-spacing:0;color:var(--fg);margin-bottom:1rem}
-.sect>p,.about-text{color:var(--fg2);font-size:.95rem;line-height:1.75}
-.snapshot-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.75rem;margin-top:1.2rem}
-.snapshot-item{padding:.85rem 1rem;border:1px solid var(--border);border-radius:var(--radius);background:color-mix(in srgb,var(--card) 86%,transparent)}
+.sect>p,.about-text{color:var(--fg2);font-size:.96rem;line-height:1.75}
+.overview-panel{display:grid;grid-template-columns:minmax(0,1fr) 310px;gap:1.15rem;align-items:start}
+.overview-main{min-width:0}
+.about-text{max-width:760px}
+.snapshot-grid{display:grid;grid-template-columns:1fr;gap:.75rem;margin-top:0}
+.snapshot-item{padding:1rem 1.05rem;border:1px solid var(--border);border-radius:var(--radius);background:color-mix(in srgb,var(--card) 88%,transparent);box-shadow:0 10px 30px rgba(15,23,42,.035)}
 .snapshot-item span{display:block;font-family:var(--mono);font-size:.62rem;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);margin-bottom:.25rem}
 .snapshot-item strong{display:block;font-size:.82rem;line-height:1.45;color:var(--fg);font-weight:650}
-.focus-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.85rem;margin-top:1.4rem}
-.focus-card{padding:1rem;background:var(--card);border:1px solid var(--border);border-radius:var(--radius)}
+.focus-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.9rem;margin-top:1.5rem}
+.focus-card{padding:1.1rem 1.15rem;background:color-mix(in srgb,var(--card) 90%,transparent);border:1px solid var(--border);border-radius:var(--radius);box-shadow:0 10px 30px rgba(15,23,42,.035)}
 .focus-card h3{font-size:.85rem;color:var(--fg);font-weight:700;margin-bottom:.35rem}
 .focus-card p{font-size:.8rem;line-height:1.55;color:var(--fg2)}
-.timeline{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1rem}
-.tcard{padding:1.4rem 1.5rem;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);position:relative;overflow:hidden;transition:border-color .3s,box-shadow .3s}
+.timeline{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1rem;align-items:stretch}
+.timeline>div{height:100%}
+.tcard{height:100%;display:flex;flex-direction:column;padding:1.4rem 1.5rem;background:color-mix(in srgb,var(--card) 94%,transparent);border:1px solid var(--border);border-radius:var(--radius);position:relative;overflow:hidden;transition:border-color .3s,box-shadow .3s,transform .3s}
 .tcard::before{content:'';position:absolute;top:0;left:0;width:3px;height:100%;background:linear-gradient(180deg,var(--accent),transparent);opacity:0;transition:opacity .3s}
 .tcard:hover::before{opacity:1}
-.tcard:hover{border-color:color-mix(in srgb,var(--accent) 20%,var(--border));box-shadow:0 8px 24px rgba(15,23,42,.055)}
+.tcard:hover{border-color:color-mix(in srgb,var(--accent) 20%,var(--border));box-shadow:0 12px 30px rgba(15,23,42,.065);transform:translateY(-2px)}
 .tcard-head{display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:.5rem}
 .tcard h3{font-size:.92rem;font-weight:700;color:var(--fg)}
 .tcard-period{font-family:var(--mono);font-size:.73rem;color:var(--fg3)}
@@ -776,12 +882,12 @@ body{background:linear-gradient(180deg,var(--bg) 0%,color-mix(in srgb,var(--bg) 
 .pub-card{padding:1.4rem 1.5rem;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);border-left:3px solid var(--accent)}
 .pub-title{font-size:.9rem;font-weight:600;color:var(--fg);font-style:italic;line-height:1.5}
 .pub-meta{font-size:.82rem;color:var(--fg3);margin-top:.4rem}
-.project-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1rem}
-.pcard{padding:1.4rem 1.5rem;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);transition:border-color .3s,box-shadow .3s,transform .3s}
+.project-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1rem;align-items:stretch}
+.pcard{height:100%;display:flex;flex-direction:column;padding:1.4rem 1.5rem;background:color-mix(in srgb,var(--card) 94%,transparent);border:1px solid var(--border);border-radius:var(--radius);transition:border-color .3s,box-shadow .3s,transform .3s}
 .pcard:hover{border-color:color-mix(in srgb,var(--accent) 25%,var(--border));box-shadow:0 8px 24px rgba(15,23,42,.055);transform:translateY(-2px)}
 .pcard h3{font-size:.92rem;font-weight:700;color:var(--fg)}
 .pcard p{font-size:.87rem;color:var(--fg2);margin-top:.35rem;line-height:1.6}
-.pcard-tags{display:flex;gap:.4rem;flex-wrap:wrap;margin-top:.75rem}
+.pcard-tags{display:flex;gap:.4rem;flex-wrap:wrap;margin-top:auto;padding-top:.85rem}
 .ptag{font-family:var(--mono);font-size:.7rem;padding:.25rem .65rem;border-radius:6px;background:var(--accent-soft);color:var(--accent);font-weight:500}
 .pcard-link{display:inline-flex;align-items:center;gap:.3rem;margin-top:.85rem;font-size:.83rem;font-weight:600;color:var(--accent);text-decoration:none;transition:gap .2s}
 .pcard-link:hover{gap:.55rem}
@@ -800,7 +906,7 @@ body{background:linear-gradient(180deg,var(--bg) 0%,color-mix(in srgb,var(--bg) 
 .btt:hover{background:var(--accent);color:#fff;border-color:var(--accent)}
 .skip{position:absolute;left:-9999px;top:0;background:var(--accent);color:#fff;padding:.5rem .75rem;border-radius:0 0 8px 0;z-index:1000;font-size:.85rem}
 .skip:focus{left:0}
-@media(max-width:920px){.timeline,.project-grid{grid-template-columns:1fr}.content{max-width:760px}.tcard,.pcard{padding:1.2rem 1.25rem}}
+@media(max-width:920px){.overview-panel{grid-template-columns:1fr}.snapshot-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.timeline,.project-grid{grid-template-columns:1fr}.content{max-width:760px}.tcard,.pcard{padding:1.2rem 1.25rem}}
 @media(max-width:760px){.snapshot-grid,.focus-grid,.skill-grid{grid-template-columns:1fr}.hero-stats{grid-template-columns:1fr;max-width:320px}.hero-stat{display:flex;align-items:baseline;justify-content:space-between;gap:1rem;text-align:left}.hero-stat span{text-align:right}.scroll-hint{display:none}}
 @media(max-width:640px){.content{gap:3.5rem;padding-top:3rem}.hero{min-height:94svh;padding:5rem 1rem 3rem}.hero-avatar{width:92px;height:92px;margin-bottom:1.25rem}.hero-sub{font-size:.95rem}.hero-note{font-size:.92rem}.btn{width:100%;justify-content:center}.hero-cta{max-width:320px;margin-left:auto;margin-right:auto}.tcard,.pcard,.pub-card{padding:1.1rem}.hero-kicker::before,.hero-kicker::after{width:18px}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:0s!important;transition-duration:0s!important}canvas{display:none}}

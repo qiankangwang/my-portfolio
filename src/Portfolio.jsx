@@ -144,7 +144,7 @@ function NeuralNetCanvas() {
     let h = 0;
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const layers = [4, 6, 7, 6, 4];
+    const layers = [5, 7, 9, 7, 5, 3];
     let nodes = [];
     let edges = [];
     let pulses = [];
@@ -158,16 +158,16 @@ function NeuralNetCanvas() {
       nodes = [];
       edges = [];
       pulses = [];
-      const centerX = w * 0.58;
+      const centerX = w < 720 ? w * 0.5 : w * 0.56;
       const centerY = h * 0.5;
-      const networkW = Math.min(w * 0.78, 860);
-      const networkH = Math.min(h * 0.58, 460);
+      const networkW = Math.min(w * 0.9, 1280);
+      const networkH = Math.min(h * 0.72, 640);
       const startX = centerX - networkW / 2;
       const layerGap = networkW / (layers.length - 1);
 
       layers.forEach((count, layer) => {
         const x = startX + layerGap * layer;
-        const usableH = networkH * (0.78 + layer * 0.025);
+        const usableH = networkH * (0.76 + layer * 0.018);
         const startY = centerY - usableH / 2;
         for (let i = 0; i < count; i++) {
           const ratio = count === 1 ? 0.5 : i / (count - 1);
@@ -239,6 +239,7 @@ function NeuralNetCanvas() {
       const accent = dark ? [139, 173, 230] : [47, 94, 158];
       const cool = dark ? [83, 106, 137] : [126, 145, 164];
       const dim = dark ? [45, 51, 59] : [200, 205, 210];
+      const warm = dark ? [214, 154, 112] : [168, 101, 63];
       const mx = mouse.current.x;
       const my = mouse.current.y;
       const t = frame * (reducedMotion ? 0.012 : 0.035);
@@ -248,6 +249,71 @@ function NeuralNetCanvas() {
       grad.addColorStop(1, rgba(accent, 0));
       ctx.fillStyle = grad;
       ctx.fillRect(0, 0, w, h);
+
+      const helixX = w < 720 ? w * 0.5 : w * 0.14;
+      const helixY = h * 0.5;
+      const helixH = Math.min(h * 0.72, 640);
+      const helixAmp = Math.min(w * 0.052, 48);
+      const helixStep = 24;
+      const helixPhase = reducedMotion ? 0 : frame * 0.018;
+      const helixTop = helixY - helixH / 2;
+      const helixBottom = helixY + helixH / 2;
+      const strand = (offset) => {
+        ctx.beginPath();
+        for (let y = helixTop; y <= helixBottom; y += 8) {
+          const p = (y - helixTop) / helixH;
+          const x = helixX + Math.sin(p * Math.PI * 6 + helixPhase + offset) * helixAmp;
+          if (y === helixTop) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        }
+      };
+
+      ctx.save();
+      ctx.globalAlpha = w < 720 ? 0.18 : 0.28;
+      strand(0);
+      ctx.strokeStyle = rgba(accent, dark ? 0.34 : 0.24);
+      ctx.lineWidth = 1.1;
+      ctx.stroke();
+      strand(Math.PI);
+      ctx.strokeStyle = rgba(warm, dark ? 0.32 : 0.22);
+      ctx.stroke();
+
+      for (let y = helixTop + 8; y <= helixBottom; y += helixStep) {
+        const p = (y - helixTop) / helixH;
+        const wave = Math.sin(p * Math.PI * 6 + helixPhase);
+        const x1 = helixX + wave * helixAmp;
+        const x2 = helixX - wave * helixAmp;
+        const alpha = 0.08 + Math.abs(wave) * 0.1;
+        ctx.beginPath();
+        ctx.moveTo(x1, y);
+        ctx.lineTo(x2, y);
+        ctx.strokeStyle = rgba(dim, alpha);
+        ctx.lineWidth = 0.7;
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(x1, y, 2.1, 0, Math.PI * 2);
+        ctx.fillStyle = rgba(accent, 0.26);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(x2, y, 2.1, 0, Math.PI * 2);
+        ctx.fillStyle = rgba(warm, 0.24);
+        ctx.fill();
+      }
+
+      if (nodes.length && w >= 720) {
+        const inputNodes = nodes.filter((n) => n.layer === 0);
+        inputNodes.forEach((n, i) => {
+          const y = helixTop + ((i + 1) / (inputNodes.length + 1)) * helixH;
+          const x = helixX + Math.sin(((y - helixTop) / helixH) * Math.PI * 6 + helixPhase) * helixAmp;
+          ctx.beginPath();
+          ctx.moveTo(x, y);
+          ctx.bezierCurveTo(x + 80, y, n.x - 80, n.y, n.x, n.y);
+          ctx.strokeStyle = rgba(accent, dark ? 0.08 : 0.06);
+          ctx.lineWidth = 0.65;
+          ctx.stroke();
+        });
+      }
+      ctx.restore();
 
       nodes.forEach((n) => {
         n.x = n.baseX + Math.sin(t + n.phase) * 2.2;

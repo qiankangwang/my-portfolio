@@ -140,153 +140,189 @@ function NeuralNetCanvas() {
   useEffect(() => {
     const canvas = canvasRef.current;
     const ctx = canvas.getContext("2d");
-    let w, h;
+    let w = 0;
+    let h = 0;
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const layers = [4, 6, 7, 6, 4];
+    let nodes = [];
+    let edges = [];
+    let pulses = [];
+    let edgeCursor = 0;
+    let frame = 0;
+
+    const isDark = () => window.matchMedia("(prefers-color-scheme: dark)").matches;
+    const rgba = (rgb, alpha) => "rgba(" + rgb.join(",") + "," + alpha + ")";
+
+    const buildNetwork = () => {
+      nodes = [];
+      edges = [];
+      pulses = [];
+      const centerX = w * 0.58;
+      const centerY = h * 0.5;
+      const networkW = Math.min(w * 0.78, 860);
+      const networkH = Math.min(h * 0.58, 460);
+      const startX = centerX - networkW / 2;
+      const layerGap = networkW / (layers.length - 1);
+
+      layers.forEach((count, layer) => {
+        const x = startX + layerGap * layer;
+        const usableH = networkH * (0.78 + layer * 0.025);
+        const startY = centerY - usableH / 2;
+        for (let i = 0; i < count; i++) {
+          const ratio = count === 1 ? 0.5 : i / (count - 1);
+          const curve = Math.sin((ratio - 0.5) * Math.PI) * 14;
+          nodes.push({
+            x,
+            y: startY + ratio * usableH + curve,
+            baseX: x,
+            baseY: startY + ratio * usableH + curve,
+            layer,
+            r: 3.2 + (layer === 0 || layer === layers.length - 1 ? 0.4 : 0.9),
+            phase: Math.random() * Math.PI * 2,
+            activation: layer === 0 ? 0.4 : 0,
+          });
+        }
+      });
+
+      const layerStarts = layers.reduce((acc, count, i) => {
+        acc.push(i === 0 ? 0 : acc[i - 1] + layers[i - 1]);
+        return acc;
+      }, []);
+
+      for (let layer = 0; layer < layers.length - 1; layer++) {
+        const aStart = layerStarts[layer];
+        const bStart = layerStarts[layer + 1];
+        for (let a = 0; a < layers[layer]; a++) {
+          for (let b = 0; b < layers[layer + 1]; b++) {
+            const distance = Math.abs((a + 0.5) / layers[layer] - (b + 0.5) / layers[layer + 1]);
+            if (distance < 0.38 || (a + b + layer) % 5 === 0) {
+              edges.push({
+                from: aStart + a,
+                to: bStart + b,
+                layer,
+                weight: 1 - Math.min(distance, 0.45),
+              });
+            }
+          }
+        }
+      }
+    };
 
     const resize = () => {
-      w = canvas.clientWidth;
-      h = canvas.clientHeight;
+      w = canvas.clientWidth || window.innerWidth;
+      h = canvas.clientHeight || window.innerHeight;
       canvas.width = w * dpr;
       canvas.height = h * dpr;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      buildNetwork();
     };
     resize();
     window.addEventListener("resize", resize);
 
-    const isDark = () => window.matchMedia("(prefers-color-scheme: dark)").matches;
-
-    const layers = [4, 6, 8, 6, 4, 2];
-    const nodes = [];
-    const edges = [];
-    const pulses = [];
-    const codeSnippets = [
-      "loss.backward()", "optimizer.step()", "torch.tensor()", "model.train()",
-      "np.linalg.solve()", "cuda.synchronize()", "grad = \u2202L/\u2202w", "F.relu(x)",
-      "conv2d(x, w)", "softmax(logits)", "\u2207\u03b8 J(\u03b8)", "x @ W + b",
-      "BiCG(A, b)", "FFT(signal)", "\u03bb\u00b7\u2016w\u2016\u00b2", "P(y|x; \u03b8)",
-    ];
-    const floatingTexts = [];
-
-    const marginX = w * 0.12;
-    const usableW = w - marginX * 2;
-    layers.forEach((count, li) => {
-      const x = marginX + (usableW * li) / (layers.length - 1);
-      const marginY = h * 0.18;
-      const usableH = h - marginY * 2;
-      for (let ni = 0; ni < count; ni++) {
-        const y = marginY + (usableH * ni) / (count - 1 || 1);
-        nodes.push({ x, y, layer: li, r: 4 + Math.random() * 2, baseX: x, baseY: y, phase: Math.random() * Math.PI * 2, activation: 0 });
-      }
-    });
-
-    let nodeIdx = 0;
-    for (let li = 0; li < layers.length - 1; li++) {
-      const currStart = nodeIdx;
-      const currCount = layers[li];
-      const nextStart = currStart + currCount;
-      const nextCount = layers[li + 1];
-      for (let a = 0; a < currCount; a++) {
-        for (let b = 0; b < nextCount; b++) {
-          if (Math.random() < 0.6) edges.push({ from: currStart + a, to: nextStart + b, weight: 0.3 + Math.random() * 0.7 });
-        }
-      }
-      nodeIdx += currCount;
-    }
-
     const spawnPulse = () => {
-        const edge = edges[Math.floor(Math.random() * edges.length)];
-        pulses.push({ edge, t: 0, speed: 0.004 + Math.random() * 0.006 });
-    };
-
-
-    const spawnText = () => {
-      const txt = codeSnippets[Math.floor(Math.random() * codeSnippets.length)];
-      const side = Math.random() < 0.5;
-      floatingTexts.push({
-        text: txt,
-        x: side ? w * (0.02 + Math.random() * 0.15) : w * (0.83 + Math.random() * 0.15),
-        y: h * (0.1 + Math.random() * 0.8),
-        opacity: 0, phase: 0, life: 0, maxLife: 180 + Math.random() * 120,
+      if (!edges.length || pulses.length > 18) return;
+      const edge = edges[edgeCursor % edges.length];
+      edgeCursor += 7;
+      pulses.push({
+        edge,
+        t: 0,
+        speed: reducedMotion ? 0.012 : 0.006 + Math.random() * 0.004,
+        alpha: 0.42 + Math.random() * 0.26,
       });
     };
 
-    let frame = 0;
     const draw = () => {
       frame++;
       ctx.clearRect(0, 0, w, h);
       const dark = isDark();
-      const accent = dark ? [107, 142, 245] : [44, 90, 233];
-      const dim = dark ? [50, 55, 70] : [180, 185, 200];
+      const accent = dark ? [139, 173, 230] : [47, 94, 158];
+      const cool = dark ? [83, 106, 137] : [126, 145, 164];
+      const dim = dark ? [45, 51, 59] : [200, 205, 210];
       const mx = mouse.current.x;
       const my = mouse.current.y;
+      const t = frame * (reducedMotion ? 0.012 : 0.035);
 
-      if (frame % 40 === 0 && floatingTexts.length < 6) spawnText();
-      for (let i = floatingTexts.length - 1; i >= 0; i--) {
-        const ft = floatingTexts[i];
-        ft.life++; ft.phase += 0.015;
-        if (ft.life < 30) ft.opacity = ft.life / 30;
-        else if (ft.life > ft.maxLife - 30) ft.opacity = (ft.maxLife - ft.life) / 30;
-        else ft.opacity = 1;
-        ft.y -= 0.15;
-        if (ft.life > ft.maxLife) { floatingTexts.splice(i, 1); continue; }
-        ctx.save();
-        ctx.globalAlpha = ft.opacity * (dark ? 0.18 : 0.13);
-        ctx.font = "500 11px 'JetBrains Mono', monospace";
-        ctx.fillStyle = "rgb(" + accent.join(",") + ")";
-        ctx.fillText(ft.text, ft.x, ft.y + Math.sin(ft.phase) * 4);
-        ctx.restore();
-      }
+      const grad = ctx.createRadialGradient(w * 0.58, h * 0.44, 0, w * 0.58, h * 0.44, Math.max(w, h) * 0.55);
+      grad.addColorStop(0, rgba(accent, dark ? 0.055 : 0.045));
+      grad.addColorStop(1, rgba(accent, 0));
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, w, h);
 
-      const t = frame * 0.06;
       nodes.forEach((n) => {
-        n.x = n.baseX + Math.sin(t + n.phase) * 3;
-        n.y = n.baseY + Math.cos(t * 0.7 + n.phase * 1.3) * 3;
+        n.x = n.baseX + Math.sin(t + n.phase) * 2.2;
+        n.y = n.baseY + Math.cos(t * 0.7 + n.phase * 1.3) * 2.2;
         const dx = n.x - mx, dy = n.y - my;
         const dist = Math.sqrt(dx * dx + dy * dy);
-        if (dist < 120) { const push = (120 - dist) / 120; n.x += (dx / dist) * push * 12; n.y += (dy / dist) * push * 12; }
-        n.activation *= 0.94;
+        if (dist > 0 && dist < 130) {
+          const pull = (130 - dist) / 130;
+          n.x += (dx / dist) * pull * 8;
+          n.y += (dy / dist) * pull * 8;
+          n.activation = Math.max(n.activation, pull * 0.7);
+        }
+        n.activation *= 0.93;
       });
 
       edges.forEach((e) => {
         const a = nodes[e.from], b = nodes[e.to];
-        ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y);
         const act = Math.max(a.activation, b.activation);
-        if (act > 0.1) {
-          ctx.strokeStyle = "rgba(" + accent.join(",") + "," + (0.06 + act * 0.25) + ")";
-          ctx.lineWidth = 0.6 + act * 1.2;
-        } else {
-          ctx.strokeStyle = "rgba(" + dim.join(",") + "," + (dark ? 0.12 : 0.1) + ")";
-          ctx.lineWidth = 0.5;
-        }
+        ctx.beginPath();
+        ctx.moveTo(a.x, a.y);
+        ctx.bezierCurveTo(a.x + (b.x - a.x) * 0.48, a.y, a.x + (b.x - a.x) * 0.52, b.y, b.x, b.y);
+        ctx.strokeStyle = act > 0.08
+          ? rgba(accent, 0.08 + act * 0.22)
+          : rgba(dim, (dark ? 0.12 : 0.18) * e.weight);
+        ctx.lineWidth = act > 0.08 ? 0.75 + act * 0.8 : 0.55;
         ctx.stroke();
       });
 
-      if (frame % 12 === 0) spawnPulse();
+      if (frame % (reducedMotion ? 42 : 16) === 0) spawnPulse();
 
       for (let i = pulses.length - 1; i >= 0; i--) {
-        const p = pulses[i]; p.t += p.speed;
-        if (p.t > 1) { nodes[p.edge.to].activation = 1; pulses.splice(i, 1); continue; }
+        const p = pulses[i];
+        p.t += p.speed;
+        if (p.t > 1) {
+          nodes[p.edge.to].activation = 1;
+          pulses.splice(i, 1);
+          continue;
+        }
         const a = nodes[p.edge.from], b = nodes[p.edge.to];
-        const px = a.x + (b.x - a.x) * p.t, py = a.y + (b.y - a.y) * p.t;
-        ctx.beginPath(); ctx.arc(px, py, 2.5, 0, Math.PI * 2);
-        ctx.fillStyle = "rgba(" + accent.join(",") + "," + (0.7 + 0.3 * Math.sin(p.t * Math.PI)) + ")";
+        const cx1 = a.x + (b.x - a.x) * 0.48;
+        const cy1 = a.y;
+        const cx2 = a.x + (b.x - a.x) * 0.52;
+        const cy2 = b.y;
+        const mt = 1 - p.t;
+        const px = mt * mt * mt * a.x + 3 * mt * mt * p.t * cx1 + 3 * mt * p.t * p.t * cx2 + p.t * p.t * p.t * b.x;
+        const py = mt * mt * mt * a.y + 3 * mt * mt * p.t * cy1 + 3 * mt * p.t * p.t * cy2 + p.t * p.t * p.t * b.y;
+        const glow = Math.sin(p.t * Math.PI);
+        ctx.beginPath();
+        ctx.arc(px, py, 2.1 + glow * 1.2, 0, Math.PI * 2);
+        ctx.fillStyle = rgba(accent, p.alpha);
         ctx.fill();
-        ctx.beginPath(); ctx.arc(px, py, 6, 0, Math.PI * 2);
-        ctx.fillStyle = "rgba(" + accent.join(",") + ",0.12)"; ctx.fill();
+        ctx.beginPath();
+        ctx.arc(px, py, 9 + glow * 5, 0, Math.PI * 2);
+        ctx.fillStyle = rgba(accent, 0.055 * glow);
+        ctx.fill();
       }
 
       nodes.forEach((n) => {
-        if (n.activation > 0.1) {
-          ctx.beginPath(); ctx.arc(n.x, n.y, n.r + 8 * n.activation, 0, Math.PI * 2);
-          ctx.fillStyle = "rgba(" + accent.join(",") + "," + (n.activation * 0.15) + ")"; ctx.fill();
+        const mix = Math.min(1, n.activation);
+        if (mix > 0.08) {
+          ctx.beginPath();
+          ctx.arc(n.x, n.y, n.r + 8 * mix, 0, Math.PI * 2);
+          ctx.fillStyle = rgba(accent, mix * 0.08);
+          ctx.fill();
         }
-        ctx.beginPath(); ctx.arc(n.x, n.y, n.r, 0, Math.PI * 2);
-        const mix = n.activation;
-        const cr = Math.round(dim[0] + (accent[0] - dim[0]) * mix);
-        const cg = Math.round(dim[1] + (accent[1] - dim[1]) * mix);
-        const cb = Math.round(dim[2] + (accent[2] - dim[2]) * mix);
-        ctx.fillStyle = "rgba(" + cr + "," + cg + "," + cb + "," + (0.4 + mix * 0.6) + ")";
+        ctx.beginPath();
+        ctx.arc(n.x, n.y, n.r, 0, Math.PI * 2);
+        const cr = Math.round(cool[0] + (accent[0] - cool[0]) * mix);
+        const cg = Math.round(cool[1] + (accent[1] - cool[1]) * mix);
+        const cb = Math.round(cool[2] + (accent[2] - cool[2]) * mix);
+        ctx.fillStyle = rgba([cr, cg, cb], dark ? 0.72 : 0.64);
         ctx.fill();
+        ctx.strokeStyle = rgba(accent, 0.16 + mix * 0.25);
+        ctx.lineWidth = 0.75;
+        ctx.stroke();
       });
 
       raf.current = requestAnimationFrame(draw);
@@ -319,7 +355,7 @@ function ParticleBG() {
     const pts = Array.from({ length: count }, () => ({ x: Math.random() * w, y: Math.random() * h, vx: (Math.random() - 0.5) * 0.2, vy: (Math.random() - 0.5) * 0.2, r: Math.random() * 1.2 + 0.4 }));
     const draw = () => {
       ctx.clearRect(0, 0, w, h);
-      const c = isDark() ? "107,142,245" : "44,90,233";
+      const c = isDark() ? "139,173,230" : "47,94,158";
       for (const p of pts) { p.vx *= 0.99; p.vy *= 0.99; p.x += p.vx; p.y += p.vy; if (p.x < 0) p.x = w; if (p.x > w) p.x = 0; if (p.y < 0) p.y = h; if (p.y > h) p.y = 0; ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2); ctx.fillStyle = "rgba(" + c + ",0.2)"; ctx.fill(); }
       for (let i = 0; i < pts.length; i++) { for (let j = i + 1; j < pts.length; j++) { const dx = pts[i].x - pts[j].x, dy = pts[i].y - pts[j].y, d2 = dx * dx + dy * dy; if (d2 < 18000) { ctx.beginPath(); ctx.moveTo(pts[i].x, pts[i].y); ctx.lineTo(pts[j].x, pts[j].y); ctx.strokeStyle = "rgba(" + c + "," + (0.04 * (1 - d2 / 18000)) + ")"; ctx.lineWidth = 0.4; ctx.stroke(); } } }
       raf.current = requestAnimationFrame(draw);

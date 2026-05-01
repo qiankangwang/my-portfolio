@@ -133,6 +133,7 @@ function NeuralNetCanvas() {
     let nodes = [];
     let edges = [];
     let pulses = [];
+    let bioMotifs = [];
     let edgeCursor = 0;
     let frame = 0;
 
@@ -143,9 +144,10 @@ function NeuralNetCanvas() {
       nodes = [];
       edges = [];
       pulses = [];
-      const centerX = w < 720 ? w * 0.5 : w * 0.64;
+      bioMotifs = [];
+      const centerX = w * 0.5;
       const centerY = h * 0.5;
-      const networkW = Math.min(w * 0.68, 980);
+      const networkW = Math.min(w * 0.82, 1180);
       const networkH = Math.min(h * 0.7, 620);
       const startX = centerX - networkW / 2;
       const layerGap = networkW / (layers.length - 1);
@@ -192,6 +194,16 @@ function NeuralNetCanvas() {
           }
         }
       }
+
+      if (w >= 720) {
+        bioMotifs = [
+          { type: "sequence", x: w * 0.08, y: h * 0.26, len: 12, speed: 0.18, phase: 0.2 },
+          { type: "sequence", x: w * 0.72, y: h * 0.72, len: 10, speed: -0.14, phase: 1.4 },
+          { type: "sequence", x: w * 0.12, y: h * 0.76, len: 9, speed: 0.1, phase: 2.1 },
+          { type: "miniHelix", x: w * 0.82, y: h * 0.25, h: Math.min(h * 0.18, 140), phase: 0.5 },
+          { type: "miniHelix", x: w * 0.18, y: h * 0.52, h: Math.min(h * 0.14, 110), phase: 2.4 },
+        ];
+      }
     };
 
     const resize = () => {
@@ -236,6 +248,56 @@ function NeuralNetCanvas() {
       ctx.fillRect(0, 0, w, h);
 
       ctx.save();
+      if (bioMotifs.length) {
+        const bases = ["A", "T", "G", "C"];
+        ctx.font = "500 9px 'JetBrains Mono', monospace";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        bioMotifs.forEach((m, mi) => {
+          const drift = Math.sin(frame * 0.01 + m.phase) * 8;
+          if (m.type === "sequence") {
+            for (let i = 0; i < m.len; i++) {
+              const x = m.x + i * 18 + Math.sin(frame * 0.012 + i * 0.7 + m.phase) * 2;
+              const y = m.y + drift;
+              const alpha = 0.11 + 0.08 * Math.sin(frame * 0.018 + i + mi);
+              ctx.fillStyle = rgba(i % 2 ? warm : accent, dark ? alpha + 0.05 : alpha);
+              ctx.fillText(bases[(i + mi) % bases.length], x, y);
+              if (i > 0) {
+                ctx.beginPath();
+                ctx.moveTo(x - 12, y);
+                ctx.lineTo(x - 6, y);
+                ctx.strokeStyle = rgba(dim, dark ? 0.08 : 0.06);
+                ctx.lineWidth = 0.6;
+                ctx.stroke();
+              }
+            }
+          } else {
+            const top = m.y - m.h / 2 + drift;
+            const amp = 10;
+            for (let y = top; y <= top + m.h; y += 10) {
+              const p = (y - top) / m.h;
+              const wave = Math.sin(p * Math.PI * 4 + frame * 0.012 + m.phase);
+              const x1 = m.x + wave * amp;
+              const x2 = m.x - wave * amp;
+              ctx.beginPath();
+              ctx.moveTo(x1, y);
+              ctx.lineTo(x2, y);
+              ctx.strokeStyle = rgba(dim, dark ? 0.08 : 0.06);
+              ctx.lineWidth = 0.55;
+              ctx.stroke();
+              ctx.beginPath();
+              ctx.arc(x1, y, 1.4, 0, Math.PI * 2);
+              ctx.fillStyle = rgba(accent, dark ? 0.16 : 0.11);
+              ctx.fill();
+              ctx.beginPath();
+              ctx.arc(x2, y, 1.4, 0, Math.PI * 2);
+              ctx.fillStyle = rgba(warm, dark ? 0.14 : 0.1);
+              ctx.fill();
+            }
+          }
+        });
+      }
+
       if (nodes.length && w >= 720) {
         const inputNodes = nodes.filter((n) => n.layer === 0);
         const streamX = Math.max(40, w * 0.06);
@@ -253,7 +315,7 @@ function NeuralNetCanvas() {
           ctx.moveTo(streamX, y);
           ctx.lineTo(endX, y);
           ctx.lineTo(n.x, n.y);
-          ctx.strokeStyle = rgba(accent, (dark ? 0.12 : 0.08) * rowAlpha);
+          ctx.strokeStyle = rgba(accent, (dark ? 0.08 : 0.055) * rowAlpha);
           ctx.lineWidth = 0.7;
           ctx.stroke();
 
@@ -272,9 +334,9 @@ function NeuralNetCanvas() {
             ctx.font = "500 8px 'JetBrains Mono', monospace";
             ctx.textAlign = "center";
             ctx.textBaseline = "middle";
-            ctx.fillStyle = rgba(accent, dark ? 0.24 : 0.18);
+            ctx.fillStyle = rgba(accent, dark ? 0.18 : 0.13);
             ctx.fillText(pair[0], x, y - 12);
-            ctx.fillStyle = rgba(warm, dark ? 0.2 : 0.16);
+            ctx.fillStyle = rgba(warm, dark ? 0.16 : 0.12);
             ctx.fillText(pair[1], x, y + 12);
           }
 
@@ -284,13 +346,13 @@ function NeuralNetCanvas() {
           ctx.beginPath();
           ctx.moveTo(pairX, y - 10);
           ctx.lineTo(pairX, y + 10);
-          ctx.strokeStyle = rgba(warm, dark ? 0.42 : 0.28);
+          ctx.strokeStyle = rgba(warm, dark ? 0.32 : 0.22);
           ctx.lineWidth = 0.9;
           ctx.stroke();
           ctx.font = "600 9px 'JetBrains Mono', monospace";
-          ctx.fillStyle = rgba(accent, dark ? 0.68 : 0.5);
+          ctx.fillStyle = rgba(accent, dark ? 0.48 : 0.34);
           ctx.fillText(activePair[0], pairX, y - 16);
-          ctx.fillStyle = rgba(warm, dark ? 0.62 : 0.46);
+          ctx.fillStyle = rgba(warm, dark ? 0.44 : 0.32);
           ctx.fillText(activePair[1], pairX, y + 16);
 
           const dataT = (frame * 0.005 + i * 0.17) % 1;
@@ -298,7 +360,7 @@ function NeuralNetCanvas() {
           const dataY = y + (n.y - y) * dataT;
           ctx.beginPath();
           ctx.arc(dataX, dataY, 1.7, 0, Math.PI * 2);
-          ctx.fillStyle = rgba(warm, dark ? 0.36 : 0.26);
+          ctx.fillStyle = rgba(warm, dark ? 0.26 : 0.18);
           ctx.fill();
         });
       }
@@ -611,6 +673,9 @@ body{background:linear-gradient(180deg,var(--bg) 0%,color-mix(in srgb,var(--bg) 
 .scroll-dot{width:5px;height:5px;border-radius:50%;background:var(--accent);animation:bounce 2s ease-in-out infinite}
 @keyframes bounce{0%,100%{transform:translateY(0);opacity:.4}50%{transform:translateY(12px);opacity:1}}
 .content{max-width:980px;margin:0 auto;padding:4rem 1.5rem 6rem;display:flex;flex-direction:column;gap:4rem;position:relative;z-index:2}
+.content::before,.content::after{content:'';position:absolute;top:4rem;bottom:5rem;width:170px;pointer-events:none;opacity:.58}
+.content::before{right:calc(100% + 2.5rem);background:linear-gradient(180deg,transparent,var(--border) 10%,var(--border) 86%,transparent) 50% 0/1px 100% no-repeat,radial-gradient(circle at 50% 8%,color-mix(in srgb,var(--accent) 36%,transparent) 0 2px,transparent 2.5px),radial-gradient(circle at 50% 28%,color-mix(in srgb,var(--warm) 28%,transparent) 0 2px,transparent 2.5px),radial-gradient(circle at 50% 52%,color-mix(in srgb,var(--accent) 30%,transparent) 0 2px,transparent 2.5px),radial-gradient(circle at 50% 78%,color-mix(in srgb,var(--warm) 24%,transparent) 0 2px,transparent 2.5px),repeating-linear-gradient(90deg,transparent 0 18px,color-mix(in srgb,var(--accent) 10%,transparent) 18px 19px,transparent 19px 36px)}
+.content::after{left:calc(100% + 2.5rem);background:linear-gradient(180deg,transparent,var(--border) 8%,var(--border) 88%,transparent) 50% 0/1px 100% no-repeat,linear-gradient(90deg,transparent 0 42%,color-mix(in srgb,var(--warm) 18%,transparent) 42% 58%,transparent 58% 100%) 50% 18%/90px 1px no-repeat,linear-gradient(90deg,transparent 0 42%,color-mix(in srgb,var(--accent) 18%,transparent) 42% 58%,transparent 58% 100%) 50% 44%/120px 1px no-repeat,linear-gradient(90deg,transparent 0 42%,color-mix(in srgb,var(--warm) 16%,transparent) 42% 58%,transparent 58% 100%) 50% 70%/80px 1px no-repeat,radial-gradient(circle at 50% 18%,color-mix(in srgb,var(--warm) 28%,transparent) 0 2px,transparent 2.5px),radial-gradient(circle at 50% 44%,color-mix(in srgb,var(--accent) 30%,transparent) 0 2px,transparent 2.5px),radial-gradient(circle at 50% 70%,color-mix(in srgb,var(--warm) 24%,transparent) 0 2px,transparent 2.5px)}
 .sect-label{font-family:var(--mono);font-size:.68rem;letter-spacing:.1em;color:var(--accent);font-weight:500;margin-bottom:.75rem;display:flex;align-items:center;gap:.6rem}
 .sect-label::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,var(--border),transparent)}
 .sect h2{font-family:var(--serif);font-size:clamp(1.7rem,3vw,2.2rem);font-weight:400;letter-spacing:0;color:var(--fg);margin-bottom:1rem}
@@ -656,7 +721,7 @@ body{background:linear-gradient(180deg,var(--bg) 0%,color-mix(in srgb,var(--bg) 
 .skill-pills{display:flex;flex-wrap:wrap;gap:.4rem}
 .pill{font-size:.82rem;font-weight:500;padding:.4rem .9rem;border-radius:8px;background:var(--card);border:1px solid var(--border);color:var(--fg2);transition:all .25s cubic-bezier(.22,1,.36,1);cursor:default}
 .pill:hover{color:var(--accent);border-color:var(--accent);transform:translateY(-2px);box-shadow:0 4px 12px var(--accent-soft)}
-.foot{text-align:center;padding:3.5rem 1.5rem;border-top:1px solid var(--border);color:var(--fg3);font-size:.82rem;position:relative;z-index:2}
+.foot{text-align:center;padding:3.5rem 1.5rem;border-top:1px solid var(--border);color:var(--fg3);font-size:.82rem;position:relative;z-index:2;background:linear-gradient(90deg,transparent,color-mix(in srgb,var(--accent) 5%,transparent),transparent),linear-gradient(180deg,color-mix(in srgb,var(--card) 26%,transparent),transparent)}
 .foot-cta{max-width:620px;margin:0 auto 1.25rem;font-family:var(--serif);font-size:clamp(1.35rem,3vw,1.9rem);line-height:1.25;color:var(--fg)}
 .foot-links{display:flex;justify-content:center;gap:1.5rem;margin-bottom:.85rem}
 .foot-links a{color:var(--fg2);text-decoration:none;font-weight:500;transition:color .2s}
@@ -667,6 +732,7 @@ body{background:linear-gradient(180deg,var(--bg) 0%,color-mix(in srgb,var(--bg) 
 .skip{position:absolute;left:-9999px;top:0;background:var(--accent);color:#fff;padding:.5rem .75rem;border-radius:0 0 8px 0;z-index:1000;font-size:.85rem}
 .skip:focus{left:0}
 @media(max-width:920px){.timeline,.project-grid{grid-template-columns:1fr}.content{max-width:760px}.tcard,.pcard{padding:1.2rem 1.25rem}}
+@media(max-width:1380px){.content::before,.content::after{display:none}}
 @media(max-width:760px){.snapshot-grid,.focus-grid,.skill-grid{grid-template-columns:1fr}.hero-stats{grid-template-columns:1fr;max-width:320px}.hero-stat{display:flex;align-items:baseline;justify-content:space-between;gap:1rem;text-align:left}.hero-stat span{text-align:right}.scroll-hint{display:none}}
 @media(max-width:640px){.content{gap:3.5rem;padding-top:3rem}.hero{min-height:94svh;padding:5rem 1rem 3rem}.hero-avatar{width:92px;height:92px;margin-bottom:1.25rem}.hero-sub{font-size:.95rem}.hero-note{font-size:.92rem}.btn{width:100%;justify-content:center}.hero-cta{max-width:320px;margin-left:auto;margin-right:auto}.tcard,.pcard,.pub-card{padding:1.1rem}.hero-kicker::before,.hero-kicker::after{width:18px}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:0s!important;transition-duration:0s!important}canvas{display:none}}

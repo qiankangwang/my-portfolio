@@ -528,6 +528,36 @@ function SideDecorCanvas() {
       }
     };
 
+    const drawReadBand = (x, y, width, rows, dir, accent, warm, dim, alpha, phase) => {
+      const t = frame * 0.01 + phase;
+      for (let r = 0; r < rows; r++) {
+        const rowY = y + r * 12 + Math.sin(t + r) * 1.8;
+        for (let i = 0; i < 4; i++) {
+          const start = (i * 0.22 + ((r * 0.13 + phase * 0.07) % 0.12)) * width;
+          const len = width * (0.11 + ((i + r) % 3) * 0.025);
+          const x1 = x + dir * start;
+          const x2 = x + dir * (start + len);
+          ctx.beginPath();
+          ctx.moveTo(x1, rowY);
+          ctx.lineTo(x2, rowY + Math.sin(t + i) * 2.4);
+          ctx.strokeStyle = rgba(dim, alpha * 0.5);
+          ctx.lineWidth = 0.75;
+          ctx.stroke();
+
+          const beads = 4 + ((i + r) % 3);
+          for (let b = 0; b < beads; b++) {
+            const k = beads === 1 ? 0 : b / (beads - 1);
+            const px = x1 + (x2 - x1) * k;
+            const py = rowY + Math.sin(t + i) * 2.4 * k;
+            ctx.beginPath();
+            ctx.arc(px, py, b % 3 === 0 ? 1.35 : 0.85, 0, Math.PI * 2);
+            ctx.fillStyle = rgba((b + i + r) % 4 === 0 ? warm : accent, alpha * (0.82 + k * 0.25));
+            ctx.fill();
+          }
+        }
+      }
+    };
+
     const drawMiniNetwork = (x, y, scale, dir, accent, warm, dim, alpha) => {
       const pts = [
         [0, 0], [28, -12], [46, 10], [20, 26], [62, 32], [88, 8],
@@ -565,25 +595,11 @@ function SideDecorCanvas() {
       const inner = (xp) => x0 + zoneW * xp;
       const time = frame * 0.008;
 
-      [0.12, 0.27, 0.43, 0.61, 0.79].forEach((yp, i) => {
-        const y = top + fieldH * yp + Math.sin(time + i) * 4;
-        const xA = side === "left" ? inner(0.08) : inner(0.92);
-        const xB = side === "left" ? inner(0.92) : inner(0.08);
-        ctx.beginPath();
-        ctx.moveTo(xA, y);
-        ctx.lineTo(xB, y + Math.sin(i * 1.2) * 14);
-        ctx.strokeStyle = rgba(i % 2 ? warm : accent, 0.075);
-        ctx.lineWidth = 0.65;
-        ctx.stroke();
-        for (let d = 0; d < 13; d++) {
-          const t = d / 12;
-          const px = xA + (xB - xA) * t;
-          const py = y + Math.sin(i * 1.2) * 14 * t;
-          ctx.beginPath();
-          ctx.arc(px, py, d % 5 === 0 ? 1.45 : 0.8, 0, Math.PI * 2);
-          ctx.fillStyle = rgba(d % 4 === 0 ? warm : accent, 0.11 + (d % 5 === 0 ? 0.06 : 0));
-          ctx.fill();
-        }
+      const readBands = side === "left"
+        ? [[0.08, 0.12, 0.76, 3, 0.2], [0.42, 0.34, 0.5, 2, 1.6], [0.1, 0.7, 0.7, 3, 3.1]]
+        : [[0.86, 0.14, 0.72, 3, 0.9], [0.52, 0.38, 0.5, 2, 2.3], [0.9, 0.74, 0.68, 3, 3.8]];
+      readBands.forEach(([xp, yp, wp, rows, phase], i) => {
+        drawReadBand(inner(xp), top + fieldH * yp, zoneW * wp, rows, dir, accent, warm, dim, 0.17 + i * 0.025, phase);
       });
 
       const motifSet = side === "left"

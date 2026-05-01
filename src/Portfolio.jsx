@@ -197,11 +197,13 @@ function NeuralNetCanvas() {
 
       if (w >= 720) {
         bioMotifs = [
-          { type: "sequence", x: w * 0.08, y: h * 0.26, len: 12, speed: 0.18, phase: 0.2 },
-          { type: "sequence", x: w * 0.72, y: h * 0.72, len: 10, speed: -0.14, phase: 1.4 },
-          { type: "sequence", x: w * 0.12, y: h * 0.76, len: 9, speed: 0.1, phase: 2.1 },
-          { type: "miniHelix", x: w * 0.82, y: h * 0.25, h: Math.min(h * 0.18, 140), phase: 0.5 },
-          { type: "miniHelix", x: w * 0.18, y: h * 0.52, h: Math.min(h * 0.14, 110), phase: 2.4 },
+          { type: "sequence", x: w * 0.07, y: h * 0.24, len: 13, phase: 0.2 },
+          { type: "sequence", x: w * 0.67, y: h * 0.25, len: 12, phase: 1.1 },
+          { type: "sequence", x: w * 0.09, y: h * 0.76, len: 11, phase: 2.2 },
+          { type: "sequence", x: w * 0.68, y: h * 0.76, len: 10, phase: 3.1 },
+          { type: "miniHelix", x: w * 0.19, y: h * 0.43, h: Math.min(h * 0.17, 132), phase: 2.4 },
+          { type: "miniHelix", x: w * 0.82, y: h * 0.45, h: Math.min(h * 0.2, 150), phase: 0.5 },
+          { type: "miniHelix", x: w * 0.74, y: h * 0.62, h: Math.min(h * 0.13, 105), phase: 1.8 },
         ];
       }
     };
@@ -250,30 +252,30 @@ function NeuralNetCanvas() {
       ctx.save();
       if (bioMotifs.length) {
         const bases = ["A", "T", "G", "C"];
-        ctx.font = "500 9px 'JetBrains Mono', monospace";
+        ctx.font = "500 10px 'JetBrains Mono', monospace";
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
         bioMotifs.forEach((m, mi) => {
-          const drift = Math.sin(frame * 0.01 + m.phase) * 8;
+          const drift = Math.sin(frame * 0.01 + m.phase) * 9;
           if (m.type === "sequence") {
             for (let i = 0; i < m.len; i++) {
-              const x = m.x + i * 18 + Math.sin(frame * 0.012 + i * 0.7 + m.phase) * 2;
+              const x = m.x + i * 18 + Math.sin(frame * 0.012 + i * 0.7 + m.phase) * 2.5;
               const y = m.y + drift;
-              const alpha = 0.11 + 0.08 * Math.sin(frame * 0.018 + i + mi);
+              const alpha = 0.16 + 0.1 * Math.sin(frame * 0.018 + i + mi);
               ctx.fillStyle = rgba(i % 2 ? warm : accent, dark ? alpha + 0.05 : alpha);
               ctx.fillText(bases[(i + mi) % bases.length], x, y);
               if (i > 0) {
                 ctx.beginPath();
                 ctx.moveTo(x - 12, y);
                 ctx.lineTo(x - 6, y);
-                ctx.strokeStyle = rgba(dim, dark ? 0.08 : 0.06);
+                ctx.strokeStyle = rgba(dim, dark ? 0.12 : 0.09);
                 ctx.lineWidth = 0.6;
                 ctx.stroke();
               }
             }
           } else {
             const top = m.y - m.h / 2 + drift;
-            const amp = 10;
+            const amp = 12;
             for (let y = top; y <= top + m.h; y += 10) {
               const p = (y - top) / m.h;
               const wave = Math.sin(p * Math.PI * 4 + frame * 0.012 + m.phase);
@@ -282,86 +284,19 @@ function NeuralNetCanvas() {
               ctx.beginPath();
               ctx.moveTo(x1, y);
               ctx.lineTo(x2, y);
-              ctx.strokeStyle = rgba(dim, dark ? 0.08 : 0.06);
-              ctx.lineWidth = 0.55;
+              ctx.strokeStyle = rgba(dim, dark ? 0.13 : 0.09);
+              ctx.lineWidth = 0.65;
               ctx.stroke();
               ctx.beginPath();
-              ctx.arc(x1, y, 1.4, 0, Math.PI * 2);
-              ctx.fillStyle = rgba(accent, dark ? 0.16 : 0.11);
+              ctx.arc(x1, y, 1.6, 0, Math.PI * 2);
+              ctx.fillStyle = rgba(accent, dark ? 0.22 : 0.16);
               ctx.fill();
               ctx.beginPath();
-              ctx.arc(x2, y, 1.4, 0, Math.PI * 2);
-              ctx.fillStyle = rgba(warm, dark ? 0.14 : 0.1);
+              ctx.arc(x2, y, 1.6, 0, Math.PI * 2);
+              ctx.fillStyle = rgba(warm, dark ? 0.2 : 0.14);
               ctx.fill();
             }
           }
-        });
-      }
-
-      if (nodes.length && w >= 720) {
-        const inputNodes = nodes.filter((n) => n.layer === 0);
-        const streamX = Math.max(40, w * 0.06);
-        const streamW = Math.min(w * 0.34, 500);
-        const streamTop = h * 0.28;
-        const streamGap = Math.min(58, Math.max(40, h * 0.065));
-        const basePairs = [["A", "T"], ["G", "C"], ["C", "G"], ["T", "A"]];
-
-        inputNodes.forEach((n, i) => {
-          const y = streamTop + i * streamGap;
-          const endX = Math.min(n.x - 12, streamX + streamW);
-          const rowAlpha = 0.75 - i * 0.07;
-
-          ctx.beginPath();
-          ctx.moveTo(streamX, y);
-          ctx.lineTo(endX, y);
-          ctx.lineTo(n.x, n.y);
-          ctx.strokeStyle = rgba(accent, (dark ? 0.08 : 0.055) * rowAlpha);
-          ctx.lineWidth = 0.7;
-          ctx.stroke();
-
-          const glyphCount = 10;
-          for (let j = 0; j < glyphCount; j++) {
-            const x = streamX + (j / (glyphCount - 1)) * (endX - streamX);
-            const pair = basePairs[(j + i) % basePairs.length];
-
-            ctx.beginPath();
-            ctx.moveTo(x, y - 7);
-            ctx.lineTo(x, y + 7);
-            ctx.strokeStyle = rgba(dim, dark ? 0.11 : 0.09);
-            ctx.lineWidth = 0.6;
-            ctx.stroke();
-
-            ctx.font = "500 8px 'JetBrains Mono', monospace";
-            ctx.textAlign = "center";
-            ctx.textBaseline = "middle";
-            ctx.fillStyle = rgba(accent, dark ? 0.18 : 0.13);
-            ctx.fillText(pair[0], x, y - 12);
-            ctx.fillStyle = rgba(warm, dark ? 0.16 : 0.12);
-            ctx.fillText(pair[1], x, y + 12);
-          }
-
-          const pairT = (frame * 0.0035 + i * 0.16) % 1;
-          const pairX = streamX + pairT * (endX - streamX);
-          const activePair = basePairs[(i + Math.floor(frame / 90)) % basePairs.length];
-          ctx.beginPath();
-          ctx.moveTo(pairX, y - 10);
-          ctx.lineTo(pairX, y + 10);
-          ctx.strokeStyle = rgba(warm, dark ? 0.32 : 0.22);
-          ctx.lineWidth = 0.9;
-          ctx.stroke();
-          ctx.font = "600 9px 'JetBrains Mono', monospace";
-          ctx.fillStyle = rgba(accent, dark ? 0.48 : 0.34);
-          ctx.fillText(activePair[0], pairX, y - 16);
-          ctx.fillStyle = rgba(warm, dark ? 0.44 : 0.32);
-          ctx.fillText(activePair[1], pairX, y + 16);
-
-          const dataT = (frame * 0.005 + i * 0.17) % 1;
-          const dataX = endX + (n.x - endX) * dataT;
-          const dataY = y + (n.y - y) * dataT;
-          ctx.beginPath();
-          ctx.arc(dataX, dataY, 1.7, 0, Math.PI * 2);
-          ctx.fillStyle = rgba(warm, dark ? 0.26 : 0.18);
-          ctx.fill();
         });
       }
       ctx.restore();
@@ -630,6 +565,9 @@ const CSS_TEXT = `
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
 html{scroll-behavior:smooth;scroll-padding-top:80px}
 body{background:linear-gradient(180deg,var(--bg) 0%,color-mix(in srgb,var(--bg) 88%,var(--bg2)) 100%);color:var(--fg);font-family:var(--sans);line-height:1.65;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+body::before,body::after{content:'';position:fixed;top:82px;bottom:0;width:clamp(104px,10vw,170px);pointer-events:none;z-index:1;opacity:.74}
+body::before{left:0;background:linear-gradient(180deg,transparent,color-mix(in srgb,var(--accent) 24%,transparent) 18%,color-mix(in srgb,var(--border) 90%,transparent) 50%,color-mix(in srgb,var(--warm) 20%,transparent) 82%,transparent) 50% 0/1px 100% no-repeat,radial-gradient(circle at 50% 14%,color-mix(in srgb,var(--accent) 55%,transparent) 0 2px,transparent 2.7px),radial-gradient(circle at 50% 36%,color-mix(in srgb,var(--warm) 48%,transparent) 0 2px,transparent 2.7px),radial-gradient(circle at 50% 62%,color-mix(in srgb,var(--accent) 48%,transparent) 0 2px,transparent 2.7px),radial-gradient(circle at 50% 84%,color-mix(in srgb,var(--warm) 42%,transparent) 0 2px,transparent 2.7px),repeating-linear-gradient(90deg,transparent 0 18px,color-mix(in srgb,var(--accent) 16%,transparent) 18px 19px,transparent 19px 36px)}
+body::after{right:0;background:linear-gradient(180deg,transparent,color-mix(in srgb,var(--border) 90%,transparent) 10%,color-mix(in srgb,var(--accent) 20%,transparent) 48%,color-mix(in srgb,var(--border) 90%,transparent) 88%,transparent) 50% 0/1px 100% no-repeat,linear-gradient(90deg,transparent 0 32%,color-mix(in srgb,var(--warm) 34%,transparent) 32% 68%,transparent 68% 100%) 50% 18%/118px 1px no-repeat,linear-gradient(90deg,transparent 0 28%,color-mix(in srgb,var(--accent) 32%,transparent) 28% 72%,transparent 72% 100%) 50% 43%/142px 1px no-repeat,linear-gradient(90deg,transparent 0 36%,color-mix(in srgb,var(--warm) 28%,transparent) 36% 64%,transparent 64% 100%) 50% 70%/98px 1px no-repeat,radial-gradient(circle at 50% 18%,color-mix(in srgb,var(--warm) 48%,transparent) 0 2.2px,transparent 2.8px),radial-gradient(circle at 50% 43%,color-mix(in srgb,var(--accent) 52%,transparent) 0 2.2px,transparent 2.8px),radial-gradient(circle at 50% 70%,color-mix(in srgb,var(--warm) 44%,transparent) 0 2.2px,transparent 2.8px)}
 ::selection{background:var(--accent);color:#fff}
 .nav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:0 clamp(1.25rem,4vw,3rem);height:60px;background:transparent;transition:background .4s,box-shadow .4s,backdrop-filter .4s}
 .nav.scrolled{background:color-mix(in srgb,var(--bg) 85%,transparent);backdrop-filter:blur(20px) saturate(1.5);-webkit-backdrop-filter:blur(20px) saturate(1.5);box-shadow:0 1px 0 var(--border)}
@@ -673,9 +611,6 @@ body{background:linear-gradient(180deg,var(--bg) 0%,color-mix(in srgb,var(--bg) 
 .scroll-dot{width:5px;height:5px;border-radius:50%;background:var(--accent);animation:bounce 2s ease-in-out infinite}
 @keyframes bounce{0%,100%{transform:translateY(0);opacity:.4}50%{transform:translateY(12px);opacity:1}}
 .content{max-width:980px;margin:0 auto;padding:4rem 1.5rem 6rem;display:flex;flex-direction:column;gap:4rem;position:relative;z-index:2}
-.content::before,.content::after{content:'';position:absolute;top:4rem;bottom:5rem;width:170px;pointer-events:none;opacity:.58}
-.content::before{right:calc(100% + 2.5rem);background:linear-gradient(180deg,transparent,var(--border) 10%,var(--border) 86%,transparent) 50% 0/1px 100% no-repeat,radial-gradient(circle at 50% 8%,color-mix(in srgb,var(--accent) 36%,transparent) 0 2px,transparent 2.5px),radial-gradient(circle at 50% 28%,color-mix(in srgb,var(--warm) 28%,transparent) 0 2px,transparent 2.5px),radial-gradient(circle at 50% 52%,color-mix(in srgb,var(--accent) 30%,transparent) 0 2px,transparent 2.5px),radial-gradient(circle at 50% 78%,color-mix(in srgb,var(--warm) 24%,transparent) 0 2px,transparent 2.5px),repeating-linear-gradient(90deg,transparent 0 18px,color-mix(in srgb,var(--accent) 10%,transparent) 18px 19px,transparent 19px 36px)}
-.content::after{left:calc(100% + 2.5rem);background:linear-gradient(180deg,transparent,var(--border) 8%,var(--border) 88%,transparent) 50% 0/1px 100% no-repeat,linear-gradient(90deg,transparent 0 42%,color-mix(in srgb,var(--warm) 18%,transparent) 42% 58%,transparent 58% 100%) 50% 18%/90px 1px no-repeat,linear-gradient(90deg,transparent 0 42%,color-mix(in srgb,var(--accent) 18%,transparent) 42% 58%,transparent 58% 100%) 50% 44%/120px 1px no-repeat,linear-gradient(90deg,transparent 0 42%,color-mix(in srgb,var(--warm) 16%,transparent) 42% 58%,transparent 58% 100%) 50% 70%/80px 1px no-repeat,radial-gradient(circle at 50% 18%,color-mix(in srgb,var(--warm) 28%,transparent) 0 2px,transparent 2.5px),radial-gradient(circle at 50% 44%,color-mix(in srgb,var(--accent) 30%,transparent) 0 2px,transparent 2.5px),radial-gradient(circle at 50% 70%,color-mix(in srgb,var(--warm) 24%,transparent) 0 2px,transparent 2.5px)}
 .sect-label{font-family:var(--mono);font-size:.68rem;letter-spacing:.1em;color:var(--accent);font-weight:500;margin-bottom:.75rem;display:flex;align-items:center;gap:.6rem}
 .sect-label::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,var(--border),transparent)}
 .sect h2{font-family:var(--serif);font-size:clamp(1.7rem,3vw,2.2rem);font-weight:400;letter-spacing:0;color:var(--fg);margin-bottom:1rem}
@@ -732,7 +667,7 @@ body{background:linear-gradient(180deg,var(--bg) 0%,color-mix(in srgb,var(--bg) 
 .skip{position:absolute;left:-9999px;top:0;background:var(--accent);color:#fff;padding:.5rem .75rem;border-radius:0 0 8px 0;z-index:1000;font-size:.85rem}
 .skip:focus{left:0}
 @media(max-width:920px){.timeline,.project-grid{grid-template-columns:1fr}.content{max-width:760px}.tcard,.pcard{padding:1.2rem 1.25rem}}
-@media(max-width:1380px){.content::before,.content::after{display:none}}
+@media(max-width:1080px){body::before,body::after{display:none}}
 @media(max-width:760px){.snapshot-grid,.focus-grid,.skill-grid{grid-template-columns:1fr}.hero-stats{grid-template-columns:1fr;max-width:320px}.hero-stat{display:flex;align-items:baseline;justify-content:space-between;gap:1rem;text-align:left}.hero-stat span{text-align:right}.scroll-hint{display:none}}
 @media(max-width:640px){.content{gap:3.5rem;padding-top:3rem}.hero{min-height:94svh;padding:5rem 1rem 3rem}.hero-avatar{width:92px;height:92px;margin-bottom:1.25rem}.hero-sub{font-size:.95rem}.hero-note{font-size:.92rem}.btn{width:100%;justify-content:center}.hero-cta{max-width:320px;margin-left:auto;margin-right:auto}.tcard,.pcard,.pub-card{padding:1.1rem}.hero-kicker::before,.hero-kicker::after{width:18px}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:0s!important;transition-duration:0s!important}canvas{display:none}}

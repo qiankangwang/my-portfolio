@@ -200,10 +200,12 @@ function NeuralNetCanvas() {
         const networkTop = centerY - networkH * 0.34;
         const networkBottom = centerY + networkH * 0.34;
         bioMotifs = [
-          { type: "sequence", x: networkLeft + networkW * 0.12, y: networkTop + networkH * 0.1, len: 15, phase: 0.2 },
-          { type: "sequence", x: networkLeft + networkW * 0.2, y: networkTop + networkH * 0.34, len: 13, phase: 1.1 },
-          { type: "sequence", x: networkLeft + networkW * 0.38, y: networkTop + networkH * 0.58, len: 12, phase: 2.0 },
-          { type: "sequence", x: networkLeft + networkW * 0.52, y: networkTop + networkH * 0.82, len: 11, phase: 3.1 },
+          { type: "rna", x: networkLeft + networkW * 0.1, y: networkTop + networkH * 0.12, len: 17, angle: 0.02, phase: 0.2 },
+          { type: "rna", x: networkLeft + networkW * 0.2, y: networkTop + networkH * 0.32, len: 14, angle: -0.04, phase: 1.1 },
+          { type: "rna", x: networkLeft + networkW * 0.35, y: networkTop + networkH * 0.5, len: 15, angle: 0.03, phase: 2.0 },
+          { type: "rna", x: networkLeft + networkW * 0.5, y: networkTop + networkH * 0.72, len: 13, angle: -0.02, phase: 3.1 },
+          { type: "rna", x: networkLeft + networkW * 0.28, y: networkBottom - networkH * 0.08, len: 12, angle: 0.05, phase: 4.2 },
+          { type: "rna", x: networkLeft + networkW * 0.62, y: networkTop + networkH * 0.42, len: 10, angle: -0.05, phase: 5.1 },
           { type: "miniHelix", x: networkLeft + networkW * 0.74, y: networkTop + networkH * 0.26, h: Math.min(networkH * 0.24, 130), phase: 0.5 },
           { type: "miniHelix", x: networkLeft + networkW * 0.18, y: networkBottom - networkH * 0.08, h: Math.min(networkH * 0.2, 112), phase: 2.4 },
         ];
@@ -253,25 +255,37 @@ function NeuralNetCanvas() {
 
       ctx.save();
       if (bioMotifs.length) {
-        const bases = ["A", "T", "G", "C"];
-        ctx.font = "600 10px 'JetBrains Mono', monospace";
-        ctx.textAlign = "center";
-        ctx.textBaseline = "middle";
         bioMotifs.forEach((m, mi) => {
           const drift = Math.sin(frame * 0.01 + m.phase) * 9;
-          if (m.type === "sequence") {
+          if (m.type === "rna") {
+            const step = 14;
+            const dx = Math.cos(m.angle) * step;
+            const dy = Math.sin(m.angle) * step;
             for (let i = 0; i < m.len; i++) {
-              const x = m.x + i * 18 + Math.sin(frame * 0.012 + i * 0.7 + m.phase) * 2.5;
-              const y = m.y + drift;
-              const alpha = 0.24 + 0.12 * Math.sin(frame * 0.018 + i + mi);
-              ctx.fillStyle = rgba(i % 2 ? warm : accent, dark ? alpha + 0.08 : alpha);
-              ctx.fillText(bases[(i + mi) % bases.length], x, y);
+              const wave = Math.sin(frame * 0.018 + i * 0.75 + m.phase);
+              const x = m.x + dx * i + Math.sin(m.angle + Math.PI / 2) * wave * 4;
+              const y = m.y + dy * i + drift + Math.cos(m.angle + Math.PI / 2) * wave * 4;
+              const hot = (i / Math.max(1, m.len - 1) + frame * 0.006 + mi * 0.17) % 1;
+              const active = hot > 0.42 && hot < 0.58;
+              const alpha = active ? (dark ? 0.72 : 0.56) : (dark ? 0.3 : 0.24);
               if (i > 0) {
                 ctx.beginPath();
-                ctx.moveTo(x - 12, y);
-                ctx.lineTo(x - 6, y);
-                ctx.strokeStyle = rgba(dim, dark ? 0.18 : 0.13);
-                ctx.lineWidth = 0.6;
+                ctx.moveTo(x - dx * 0.72, y - dy * 0.72);
+                ctx.lineTo(x - dx * 0.25, y - dy * 0.25);
+                ctx.strokeStyle = rgba(dim, dark ? 0.22 : 0.16);
+                ctx.lineWidth = active ? 1 : 0.7;
+                ctx.stroke();
+              }
+              ctx.beginPath();
+              ctx.arc(x, y, active ? 2.3 : 1.55, 0, Math.PI * 2);
+              ctx.fillStyle = rgba(i % 2 ? warm : accent, alpha);
+              ctx.fill();
+              if (i % 3 === 1) {
+                ctx.beginPath();
+                ctx.moveTo(x, y);
+                ctx.lineTo(x + Math.sin(m.angle + Math.PI / 2) * 8, y + Math.cos(m.angle + Math.PI / 2) * 8);
+                ctx.strokeStyle = rgba(i % 2 ? warm : accent, active ? 0.28 : 0.14);
+                ctx.lineWidth = 0.7;
                 ctx.stroke();
               }
             }
@@ -453,54 +467,69 @@ function SideDecorCanvas() {
     const isDark = () => window.matchMedia("(prefers-color-scheme: dark)").matches;
 
     const drawRail = (side, accent, warm, dim) => {
-      const railW = Math.min(Math.max(w * 0.13, 130), 220);
-      const x0 = side === "left" ? 0 : w - railW;
-      const center = side === "left" ? x0 + railW * 0.48 : x0 + railW * 0.52;
+      const contentW = Math.min(980, w - 48);
+      const contentLeft = (w - contentW) / 2;
+      const gap = Math.max(120, contentLeft - 24);
+      const x0 = side === "left" ? 0 : w - gap;
+      const railW = gap;
       const dir = side === "left" ? 1 : -1;
       const top = 95;
       const bottom = h - 28;
       const speed = reducedMotion ? 0 : frame * 0.006 * dir;
 
-      ctx.beginPath();
-      ctx.moveTo(center, top);
-      ctx.lineTo(center, bottom);
-      ctx.strokeStyle = rgba(dim, 0.2);
-      ctx.lineWidth = 1;
-      ctx.stroke();
+      const columns = railW > 320 ? 3 : 2;
+      for (let c = 0; c < columns; c++) {
+        const colX = x0 + railW * ((c + 1) / (columns + 1));
+        ctx.beginPath();
+        ctx.moveTo(colX, top);
+        ctx.lineTo(colX, bottom);
+        ctx.strokeStyle = rgba(dim, 0.12 + c * 0.025);
+        ctx.lineWidth = 0.8;
+        ctx.stroke();
+      }
 
-      for (let i = 0; i < 8; i++) {
-        const y = top + ((i * 112 + speed * 80) % (bottom - top));
-        const reach = 28 + (i % 3) * 14;
-        const x1 = center;
-        const x2 = center + dir * reach;
+      for (let i = 0; i < 14; i++) {
+        const y = top + ((i * 86 + speed * 82) % (bottom - top));
+        const anchor = x0 + railW * (((i % columns) + 1) / (columns + 1));
+        const reach = 34 + (i % 4) * 18;
+        const x1 = anchor;
+        const x2 = anchor + dir * reach;
         ctx.beginPath();
         ctx.moveTo(x1, y);
         ctx.lineTo(x2, y + Math.sin(frame * 0.012 + i) * 5);
-        ctx.strokeStyle = rgba(i % 2 ? warm : accent, 0.2);
-        ctx.lineWidth = 0.85;
+        ctx.strokeStyle = rgba(i % 2 ? warm : accent, 0.24);
+        ctx.lineWidth = 0.9;
         ctx.stroke();
 
         ctx.beginPath();
-        ctx.arc(x1, y, 2.3, 0, Math.PI * 2);
-        ctx.fillStyle = rgba(i % 2 ? warm : accent, 0.34);
+        ctx.arc(x1, y, 2.4, 0, Math.PI * 2);
+        ctx.fillStyle = rgba(i % 2 ? warm : accent, 0.38);
         ctx.fill();
         ctx.beginPath();
-        ctx.arc(x2, y + Math.sin(frame * 0.012 + i) * 5, 1.8, 0, Math.PI * 2);
-        ctx.fillStyle = rgba(i % 2 ? accent : warm, 0.26);
+        ctx.arc(x2, y + Math.sin(frame * 0.012 + i) * 5, 1.9, 0, Math.PI * 2);
+        ctx.fillStyle = rgba(i % 2 ? accent : warm, 0.3);
         ctx.fill();
       }
 
-      const bases = ["A", "T", "G", "C"];
-      ctx.font = "500 9px 'JetBrains Mono', monospace";
-      ctx.textBaseline = "middle";
-      ctx.textAlign = side === "left" ? "left" : "right";
-      for (let row = 0; row < 6; row++) {
-        const y = top + 42 + row * 92 + Math.sin(frame * 0.01 + row) * 8;
-        const start = side === "left" ? x0 + 22 : x0 + railW - 22;
-        for (let i = 0; i < 7; i++) {
-          const x = start + dir * i * 15;
-          ctx.fillStyle = rgba(i % 2 ? warm : accent, 0.18 + 0.08 * Math.sin(frame * 0.02 + i + row));
-          ctx.fillText(bases[(i + row) % bases.length], x, y);
+      for (let row = 0; row < 7; row++) {
+        const y = top + 34 + row * 86 + Math.sin(frame * 0.01 + row) * 8;
+        const start = side === "left" ? x0 + railW * 0.14 : x0 + railW * 0.86;
+        const len = 7 + (row % 3);
+        for (let i = 0; i < len; i++) {
+          const x = start + dir * i * 14;
+          const active = ((i / len + frame * 0.006 + row * 0.13) % 1) > 0.48 && ((i / len + frame * 0.006 + row * 0.13) % 1) < 0.62;
+          if (i > 0) {
+            ctx.beginPath();
+            ctx.moveTo(x - dir * 10, y);
+            ctx.lineTo(x - dir * 4, y);
+            ctx.strokeStyle = rgba(dim, active ? 0.18 : 0.1);
+            ctx.lineWidth = 0.65;
+            ctx.stroke();
+          }
+          ctx.beginPath();
+          ctx.arc(x, y, active ? 2.1 : 1.45, 0, Math.PI * 2);
+          ctx.fillStyle = rgba(i % 2 ? warm : accent, active ? 0.42 : 0.22);
+          ctx.fill();
         }
       }
     };

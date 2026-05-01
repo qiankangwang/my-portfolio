@@ -8,17 +8,44 @@ const D = {
     linkedin: "https://linkedin.com/in/qiankang-wang-737b97279",
     github: "https://github.com/xiaole5211314",
     avatar: "https://github.com/xiaole5211314.png",
-    tagline: "Machine learning, generative modeling, AI for biology, and scientific computing.",
+    tagline: "Machine learning, AI for biology, and scientific computing.",
+    heroNote: "I work on research-oriented ML and scientific computing projects, with an interest in useful systems for real data.",
     about:
-        "I am Qiankang (Kant) Wang, an undergraduate at UC Berkeley studying Data Science. My interests include machine learning, generative modeling, AI for biology, and scientific computing. I enjoy working on technical problems that connect algorithms, systems, and real research workflows, from GPU-accelerated solvers to biological and scientific data.",
+        "I am Qiankang (Kant) Wang, an undergraduate at UC Berkeley studying Data Science. I am interested in machine learning, AI for biology, and scientific computing. This site is a short public overview of my work and interests.",
+
+    highlights: [
+        { value: "ML", label: "research" },
+        { value: "AI", label: "for biology" },
+        { value: "HPC", label: "scientific computing" },
+    ],
+
+    focusAreas: [
+        {
+            title: "Scientific ML",
+            desc: "Learning methods for scientific and biological data.",
+        },
+        {
+            title: "GPU Computing",
+            desc: "Fast numerical workflows and scientific software.",
+        },
+        {
+            title: "Research Systems",
+            desc: "Tools for experiments, benchmarks, and analysis.",
+        },
+    ],
+
+    snapshot: [
+        { label: "Education", value: "UC Berkeley, B.A. Data Science" },
+        { label: "Timeline", value: "Expected May 2027" },
+        { label: "Publication", value: "JCTC 2026, second author" },
+    ],
 
     education: {
         school: "University of California, Berkeley",
         degree: "B.A. in Data Science",
-        gpa: "4.0 / 4.0",
         period: "Expected May 2027",
         coursework:
-            "Principles and Techniques of Data Science, Probability, Machine Learning, Data Structures",
+            "Data science, machine learning, probability, and computer science.",
     },
 
     experience: [
@@ -27,8 +54,8 @@ const D = {
             role: "Research Assistant",
             period: "Mar 2026 - Present",
             desc: [
-                "Implemented the SimCLR contrastive learning framework for self-supervised representation learning on scientific data.",
-                "Engaged with research directions in generative modeling and AI for biology, with a focus on scientific data and biological applications.",
+                "Working on machine learning research related to scientific and biological data.",
+                "Exploring self-supervised learning, representation learning, and generative modeling.",
             ],
         },
         {
@@ -36,8 +63,8 @@ const D = {
             role: "Research Assistant",
             period: "Nov 2025 - Mar 2026",
             desc: [
-                "Contributed to the AMBER pGM acceleration project, supporting code integration, regression testing, and output consistency checks across implementations.",
-                "Worked with the AMBER/PMEMD codebase to analyze numerical discrepancies, including stability issues and random seed effects.",
+                "Contributed to scientific software development and validation workflows.",
+                "Supported code integration, testing, and numerical consistency checks.",
             ],
         },
         {
@@ -45,9 +72,8 @@ const D = {
             role: "Research Assistant",
             period: "Jul 2024 - Nov 2025",
             desc: [
-                "Refactored core CG/BiCG solver modules into a LibTorch tensor-computation framework; achieved 3-5x faster iterative convergence through GPU parallelization, significantly improving PBSA performance and scalability for large biomolecular systems.",
-                "Built a custom Slurm scheduling pipeline and ran 1,000,000+ PBSA energy calculation jobs, improving cluster throughput and increasing average GPU utilization by about 20%.",
-                "Used Python (Pandas/Matplotlib/Seaborn) to conduct PBSA benchmarking and generate heatmaps, runtime curves, and error distribution plots, providing quantitative support for algorithm optimization and paper writing.",
+                "Worked on GPU-accelerated scientific computing for biomolecular simulation workflows.",
+                "Built analysis and benchmarking tools for research experiments.",
             ],
         },
     ],
@@ -61,66 +87,49 @@ const D = {
 
     projects: [
         {
-            name: "AmberTorchPB Scientific Computing Pipeline",
-            desc: "Refactored Poisson-Boltzmann solver components into a tensor-computation workflow with LibTorch, GPU acceleration, and benchmarking utilities for large biomolecular systems.",
-            stack: ["LibTorch", "C++", "CUDA", "PBSA", "Scientific Computing"],
+            name: "Scientific Computing Pipeline",
+            desc: "Research software for GPU-accelerated scientific computing and biomolecular simulation workflows.",
+            stack: ["C++", "CUDA", "LibTorch", "Scientific Computing"],
             link: "https://github.com/xiaole5211314",
         },
         {
-            name: "Million-Job PBSA Benchmarking Workflow",
-            desc: "Built a Slurm-based scheduling and analysis workflow for large-scale PBSA energy calculations, runtime profiling, and error distribution analysis across scientific workloads.",
-            stack: ["Python", "Slurm", "Pandas", "Matplotlib", "HPC"],
+            name: "Representation Learning Experiments",
+            desc: "Machine learning experiments focused on self-supervised learning and scientific data representations.",
+            stack: ["PyTorch", "Self-supervised Learning", "Representation Learning"],
             link: "https://github.com/xiaole5211314",
         },
         {
-            name: "SimCLR for Scientific Representation Learning",
-            desc: "Implemented a self-supervised contrastive learning pipeline inspired by SimCLR to study representation learning workflows for scientific and biological data.",
-            stack: ["PyTorch", "SimCLR", "Self-supervised Learning", "Representation Learning"],
-            link: "https://github.com/xiaole5211314",
-        },
-        {
-            name: "Titanic Survival Prediction in C++",
-            desc: "Implemented a decision tree algorithm from scratch in C++ using the Gini criterion, including node splitting, model training, and prediction. Built the project outside mainstream ML frameworks to better understand how AI algorithms are implemented from the ground up.",
-            stack: ["C++", "Machine Learning", "Decision Trees"],
+            name: "ML From Scratch",
+            desc: "Small implementations of classic machine learning ideas to better understand model training and inference.",
+            stack: ["C++", "Machine Learning", "Algorithms"],
             link: "https://github.com/xiaole5211314",
         },
     ],
 
     skills: {
-        "Programming Languages": ["Python", "C++", "Java", "MATLAB", "Bash"],
-        "Machine Learning & Scientific Computing": [
+        "Languages": ["Python", "C++", "Java", "Bash"],
+        "ML & Scientific Computing": [
             "PyTorch / LibTorch",
-            "TensorFlow",
             "scikit-learn",
             "Pandas",
             "NumPy",
             "Matplotlib",
-            "Seaborn",
-            "Transformers",
-            "CNNs",
             "Self-supervised Learning",
-            "Contrastive Learning",
             "Representation Learning",
-            "Diffusion Models",
-            "Conjugate Gradient Methods",
-            "Maximum Likelihood Estimation (MLE)",
-            "Cross-validation",
-            "Regularization",
         ],
         "Tools & Platforms": [
             "Linux",
             "Git",
-            "Docker",
             "CMake",
             "Jupyter",
             "Slurm",
             "VS Code",
         ],
-        "Web & Other": ["SQL", "HTML", "CSS", "React", "Django", "LaTeX", "Regex"],
+        "Other": ["SQL", "React", "LaTeX"],
     },
 };
 
-const NAV = ["About", "Education", "Experience", "Publication", "Projects", "Skills"];
+const NAV = ["About", "Experience", "Projects", "Skills"];
 
 /* Neural network hero canvas */
 function NeuralNetCanvas() {
@@ -399,53 +408,52 @@ export default function Portfolio() {
         <div className="hero-overlay" />
         <div className="hero-content">
           <img className={"hero-avatar" + (heroVis ? " vis" : "")} src={D.avatar} alt={D.name + " avatar"} />
+          <div className={"hero-kicker" + (heroVis ? " vis" : "")}>UC Berkeley Data Science</div>
           <TextReveal text={D.fullName} tag="h1" />
           <p className={"hero-sub" + (heroVis ? " vis" : "")}>{D.title}</p>
           <p className={"hero-tagline" + (heroVis ? " vis" : "")}>{D.tagline}</p>
+          <p className={"hero-note" + (heroVis ? " vis" : "")}>{D.heroNote}</p>
           <div className={"hero-cta" + (heroVis ? " vis" : "")}>
             <MagneticBtn className="btn primary" href={"mailto:" + D.email}>{"\u2709"} Email Me</MagneticBtn>
             <MagneticBtn className="btn" href={D.linkedin} target="_blank" rel="noopener noreferrer">LinkedIn</MagneticBtn>
             <MagneticBtn className="btn" href={D.github} target="_blank" rel="noopener noreferrer">GitHub</MagneticBtn>
+          </div>
+          <div className={"hero-stats" + (heroVis ? " vis" : "")}>
+            {D.highlights.map((h) => <div key={h.label} className="hero-stat"><strong>{h.value}</strong><span>{h.label}</span></div>)}
           </div>
         </div>
         <div className="scroll-hint"><div className="scroll-dot" /><span>Scroll</span></div>
       </header>
 
       <div className="content">
-        <Section id="about"><span className="sect-label">01 ABOUT</span><h2>Hello.</h2><p className="about-text">{D.about}</p></Section>
-
-        <Section id="education" delay={0.05}>
-          <span className="sect-label">02 EDUCATION</span><h2>Education</h2>
-          <div className="tcard">
-            <div className="tcard-head"><h3>{D.education.degree}</h3><span className="tcard-period">{D.education.period}</span></div>
-            <div className="tcard-org">{D.education.school}</div>
-            <div style={{ display: "flex", gap: "1.5rem", marginTop: ".6rem", flexWrap: "wrap" }}><span style={{ fontSize: ".85rem", color: "var(--fg2)" }}><strong style={{ color: "var(--fg)" }}>GPA:</strong> {D.education.gpa}</span></div>
-            <p style={{ fontSize: ".85rem", color: "var(--fg3)", marginTop: ".5rem" }}>{D.education.coursework}</p>
+        <Section id="about">
+          <span className="sect-label">01 ABOUT</span><h2>Hello.</h2><p className="about-text">{D.about}</p>
+          <div className="snapshot-grid">
+            {D.snapshot.map((item) => <div key={item.label} className="snapshot-item"><span>{item.label}</span><strong>{item.value}</strong></div>)}
+          </div>
+          <div className="focus-grid">
+            {D.focusAreas.map((area) => <article key={area.title} className="focus-card"><h3>{area.title}</h3><p>{area.desc}</p></article>)}
           </div>
         </Section>
 
         <Section id="experience" delay={0.05}>
-          <span className="sect-label">03 RESEARCH EXPERIENCE</span><h2>Experience</h2>
+          <span className="sect-label">02 RESEARCH EXPERIENCE</span><h2>Experience</h2>
           <div className="timeline" ref={expRef}>{D.experience.map((exp, i) => <StaggerItem key={exp.org} index={i} visible={expVis}><div className="tcard"><div className="tcard-head"><h3>{exp.role}</h3><span className="tcard-period">{exp.period}</span></div><div className="tcard-org">{exp.org}</div><ul>{exp.desc.map((d, j) => <li key={j}>{d}</li>)}</ul></div></StaggerItem>)}</div>
         </Section>
 
-        <Section id="publication" delay={0.05}>
-          <span className="sect-label">04 PUBLICATION</span><h2>Publication</h2>
-          <div className="pub-card"><div className="pub-title">{D.publication.title}</div><div className="pub-meta">{D.publication.journal} {"\u00b7"} {D.publication.role}</div></div>
-        </Section>
-
         <Section id="projects" delay={0.05}>
-          <span className="sect-label">05 SELECTED WORK</span><h2>Selected Work</h2>
-          {D.projects.map((p) => <div key={p.name} className="pcard"><h3>{p.name}</h3><p>{p.desc}</p><div className="pcard-tags">{p.stack.map((t) => <span key={t} className="ptag">{t}</span>)}</div><a className="pcard-link" href={p.link} target="_blank" rel="noopener noreferrer">View on GitHub {"\u2192"}</a></div>)}
+          <span className="sect-label">03 SELECTED WORK</span><h2>Selected Work</h2>
+          <div className="project-grid">{D.projects.map((p) => <div key={p.name} className="pcard"><h3>{p.name}</h3><p>{p.desc}</p><div className="pcard-tags">{p.stack.map((t) => <span key={t} className="ptag">{t}</span>)}</div><a className="pcard-link" href={p.link} target="_blank" rel="noopener noreferrer">View on GitHub {"\u2192"}</a></div>)}</div>
         </Section>
 
         <Section id="skills" delay={0.05}>
-          <span className="sect-label">06 SKILLS</span><h2>Technical Skills</h2>
+          <span className="sect-label">04 SKILLS</span><h2>Technical Skills</h2>
           <div className="skill-grid" ref={skillRef}>{Object.entries(D.skills).map(([cat, items], ci) => <StaggerItem key={cat} index={ci} visible={skillVis}><div><div className="skill-cat">{cat}</div><div className="skill-pills">{items.map((s) => <span key={s} className="pill">{s}</span>)}</div></div></StaggerItem>)}</div>
         </Section>
       </div>
 
       <footer className="foot">
+        <div className="foot-cta">Interested in ML research, scientific computing, or AI for biology? Let's talk.</div>
         <div className="foot-links"><a href={"mailto:" + D.email}>Email</a><a href={D.linkedin} target="_blank" rel="noopener noreferrer">LinkedIn</a><a href={D.github} target="_blank" rel="noopener noreferrer">GitHub</a></div>
         <div>{"\u00a9"} {new Date().getFullYear()} {D.fullName}</div>
       </footer>
@@ -457,8 +465,8 @@ export default function Portfolio() {
 
 const CSS_TEXT = `
 @import url('https://fonts.googleapis.com/css2?family=Instrument+Serif&family=Satoshi:wght@400;500;700;900&family=JetBrains+Mono:wght@400;500&display=swap');
-:root{--bg:#F8F7F4;--bg2:#EFEEE9;--fg:#141413;--fg2:#4A4A45;--fg3:#8A8A84;--accent:#2C5AE9;--accent2:#1A3FA0;--accent-soft:rgba(44,90,233,.07);--border:#DDD;--card:#FFF;--glow-color:rgba(44,90,233,.04);--serif:'Instrument Serif',Georgia,serif;--sans:'Satoshi',system-ui,sans-serif;--mono:'JetBrains Mono',monospace;--radius:14px}
-@media(prefers-color-scheme:dark){:root{--bg:#0C0C0B;--bg2:#161614;--fg:#EDEDE8;--fg2:#A3A29D;--fg3:#6E6D68;--accent:#6B8EF5;--accent2:#8FAAF7;--accent-soft:rgba(107,142,245,.1);--border:#262624;--card:#141413;--glow-color:rgba(107,142,245,.06)}}
+:root{--bg:#F6F8F7;--bg2:#E8EFEE;--fg:#111817;--fg2:#43504E;--fg3:#788380;--accent:#1F6F68;--accent2:#2447C7;--warm:#B85C38;--accent-soft:rgba(31,111,104,.08);--border:#DCE4E2;--card:#FFFFFF;--glow-color:rgba(31,111,104,.05);--serif:'Instrument Serif',Georgia,serif;--sans:'Satoshi',system-ui,sans-serif;--mono:'JetBrains Mono',monospace;--radius:8px}
+@media(prefers-color-scheme:dark){:root{--bg:#0D1111;--bg2:#141B1A;--fg:#EEF3F2;--fg2:#B1BDBA;--fg3:#74817E;--accent:#72C7BA;--accent2:#91A7FF;--warm:#E39565;--accent-soft:rgba(114,199,186,.11);--border:#263130;--card:#151C1B;--glow-color:rgba(114,199,186,.06)}}
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
 html{scroll-behavior:smooth;scroll-padding-top:80px}
 body{background:var(--bg);color:var(--fg);font-family:var(--sans);line-height:1.65;-webkit-font-smoothing:antialiased;overflow-x:hidden}
@@ -474,32 +482,50 @@ body{background:var(--bg);color:var(--fg);font-family:var(--sans);line-height:1.
 .nav-links a.active{color:var(--accent)}
 .hamburger{display:none;background:none;border:none;color:var(--fg);font-size:1.4rem;cursor:pointer;padding:.25rem}
 @media(max-width:700px){.nav-links{position:fixed;top:0;left:0;right:0;bottom:0;flex-direction:column;align-items:center;justify-content:center;gap:.75rem;background:color-mix(in srgb,var(--bg) 97%,transparent);backdrop-filter:blur(24px);opacity:0;pointer-events:none;transition:opacity .3s}.nav-links.open{opacity:1;pointer-events:auto}.nav-links a{font-size:1.2rem;padding:.85rem 1.5rem}.hamburger{display:block}}
-.hero{height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:6rem 1.5rem 4rem;position:relative;overflow:hidden}
-.hero-overlay{position:absolute;inset:0;z-index:1;background:radial-gradient(ellipse at center,transparent 30%,var(--bg) 80%);pointer-events:none}
-.hero-content{position:relative;z-index:2}
+.hero{min-height:92svh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:6rem 1.5rem 4.5rem;position:relative;overflow:hidden;border-bottom:1px solid var(--border)}
+.hero-overlay{position:absolute;inset:0;z-index:1;background:radial-gradient(ellipse at 50% 38%,transparent 24%,color-mix(in srgb,var(--bg) 50%,transparent) 58%,var(--bg) 90%),linear-gradient(180deg,transparent 0%,color-mix(in srgb,var(--bg) 76%,transparent) 100%);pointer-events:none}
+.hero-content{position:relative;z-index:2;max-width:760px}
 .hero-avatar{width:110px;height:110px;border-radius:50%;object-fit:cover;border:3px solid var(--border);margin-bottom:1.75rem;opacity:0;transform:scale(.8);transition:opacity .8s .1s cubic-bezier(.22,1,.36,1),transform .8s .1s cubic-bezier(.22,1,.36,1)}
 .hero-avatar.vis{opacity:1;transform:scale(1)}
-.hero h1{font-family:var(--serif);font-size:clamp(2.8rem,6vw,4.5rem);font-weight:400;font-style:italic;letter-spacing:-.02em;line-height:1.1;color:var(--fg)}
+.hero-kicker{display:inline-flex;align-items:center;gap:.5rem;margin-bottom:.7rem;font-family:var(--mono);font-size:.68rem;letter-spacing:.11em;text-transform:uppercase;color:var(--accent);opacity:0;transform:translateY(12px);transition:all .7s .25s cubic-bezier(.22,1,.36,1)}
+.hero-kicker::before,.hero-kicker::after{content:'';width:28px;height:1px;background:var(--accent)}
+.hero-kicker.vis{opacity:1;transform:translateY(0)}
+.hero h1{font-family:var(--serif);font-size:clamp(2.8rem,6vw,4.75rem);font-weight:400;font-style:italic;letter-spacing:0;line-height:1.05;color:var(--fg)}
 .hero-sub{font-size:1.05rem;color:var(--fg2);margin-top:.75rem;font-weight:500;letter-spacing:.02em;opacity:0;transform:translateY(16px);transition:all .7s .5s cubic-bezier(.22,1,.36,1)}
 .hero-sub.vis{opacity:1;transform:translateY(0)}
 .hero-tagline{max-width:500px;color:var(--fg3);margin:.75rem auto 0;font-size:.92rem;line-height:1.65;opacity:0;transform:translateY(16px);transition:all .7s .6s cubic-bezier(.22,1,.36,1)}
 .hero-tagline.vis{opacity:1;transform:translateY(0)}
-.hero-cta{display:flex;gap:.6rem;flex-wrap:wrap;justify-content:center;margin-top:2rem;opacity:0;transform:translateY(16px);transition:all .7s .75s cubic-bezier(.22,1,.36,1)}
+.hero-note{max-width:620px;margin:.9rem auto 0;color:var(--fg2);font-size:1rem;line-height:1.65;opacity:0;transform:translateY(16px);transition:all .7s .68s cubic-bezier(.22,1,.36,1)}
+.hero-note.vis{opacity:1;transform:translateY(0)}
+.hero-cta{display:flex;gap:.6rem;flex-wrap:wrap;justify-content:center;margin-top:1.8rem;opacity:0;transform:translateY(16px);transition:all .7s .78s cubic-bezier(.22,1,.36,1)}
 .hero-cta.vis{opacity:1;transform:translateY(0)}
 .btn{display:inline-flex;align-items:center;gap:.4rem;padding:.7rem 1.4rem;border-radius:9999px;font-size:.85rem;font-weight:600;text-decoration:none;border:1px solid var(--border);background:var(--card);color:var(--fg);letter-spacing:.01em}
 .btn:hover{box-shadow:0 4px 20px rgba(0,0,0,.08)}
 .btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
 .btn.primary:hover{background:var(--accent2);box-shadow:0 4px 24px color-mix(in srgb,var(--accent) 30%,transparent)}
+.hero-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.75rem;max-width:520px;margin:1.6rem auto 0;opacity:0;transform:translateY(16px);transition:all .7s .88s cubic-bezier(.22,1,.36,1)}
+.hero-stats.vis{opacity:1;transform:translateY(0)}
+.hero-stat{padding:.85rem .7rem;border:1px solid var(--border);border-radius:var(--radius);background:color-mix(in srgb,var(--card) 78%,transparent);backdrop-filter:blur(12px)}
+.hero-stat strong{display:block;font-family:var(--serif);font-size:1.65rem;font-weight:400;line-height:1;color:var(--fg)}
+.hero-stat span{display:block;margin-top:.3rem;font-family:var(--mono);font-size:.64rem;letter-spacing:.06em;text-transform:uppercase;color:var(--fg3)}
 .scroll-hint{position:absolute;bottom:2rem;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:.35rem;color:var(--fg3);font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;font-weight:500;z-index:2;opacity:0;animation:fadeIn 1s 1.4s forwards}
 @keyframes fadeIn{to{opacity:1}}
 .scroll-dot{width:5px;height:5px;border-radius:50%;background:var(--accent);animation:bounce 2s ease-in-out infinite}
 @keyframes bounce{0%,100%{transform:translateY(0);opacity:.4}50%{transform:translateY(12px);opacity:1}}
-.content{max-width:700px;margin:0 auto;padding:2rem 1.5rem 6rem;display:flex;flex-direction:column;gap:5rem;position:relative;z-index:2}
+.content{max-width:980px;margin:0 auto;padding:4rem 1.5rem 6rem;display:flex;flex-direction:column;gap:4rem;position:relative;z-index:2}
 .sect-label{font-family:var(--mono);font-size:.68rem;letter-spacing:.1em;color:var(--accent);font-weight:500;margin-bottom:.75rem;display:flex;align-items:center;gap:.6rem}
 .sect-label::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,var(--border),transparent)}
 .sect h2{font-family:var(--serif);font-size:clamp(1.7rem,3vw,2.2rem);font-weight:400;font-style:italic;letter-spacing:-.01em;color:var(--fg);margin-bottom:1rem}
 .sect>p,.about-text{color:var(--fg2);font-size:.95rem;line-height:1.75}
-.timeline{display:flex;flex-direction:column;gap:1.25rem}
+.snapshot-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.75rem;margin-top:1.2rem}
+.snapshot-item{padding:.85rem 1rem;border:1px solid var(--border);border-radius:var(--radius);background:color-mix(in srgb,var(--card) 86%,transparent)}
+.snapshot-item span{display:block;font-family:var(--mono);font-size:.62rem;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);margin-bottom:.25rem}
+.snapshot-item strong{display:block;font-size:.82rem;line-height:1.45;color:var(--fg);font-weight:650}
+.focus-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.85rem;margin-top:1.4rem}
+.focus-card{padding:1rem;background:var(--card);border:1px solid var(--border);border-radius:var(--radius)}
+.focus-card h3{font-size:.85rem;color:var(--fg);font-weight:700;margin-bottom:.35rem}
+.focus-card p{font-size:.8rem;line-height:1.55;color:var(--fg2)}
+.timeline{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1rem}
 .tcard{padding:1.4rem 1.5rem;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);position:relative;overflow:hidden;transition:border-color .3s,box-shadow .3s}
 .tcard::before{content:'';position:absolute;top:0;left:0;width:3px;height:100%;background:linear-gradient(180deg,var(--accent),transparent);opacity:0;transition:opacity .3s}
 .tcard:hover::before{opacity:1}
@@ -508,12 +534,17 @@ body{background:var(--bg);color:var(--fg);font-family:var(--sans);line-height:1.
 .tcard h3{font-size:.92rem;font-weight:700;color:var(--fg)}
 .tcard-period{font-family:var(--mono);font-size:.73rem;color:var(--fg3)}
 .tcard-org{font-size:.85rem;color:var(--accent);font-weight:600;margin-top:.2rem}
+.edu-facts{display:flex;gap:1.5rem;margin-top:.6rem;flex-wrap:wrap}
+.edu-facts span{font-size:.85rem;color:var(--fg2)}
+.edu-facts strong{color:var(--fg)}
+.muted-copy{font-size:.85rem;color:var(--fg3);margin-top:.5rem}
 .tcard ul{margin-top:.7rem;padding-left:0;list-style:none}
 .tcard li{position:relative;font-size:.87rem;color:var(--fg2);padding:.25rem 0 .25rem 1.1rem;line-height:1.6}
 .tcard li::before{content:'\u203A';position:absolute;left:0;top:.25rem;color:var(--accent);font-weight:700;font-size:.9rem}
 .pub-card{padding:1.4rem 1.5rem;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);border-left:3px solid var(--accent)}
 .pub-title{font-size:.9rem;font-weight:600;color:var(--fg);font-style:italic;line-height:1.5}
 .pub-meta{font-size:.82rem;color:var(--fg3);margin-top:.4rem}
+.project-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1rem}
 .pcard{padding:1.4rem 1.5rem;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);transition:border-color .3s,box-shadow .3s,transform .3s}
 .pcard:hover{border-color:color-mix(in srgb,var(--accent) 25%,var(--border));box-shadow:0 8px 32px rgba(0,0,0,.06);transform:translateY(-3px)}
 .pcard h3{font-size:.92rem;font-weight:700;color:var(--fg)}
@@ -522,12 +553,13 @@ body{background:var(--bg);color:var(--fg);font-family:var(--sans);line-height:1.
 .ptag{font-family:var(--mono);font-size:.7rem;padding:.25rem .65rem;border-radius:6px;background:var(--accent-soft);color:var(--accent);font-weight:500}
 .pcard-link{display:inline-flex;align-items:center;gap:.3rem;margin-top:.85rem;font-size:.83rem;font-weight:600;color:var(--accent);text-decoration:none;transition:gap .2s}
 .pcard-link:hover{gap:.55rem}
-.skill-grid{display:flex;flex-direction:column;gap:1.5rem}
+.skill-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1.5rem 2rem}
 .skill-cat{font-family:var(--mono);font-size:.7rem;text-transform:uppercase;letter-spacing:.08em;color:var(--fg3);font-weight:500;margin-bottom:.55rem}
 .skill-pills{display:flex;flex-wrap:wrap;gap:.4rem}
 .pill{font-size:.82rem;font-weight:500;padding:.4rem .9rem;border-radius:8px;background:var(--card);border:1px solid var(--border);color:var(--fg2);transition:all .25s cubic-bezier(.22,1,.36,1);cursor:default}
 .pill:hover{color:var(--accent);border-color:var(--accent);transform:translateY(-2px);box-shadow:0 4px 12px var(--accent-soft)}
 .foot{text-align:center;padding:3.5rem 1.5rem;border-top:1px solid var(--border);color:var(--fg3);font-size:.82rem;position:relative;z-index:2}
+.foot-cta{max-width:620px;margin:0 auto 1.25rem;font-family:var(--serif);font-size:clamp(1.35rem,3vw,1.9rem);line-height:1.25;color:var(--fg)}
 .foot-links{display:flex;justify-content:center;gap:1.5rem;margin-bottom:.85rem}
 .foot-links a{color:var(--fg2);text-decoration:none;font-weight:500;transition:color .2s}
 .foot-links a:hover{color:var(--accent)}
@@ -536,7 +568,9 @@ body{background:var(--bg);color:var(--fg);font-family:var(--sans);line-height:1.
 .btt:hover{background:var(--accent);color:#fff;border-color:var(--accent)}
 .skip{position:absolute;left:-9999px;top:0;background:var(--accent);color:#fff;padding:.5rem .75rem;border-radius:0 0 8px 0;z-index:1000;font-size:.85rem}
 .skip:focus{left:0}
-@media(max-width:640px){.content{gap:3.5rem}}
+@media(max-width:920px){.timeline,.project-grid{grid-template-columns:1fr}.content{max-width:760px}.tcard,.pcard{padding:1.2rem 1.25rem}}
+@media(max-width:760px){.snapshot-grid,.focus-grid,.skill-grid{grid-template-columns:1fr}.hero-stats{grid-template-columns:1fr;max-width:320px}.hero-stat{display:flex;align-items:baseline;justify-content:space-between;gap:1rem;text-align:left}.hero-stat span{text-align:right}.scroll-hint{display:none}}
+@media(max-width:640px){.content{gap:3.5rem;padding-top:3rem}.hero{min-height:94svh;padding:5rem 1rem 3rem}.hero-avatar{width:92px;height:92px;margin-bottom:1.25rem}.hero-sub{font-size:.95rem}.hero-note{font-size:.92rem}.btn{width:100%;justify-content:center}.hero-cta{max-width:320px;margin-left:auto;margin-right:auto}.tcard,.pcard,.pub-card{padding:1.1rem}.hero-kicker::before,.hero-kicker::after{width:18px}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:0s!important;transition-duration:0s!important}canvas{display:none}}
 `;
 

@@ -393,6 +393,15 @@ function NeuralNetCanvas() {
    Helpers
    ---------------------------------------------------------------------- */
 
+function AmbientBg() {
+  return (
+    <div className="ambient" aria-hidden="true">
+      <div className="amb-orb amb-1" />
+      <div className="amb-orb amb-2" />
+    </div>
+  );
+}
+
 function useInView(threshold = 0.12) {
   const ref = useRef(null);
   const [visible, setVisible] = useState(false);
@@ -524,6 +533,7 @@ export default function Portfolio() {
   return (
     <>
       <style>{CSS_TEXT}</style>
+      <AmbientBg />
       <a className="skip" href="#about">Skip to content</a>
 
       {/* ── Nav ─────────────────────────────────────────────── */}
@@ -583,15 +593,17 @@ export default function Portfolio() {
             <span className="sect-n">01</span>
             <h2>About</h2>
           </div>
-          <div className="about-stats">
-            {D.stats.map((s) => (
-              <div key={s.l} className="stat">
-                <span className="stat-n">{s.n}</span>
-                <span className="stat-l">{s.l}</span>
-              </div>
-            ))}
+          <div className="about-layout">
+            <div className="about-stats">
+              {D.stats.map((s) => (
+                <div key={s.l} className="stat">
+                  <span className="stat-n">{s.n}</span>
+                  <span className="stat-l">{s.l}</span>
+                </div>
+              ))}
+            </div>
+            <p className="about-text">{D.about}</p>
           </div>
-          <p className="about-text">{D.about}</p>
         </Section>
 
         {/* ── Research / Timeline ─────────────────────────────── */}
@@ -628,7 +640,7 @@ export default function Portfolio() {
             <span className="sect-n">03</span>
             <h2>Publication</h2>
           </div>
-          <article className="pub-card">
+          <article className="pub-card" onMouseMove={(e) => { const r = e.currentTarget.getBoundingClientRect(); e.currentTarget.style.setProperty('--gx', `${e.clientX - r.left}px`); e.currentTarget.style.setProperty('--gy', `${e.clientY - r.top}px`); }}>
             <div className="pub-venue">
               <span>{D.publication.venue}</span>
               <strong>{D.publication.year}</strong>
@@ -649,7 +661,7 @@ export default function Portfolio() {
           <div className="skill-bento" ref={skillRef}>
             {Object.entries(D.skills).map(([cat, items], ci) => (
               <StaggerItem key={cat} index={ci} visible={skillVis}>
-                <article className="skill-card">
+                <article className="skill-card" onMouseMove={(e) => { const r = e.currentTarget.getBoundingClientRect(); e.currentTarget.style.setProperty('--gx', `${e.clientX - r.left}px`); e.currentTarget.style.setProperty('--gy', `${e.clientY - r.top}px`); }}>
                   <div className="skill-cat">{cat}</div>
                   <div className="skill-pills">
                     {items.map((s) => (
@@ -741,6 +753,20 @@ body {
   line-height: 1.65;
   -webkit-font-smoothing: antialiased;
   overflow-x: hidden;
+}
+
+/* ── Ambient orbs ──────────────────────────────────────────────── */
+.ambient { position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
+.amb-orb  { position: absolute; border-radius: 50%; filter: blur(90px); }
+.amb-1 {
+  width: 700px; height: 700px;
+  background: radial-gradient(circle, var(--accent-soft) 0%, transparent 70%);
+  top: -25%; right: -18%;
+}
+.amb-2 {
+  width: 550px; height: 550px;
+  background: radial-gradient(circle, var(--warm-soft) 0%, transparent 70%);
+  bottom: 8%; left: -12%;
 }
 
 /* subtle grid texture visible only at the top */
@@ -879,7 +905,10 @@ body::before {
   font-size: clamp(3.2rem, 7.2vw, 6rem);
   font-weight: 400;
   line-height: 1.01;
-  color: var(--fg);
+  background: linear-gradient(160deg, var(--fg) 45%, color-mix(in srgb, var(--fg) 68%, var(--accent)) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
   letter-spacing: -.025em;
 }
 .hero-tagline {
@@ -938,9 +967,9 @@ body::before {
 
 /* ── Content wrapper ─────────────────────────────────────────────── */
 .content {
-  max-width: 960px;
+  max-width: 1100px;
   margin: 0 auto;
-  padding: 8rem 1.75rem 9rem;
+  padding: 8rem clamp(2rem, 7vw, 6rem) 9rem;
   display: flex; flex-direction: column;
   gap: 8rem;
   position: relative; z-index: 2;
@@ -967,26 +996,33 @@ body::before {
 }
 
 /* ── About ───────────────────────────────────────────────────────── */
+.about-layout {
+  display: grid;
+  grid-template-columns: 140px 1fr;
+  gap: 3.5rem;
+  align-items: start;
+}
 .about-stats {
-  display: flex; gap: 3.5rem;
-  margin-bottom: 2.5rem;
-  padding-bottom: 2.5rem;
-  border-bottom: 1px solid var(--border);
+  display: flex; flex-direction: column; gap: 2rem;
+  padding-right: 2.5rem;
+  border-right: 1px solid var(--border);
+  flex-shrink: 0;
 }
 .stat { display: flex; flex-direction: column; gap: .3rem; }
 .stat-n {
   font-family: var(--serif);
-  font-size: 2.6rem; line-height: 1; color: var(--fg);
+  font-size: 2.4rem; line-height: 1; color: var(--fg);
 }
 .stat-l {
   font-family: var(--mono);
-  font-size: .68rem; font-weight: 500;
+  font-size: .66rem; font-weight: 500;
   text-transform: uppercase; letter-spacing: .07em;
   color: var(--fg3);
 }
 .about-text {
-  max-width: 680px; color: var(--fg2);
-  font-size: 1.04rem; line-height: 1.8;
+  color: var(--fg2);
+  font-size: 1.04rem; line-height: 1.82;
+  padding-top: .3rem;
 }
 
 /* ── Timeline ────────────────────────────────────────────────────── */
@@ -1064,6 +1100,15 @@ body::before {
   border-color: color-mix(in srgb, var(--accent) 22%, var(--border));
   transform: translateY(-2px);
 }
+.pub-card::after, .skill-card::after {
+  content: '';
+  position: absolute; inset: 0; border-radius: inherit;
+  background: radial-gradient(circle 260px at var(--gx, -100%) var(--gy, -100%), var(--accent-soft), transparent 70%);
+  opacity: 0; pointer-events: none;
+  transition: opacity .5s;
+}
+.pub-card:hover::after, .skill-card:hover::after { opacity: 1; }
+.pub-card > *, .skill-card > * { position: relative; z-index: 1; }
 .pub-venue {
   display: flex; align-items: center; justify-content: space-between;
   gap: 1rem; margin-bottom: 1.1rem; flex-wrap: wrap;
@@ -1103,6 +1148,7 @@ body::before {
   border-radius: var(--r);
   background: var(--card);
   box-shadow: var(--sh);
+  position: relative; overflow: hidden;
   transition: border-color .3s, box-shadow .3s, transform .3s;
 }
 /* Featured (ML) card */
@@ -1124,6 +1170,7 @@ body::before {
   letter-spacing: .1em; color: var(--fg3); font-weight: 500;
   margin-bottom: .85rem;
 }
+.skill-bento > div:first-child .skill-cat { color: var(--accent); }
 .skill-pills { display: flex; flex-wrap: wrap; gap: .45rem; }
 .pill {
   font-size: .8rem; font-weight: 500;
@@ -1182,7 +1229,8 @@ body::before {
 /* ── Responsive ──────────────────────────────────────────────────── */
 @media (max-width: 900px) {
   .section-head  { margin-bottom: 2.25rem; }
-  .about-stats   { gap: 2.25rem; }
+  .about-layout  { grid-template-columns: 1fr; gap: 2rem; }
+  .about-stats   { flex-direction: row; gap: 2.5rem; padding-right: 0; border-right: none; border-bottom: 1px solid var(--border); padding-bottom: 2rem; }
   .skill-bento   { grid-template-columns: 1fr; }
   .skill-bento > div:first-child { grid-column: 1; }
 }
@@ -1190,6 +1238,8 @@ body::before {
 @media (max-width: 640px) {
   body::before { opacity: .28; }
   .content { gap: 5.5rem; padding: 4rem 1.25rem 7rem; }
+  .about-layout { grid-template-columns: 1fr; }
+  .about-stats { flex-direction: row; flex-wrap: wrap; gap: 1.5rem 2.5rem; padding-right: 0; border-right: none; border-bottom: 1px solid var(--border); padding-bottom: 1.75rem; }
   .hero { padding: 5.5rem 1rem 4rem; min-height: 94svh; }
   .hero-avatar { width: 92px; height: 92px; margin-bottom: 1.2rem; }
   .hero h1 { font-size: clamp(2.6rem, 9vw, 3.8rem); }

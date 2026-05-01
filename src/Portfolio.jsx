@@ -450,33 +450,41 @@ function StaggerItem({ children, index, visible }) {
   );
 }
 
-function TextReveal({ text, tag: Tag = "h1", className }) {
+function TextReveal({ text, tag: Tag = "h1", className, wordColors = null }) {
   const [ref, vis] = useInView(0.3);
+  const words = text.split(" ");
+  const last  = Math.max(1, words.length - 1);
   return (
     <Tag ref={ref} className={className} aria-label={text}>
-      {text.split(" ").map((w, i) => (
-        <span
-          key={i}
-          aria-hidden="true"
-          style={{
-            display: "inline-block",
-            overflow: "hidden",
-            marginRight: "0.3em",
-            paddingRight: "0.08em",
-            paddingBottom: "0.12em",
-          }}
-        >
+      {words.map((w, i) => {
+        const color = wordColors
+          ? wordColors[Math.round((i / last) * (wordColors.length - 1))]
+          : undefined;
+        return (
           <span
+            key={i}
+            aria-hidden="true"
             style={{
               display: "inline-block",
-              transform: vis ? "translateY(0)" : "translateY(110%)",
-              transition: `transform 0.7s ${0.05 * i}s cubic-bezier(.22,1,.36,1)`,
+              overflow: "hidden",
+              marginRight: "0.3em",
+              paddingRight: "0.08em",
+              paddingBottom: "0.12em",
             }}
           >
-            {w}
+            <span
+              style={{
+                display: "inline-block",
+                transform: vis ? "translateY(0)" : "translateY(110%)",
+                transition: `transform 0.7s ${0.05 * i}s cubic-bezier(.22,1,.36,1)`,
+                ...(color ? { color } : {}),
+              }}
+            >
+              {w}
+            </span>
           </span>
-        </span>
-      ))}
+        );
+      })}
     </Tag>
   );
 }
@@ -571,7 +579,11 @@ export default function Portfolio() {
           <div className={"hero-kicker" + (heroVis ? " vis" : "")}>
             UC Berkeley · Data Science · 2027
           </div>
-          <TextReveal text={D.fullName} tag="h1" />
+          <TextReveal
+            text={D.fullName}
+            tag="h1"
+            wordColors={["var(--fg)", "var(--accent)", "var(--grad-end)"]}
+          />
           <p className={"hero-tagline" + (heroVis ? " vis" : "")}>{D.tagline}</p>
           <div className={"hero-cta" + (heroVis ? " vis" : "")}>
             <a className="btn primary" href={"mailto:" + D.email}>{"✉"} Email</a>
@@ -721,6 +733,7 @@ const CSS_TEXT = `
   --sans:  'Satoshi', system-ui, sans-serif;
   --mono:  'JetBrains Mono', monospace;
   --r:     14px;
+  --grad-end: #7C3AED;
   --sh:    0 1px 2px rgba(0,0,0,.04), 0 4px 16px rgba(0,0,0,.06);
   --sh2:   0 2px 6px rgba(0,0,0,.07), 0 10px 36px rgba(0,0,0,.09);
 }
@@ -739,6 +752,7 @@ const CSS_TEXT = `
     --warm-soft:   rgba(212,136,74,.11);
     --border:      rgba(255,255,255,.07);
     --card:        #0C0F19;
+    --grad-end: #C4B5FD;
     --sh:          0 1px 3px rgba(0,0,0,.35), 0 6px 24px rgba(0,0,0,.22);
     --sh2:         0 2px 8px rgba(0,0,0,.45), 0 14px 48px rgba(0,0,0,.32);
   }

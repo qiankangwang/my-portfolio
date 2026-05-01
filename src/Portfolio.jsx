@@ -235,10 +235,10 @@ function NeuralNetCanvas() {
       ctx.fillStyle = grad;
       ctx.fillRect(0, 0, w, h);
 
-      const helixX = w < 720 ? w * 0.5 : w * 0.15;
+      const helixX = w < 720 ? w * 0.5 : w * 0.23;
       const helixY = h * 0.5;
       const helixH = Math.min(h * 0.72, 640);
-      const helixAmp = Math.min(w * 0.052, 48);
+      const helixAmp = Math.min(w * 0.056, 54);
       const helixStep = 24;
       const helixPhase = reducedMotion ? 0 : frame * 0.018;
       const helixTop = helixY - helixH / 2;
@@ -255,13 +255,13 @@ function NeuralNetCanvas() {
       };
 
       ctx.save();
-      ctx.globalAlpha = w < 720 ? 0.28 : 0.46;
+      ctx.globalAlpha = w < 720 ? 0.36 : 0.72;
       strand(0);
-      ctx.strokeStyle = rgba(accent, dark ? 0.42 : 0.32);
-      ctx.lineWidth = 1.35;
+      ctx.strokeStyle = rgba(accent, dark ? 0.58 : 0.46);
+      ctx.lineWidth = 1.65;
       ctx.stroke();
       strand(Math.PI);
-      ctx.strokeStyle = rgba(warm, dark ? 0.4 : 0.3);
+      ctx.strokeStyle = rgba(warm, dark ? 0.52 : 0.42);
       ctx.stroke();
 
       for (let y = helixTop + 8, i = 0; y <= helixBottom; y += helixStep, i++) {
@@ -269,7 +269,7 @@ function NeuralNetCanvas() {
         const wave = Math.sin(p * Math.PI * 6 + helixPhase);
         const x1 = helixX + wave * helixAmp;
         const x2 = helixX - wave * helixAmp;
-        const alpha = 0.12 + Math.abs(wave) * 0.16;
+        const alpha = 0.18 + Math.abs(wave) * 0.22;
         ctx.beginPath();
         ctx.moveTo(x1, y);
         ctx.lineTo(x2, y);
@@ -278,19 +278,19 @@ function NeuralNetCanvas() {
         ctx.stroke();
         ctx.beginPath();
         ctx.arc(x1, y, 2.1, 0, Math.PI * 2);
-        ctx.fillStyle = rgba(accent, 0.26);
+        ctx.fillStyle = rgba(accent, 0.42);
         ctx.fill();
         ctx.beginPath();
         ctx.arc(x2, y, 2.1, 0, Math.PI * 2);
-        ctx.fillStyle = rgba(warm, 0.24);
+        ctx.fillStyle = rgba(warm, 0.38);
         ctx.fill();
         if (w >= 720 && i % 2 === 0) {
           ctx.font = "500 9px 'JetBrains Mono', monospace";
           ctx.textAlign = "center";
           ctx.textBaseline = "middle";
-          ctx.fillStyle = rgba(accent, dark ? 0.55 : 0.42);
+          ctx.fillStyle = rgba(accent, dark ? 0.72 : 0.6);
           ctx.fillText(bases[i % bases.length], x1 + (x1 < x2 ? -10 : 10), y);
-          ctx.fillStyle = rgba(warm, dark ? 0.5 : 0.38);
+          ctx.fillStyle = rgba(warm, dark ? 0.68 : 0.54);
           ctx.fillText(bases[(i + 1) % bases.length], x2 + (x2 < x1 ? -10 : 10), y);
         }
       }
@@ -303,8 +303,8 @@ function NeuralNetCanvas() {
           ctx.beginPath();
           ctx.moveTo(x, y);
           ctx.lineTo(n.x, n.y);
-          ctx.strokeStyle = rgba(accent, dark ? 0.11 : 0.085);
-          ctx.lineWidth = 0.7;
+          ctx.strokeStyle = rgba(accent, dark ? 0.18 : 0.14);
+          ctx.lineWidth = 0.85;
           ctx.stroke();
 
           const dataT = (frame * 0.006 + i * 0.18) % 1;
@@ -312,7 +312,7 @@ function NeuralNetCanvas() {
           const dataY = y + (n.y - y) * dataT;
           ctx.beginPath();
           ctx.arc(dataX, dataY, 1.8, 0, Math.PI * 2);
-          ctx.fillStyle = rgba(warm, dark ? 0.4 : 0.28);
+          ctx.fillStyle = rgba(warm, dark ? 0.58 : 0.44);
           ctx.fill();
         });
 
@@ -330,13 +330,13 @@ function NeuralNetCanvas() {
           if (i === 0) ctx.moveTo(pt.x, pt.y);
           else ctx.lineTo(pt.x, pt.y);
         });
-        ctx.strokeStyle = rgba(warm, dark ? 0.22 : 0.16);
-        ctx.lineWidth = 1;
+        ctx.strokeStyle = rgba(warm, dark ? 0.36 : 0.26);
+        ctx.lineWidth = 1.25;
         ctx.stroke();
         foldPoints.forEach((pt, i) => {
           ctx.beginPath();
           ctx.arc(pt.x, pt.y, i % 3 === 0 ? 2.7 : 2.1, 0, Math.PI * 2);
-          ctx.fillStyle = rgba(i % 2 === 0 ? warm : accent, dark ? 0.3 : 0.22);
+          ctx.fillStyle = rgba(i % 2 === 0 ? warm : accent, dark ? 0.48 : 0.34);
           ctx.fill();
         });
 
@@ -344,9 +344,9 @@ function NeuralNetCanvas() {
         ctx.font = "500 10px 'JetBrains Mono', monospace";
         ctx.textAlign = "left";
         ctx.textBaseline = "middle";
-        ctx.fillStyle = rgba(accent, dark ? 0.45 : 0.34);
+        ctx.fillStyle = rgba(accent, dark ? 0.68 : 0.52);
         ctx.fillText("genomic signal", labelX, helixTop - 18);
-        ctx.fillStyle = rgba(warm, dark ? 0.38 : 0.3);
+        ctx.fillStyle = rgba(warm, dark ? 0.6 : 0.46);
         ctx.fillText("protein structure", foldX - 16, foldY - 18);
       }
       ctx.restore();
@@ -628,8 +628,8 @@ body{background:linear-gradient(180deg,var(--bg) 0%,color-mix(in srgb,var(--bg) 
 .hamburger{display:none;background:none;border:none;color:var(--fg);font-size:1.4rem;cursor:pointer;padding:.25rem}
 @media(max-width:700px){.nav-links{position:fixed;top:0;left:0;right:0;bottom:0;flex-direction:column;align-items:center;justify-content:center;gap:.75rem;background:color-mix(in srgb,var(--bg) 97%,transparent);backdrop-filter:blur(24px);opacity:0;pointer-events:none;transition:opacity .3s}.nav-links.open{opacity:1;pointer-events:auto}.nav-links a{font-size:1.2rem;padding:.85rem 1.5rem}.hamburger{display:block}}
 .hero{min-height:92svh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:6rem 1.5rem 4.5rem;position:relative;overflow:hidden;border-bottom:1px solid var(--border)}
-.hero-overlay{position:absolute;inset:0;z-index:1;background:radial-gradient(ellipse at 50% 38%,transparent 22%,color-mix(in srgb,var(--bg) 62%,transparent) 56%,var(--bg) 88%),linear-gradient(180deg,transparent 0%,color-mix(in srgb,var(--bg) 84%,transparent) 100%);pointer-events:none}
-.hero-content{position:relative;z-index:2;max-width:760px}
+.hero-overlay{position:absolute;inset:0;z-index:1;background:radial-gradient(ellipse at 50% 40%,color-mix(in srgb,var(--bg) 12%,transparent) 0%,color-mix(in srgb,var(--bg) 24%,transparent) 42%,color-mix(in srgb,var(--bg) 54%,transparent) 78%,color-mix(in srgb,var(--bg) 78%,transparent) 100%),linear-gradient(180deg,transparent 0%,color-mix(in srgb,var(--bg) 72%,transparent) 100%);pointer-events:none}
+.hero-content{position:relative;z-index:2;max-width:760px;padding:1.5rem;border-radius:12px;background:color-mix(in srgb,var(--bg) 58%,transparent);backdrop-filter:blur(2px)}
 .hero-avatar{width:104px;height:104px;border-radius:50%;object-fit:cover;border:1px solid var(--border);box-shadow:0 10px 32px rgba(15,23,42,.08);margin-bottom:1.75rem;opacity:0;transform:scale(.8);transition:opacity .8s .1s cubic-bezier(.22,1,.36,1),transform .8s .1s cubic-bezier(.22,1,.36,1)}
 .hero-avatar.vis{opacity:1;transform:scale(1)}
 .hero-kicker{display:inline-flex;align-items:center;gap:.5rem;margin-bottom:.7rem;font-family:var(--mono);font-size:.68rem;letter-spacing:.11em;text-transform:uppercase;color:var(--accent);opacity:0;transform:translateY(12px);transition:all .7s .25s cubic-bezier(.22,1,.36,1)}

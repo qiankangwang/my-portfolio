@@ -206,8 +206,9 @@ function NeuralNetCanvas() {
           { type: "rna", x: networkLeft + networkW * 0.5, y: networkTop + networkH * 0.72, len: 13, angle: -0.02, phase: 3.1 },
           { type: "rna", x: networkLeft + networkW * 0.28, y: networkBottom - networkH * 0.08, len: 12, angle: 0.05, phase: 4.2 },
           { type: "rna", x: networkLeft + networkW * 0.62, y: networkTop + networkH * 0.42, len: 10, angle: -0.05, phase: 5.1 },
-          { type: "miniHelix", x: networkLeft + networkW * 0.74, y: networkTop + networkH * 0.26, h: Math.min(networkH * 0.24, 130), phase: 0.5 },
-          { type: "miniHelix", x: networkLeft + networkW * 0.18, y: networkBottom - networkH * 0.08, h: Math.min(networkH * 0.2, 112), phase: 2.4 },
+          { type: "protein", x: networkLeft + networkW * 0.74, y: networkTop + networkH * 0.2, len: 10, scale: 1.08, phase: 0.5 },
+          { type: "protein", x: networkLeft + networkW * 0.18, y: networkBottom - networkH * 0.16, len: 8, scale: 0.95, phase: 2.4 },
+          { type: "protein", x: networkLeft + networkW * 0.78, y: networkBottom - networkH * 0.28, len: 7, scale: 0.84, phase: 3.3 },
         ];
       }
     };
@@ -289,29 +290,28 @@ function NeuralNetCanvas() {
                 ctx.stroke();
               }
             }
-          } else {
-            const top = m.y - m.h / 2 + drift;
-            const amp = 12;
-            for (let y = top; y <= top + m.h; y += 10) {
-              const p = (y - top) / m.h;
-              const wave = Math.sin(p * Math.PI * 4 + frame * 0.012 + m.phase);
-              const x1 = m.x + wave * amp;
-              const x2 = m.x - wave * amp;
-              ctx.beginPath();
-              ctx.moveTo(x1, y);
-              ctx.lineTo(x2, y);
-              ctx.strokeStyle = rgba(dim, dark ? 0.2 : 0.14);
-              ctx.lineWidth = 0.75;
-              ctx.stroke();
-              ctx.beginPath();
-              ctx.arc(x1, y, 1.6, 0, Math.PI * 2);
-              ctx.fillStyle = rgba(accent, dark ? 0.34 : 0.24);
-              ctx.fill();
-              ctx.beginPath();
-              ctx.arc(x2, y, 1.6, 0, Math.PI * 2);
-              ctx.fillStyle = rgba(warm, dark ? 0.3 : 0.22);
-              ctx.fill();
+          } else if (m.type === "protein") {
+            const pts = [];
+            for (let i = 0; i < m.len; i++) {
+              pts.push({
+                x: m.x + Math.cos(i * 0.88 + frame * 0.012 + m.phase) * (12 + i * 2.4) * m.scale,
+                y: m.y + drift + i * 10 * m.scale + Math.sin(i * 1.2 + frame * 0.01 + m.phase) * 9 * m.scale,
+              });
             }
+            ctx.beginPath();
+            pts.forEach((pt, i) => {
+              if (i === 0) ctx.moveTo(pt.x, pt.y);
+              else ctx.lineTo(pt.x, pt.y);
+            });
+            ctx.strokeStyle = rgba(warm, dark ? 0.25 : 0.18);
+            ctx.lineWidth = 0.85;
+            ctx.stroke();
+            pts.forEach((pt, i) => {
+              ctx.beginPath();
+              ctx.arc(pt.x, pt.y, i % 3 === 0 ? 2 : 1.45, 0, Math.PI * 2);
+              ctx.fillStyle = rgba(i % 2 ? warm : accent, dark ? 0.34 : 0.24);
+              ctx.fill();
+            });
           }
         });
       }
@@ -446,10 +446,8 @@ function SideDecorCanvas() {
     const canvas = canvasRef.current;
     const ctx = canvas.getContext("2d");
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
-    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     let w = 0;
     let h = 0;
-    let frame = 0;
 
     const resize = () => {
       w = window.innerWidth;
@@ -475,67 +473,64 @@ function SideDecorCanvas() {
       const dir = side === "left" ? 1 : -1;
       const top = 95;
       const bottom = h - 28;
-      const speed = reducedMotion ? 0 : frame * 0.006 * dir;
 
-      const columns = railW > 320 ? 3 : 2;
+      const columns = railW > 300 ? 4 : 3;
       for (let c = 0; c < columns; c++) {
         const colX = x0 + railW * ((c + 1) / (columns + 1));
         ctx.beginPath();
         ctx.moveTo(colX, top);
         ctx.lineTo(colX, bottom);
-        ctx.strokeStyle = rgba(dim, 0.12 + c * 0.025);
+        ctx.strokeStyle = rgba(dim, 0.08 + c * 0.015);
         ctx.lineWidth = 0.8;
         ctx.stroke();
       }
 
-      for (let i = 0; i < 14; i++) {
-        const y = top + ((i * 86 + speed * 82) % (bottom - top));
+      for (let i = 0; i < 20; i++) {
+        const y = top + 34 + (i * 72) % (bottom - top);
         const anchor = x0 + railW * (((i % columns) + 1) / (columns + 1));
-        const reach = 34 + (i % 4) * 18;
+        const reach = 42 + (i % 5) * 18;
         const x1 = anchor;
         const x2 = anchor + dir * reach;
         ctx.beginPath();
         ctx.moveTo(x1, y);
-        ctx.lineTo(x2, y + Math.sin(frame * 0.012 + i) * 5);
-        ctx.strokeStyle = rgba(i % 2 ? warm : accent, 0.24);
-        ctx.lineWidth = 0.9;
+        ctx.lineTo(x2, y + Math.sin(i) * 5);
+        ctx.strokeStyle = rgba(i % 2 ? warm : accent, 0.2);
+        ctx.lineWidth = 0.8;
         ctx.stroke();
 
         ctx.beginPath();
-        ctx.arc(x1, y, 2.4, 0, Math.PI * 2);
-        ctx.fillStyle = rgba(i % 2 ? warm : accent, 0.38);
+        ctx.arc(x1, y, 2.1, 0, Math.PI * 2);
+        ctx.fillStyle = rgba(i % 2 ? warm : accent, 0.3);
         ctx.fill();
         ctx.beginPath();
-        ctx.arc(x2, y + Math.sin(frame * 0.012 + i) * 5, 1.9, 0, Math.PI * 2);
-        ctx.fillStyle = rgba(i % 2 ? accent : warm, 0.3);
+        ctx.arc(x2, y + Math.sin(i) * 5, 1.65, 0, Math.PI * 2);
+        ctx.fillStyle = rgba(i % 2 ? accent : warm, 0.22);
         ctx.fill();
       }
 
-      for (let row = 0; row < 7; row++) {
-        const y = top + 34 + row * 86 + Math.sin(frame * 0.01 + row) * 8;
-        const start = side === "left" ? x0 + railW * 0.14 : x0 + railW * 0.86;
-        const len = 7 + (row % 3);
+      for (let row = 0; row < 10; row++) {
+        const y = top + 26 + row * 68;
+        const start = side === "left" ? x0 + railW * 0.12 : x0 + railW * 0.88;
+        const len = 8 + (row % 4);
         for (let i = 0; i < len; i++) {
           const x = start + dir * i * 14;
-          const active = ((i / len + frame * 0.006 + row * 0.13) % 1) > 0.48 && ((i / len + frame * 0.006 + row * 0.13) % 1) < 0.62;
           if (i > 0) {
             ctx.beginPath();
             ctx.moveTo(x - dir * 10, y);
             ctx.lineTo(x - dir * 4, y);
-            ctx.strokeStyle = rgba(dim, active ? 0.18 : 0.1);
+            ctx.strokeStyle = rgba(dim, 0.095);
             ctx.lineWidth = 0.65;
             ctx.stroke();
           }
           ctx.beginPath();
-          ctx.arc(x, y, active ? 2.1 : 1.45, 0, Math.PI * 2);
-          ctx.fillStyle = rgba(i % 2 ? warm : accent, active ? 0.42 : 0.22);
+          ctx.arc(x, y, 1.55, 0, Math.PI * 2);
+          ctx.fillStyle = rgba(i % 2 ? warm : accent, 0.2);
           ctx.fill();
         }
       }
     };
 
     const draw = () => {
-      frame++;
       ctx.clearRect(0, 0, w, h);
       if (w < 1080) {
         raf.current = requestAnimationFrame(draw);
@@ -721,14 +716,14 @@ body{background:linear-gradient(180deg,var(--bg) 0%,color-mix(in srgb,var(--bg) 
 @media(max-width:700px){.nav-links{position:fixed;top:0;left:0;right:0;bottom:0;flex-direction:column;align-items:center;justify-content:center;gap:.75rem;background:color-mix(in srgb,var(--bg) 97%,transparent);backdrop-filter:blur(24px);opacity:0;pointer-events:none;transition:opacity .3s}.nav-links.open{opacity:1;pointer-events:auto}.nav-links a{font-size:1.2rem;padding:.85rem 1.5rem}.hamburger{display:block}}
 .hero{min-height:92svh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:6rem 1.5rem 4.5rem;position:relative;overflow:hidden;border-bottom:1px solid var(--border)}
 .hero-overlay{position:absolute;inset:0;z-index:1;background:radial-gradient(ellipse at 50% 42%,color-mix(in srgb,var(--bg) 42%,transparent) 0%,color-mix(in srgb,var(--bg) 28%,transparent) 32%,color-mix(in srgb,var(--bg) 20%,transparent) 58%,color-mix(in srgb,var(--bg) 62%,transparent) 100%),linear-gradient(180deg,transparent 0%,color-mix(in srgb,var(--bg) 68%,transparent) 100%);pointer-events:none}
-.hero-content{position:relative;z-index:2;max-width:760px;padding:0 1rem;text-shadow:0 1px 18px color-mix(in srgb,var(--bg) 78%,transparent)}
-.hero-avatar{width:104px;height:104px;border-radius:50%;object-fit:cover;border:1px solid var(--border);box-shadow:0 10px 32px rgba(15,23,42,.08);margin-bottom:1.75rem;opacity:0;transform:scale(.8);transition:opacity .8s .1s cubic-bezier(.22,1,.36,1),transform .8s .1s cubic-bezier(.22,1,.36,1)}
+.hero-content{position:relative;z-index:2;max-width:860px;padding:0 1rem;text-shadow:0 1px 18px color-mix(in srgb,var(--bg) 78%,transparent)}
+.hero-avatar{width:112px;height:112px;border-radius:50%;object-fit:cover;border:1px solid var(--border);box-shadow:0 10px 32px rgba(15,23,42,.08);margin-bottom:1.75rem;opacity:0;transform:scale(.8);transition:opacity .8s .1s cubic-bezier(.22,1,.36,1),transform .8s .1s cubic-bezier(.22,1,.36,1)}
 .hero-avatar.vis{opacity:1;transform:scale(1)}
 .hero-kicker{display:inline-flex;align-items:center;gap:.5rem;margin-bottom:.7rem;font-family:var(--mono);font-size:.68rem;letter-spacing:.11em;text-transform:uppercase;color:var(--accent);opacity:0;transform:translateY(12px);transition:all .7s .25s cubic-bezier(.22,1,.36,1)}
 .hero-kicker::before,.hero-kicker::after{content:'';width:28px;height:1px;background:var(--accent)}
 .hero-kicker.vis{opacity:1;transform:translateY(0)}
-.hero h1{font-family:var(--serif);font-size:clamp(2.8rem,6vw,4.75rem);font-weight:400;letter-spacing:0;line-height:1.05;color:var(--fg)}
-.hero-sub{font-size:1.05rem;color:var(--fg2);margin-top:.75rem;font-weight:500;letter-spacing:.02em;opacity:0;transform:translateY(16px);transition:all .7s .5s cubic-bezier(.22,1,.36,1)}
+.hero h1{font-family:var(--serif);font-size:clamp(3.1rem,6.4vw,5.35rem);font-weight:400;letter-spacing:0;line-height:1.05;color:var(--fg)}
+.hero-sub{font-size:1.12rem;color:var(--fg2);margin-top:.75rem;font-weight:500;letter-spacing:.02em;opacity:0;transform:translateY(16px);transition:all .7s .5s cubic-bezier(.22,1,.36,1)}
 .hero-sub.vis{opacity:1;transform:translateY(0)}
 .hero-tagline{max-width:500px;color:var(--fg3);margin:.75rem auto 0;font-size:.92rem;line-height:1.65;opacity:0;transform:translateY(16px);transition:all .7s .6s cubic-bezier(.22,1,.36,1)}
 .hero-tagline.vis{opacity:1;transform:translateY(0)}

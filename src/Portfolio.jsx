@@ -196,14 +196,16 @@ function NeuralNetCanvas() {
       }
 
       if (w >= 720) {
+        const networkLeft = startX;
+        const networkTop = centerY - networkH * 0.34;
+        const networkBottom = centerY + networkH * 0.34;
         bioMotifs = [
-          { type: "sequence", x: w * 0.07, y: h * 0.24, len: 13, phase: 0.2 },
-          { type: "sequence", x: w * 0.67, y: h * 0.25, len: 12, phase: 1.1 },
-          { type: "sequence", x: w * 0.09, y: h * 0.76, len: 11, phase: 2.2 },
-          { type: "sequence", x: w * 0.68, y: h * 0.76, len: 10, phase: 3.1 },
-          { type: "miniHelix", x: w * 0.19, y: h * 0.43, h: Math.min(h * 0.17, 132), phase: 2.4 },
-          { type: "miniHelix", x: w * 0.82, y: h * 0.45, h: Math.min(h * 0.2, 150), phase: 0.5 },
-          { type: "miniHelix", x: w * 0.74, y: h * 0.62, h: Math.min(h * 0.13, 105), phase: 1.8 },
+          { type: "sequence", x: networkLeft + networkW * 0.12, y: networkTop + networkH * 0.1, len: 15, phase: 0.2 },
+          { type: "sequence", x: networkLeft + networkW * 0.2, y: networkTop + networkH * 0.34, len: 13, phase: 1.1 },
+          { type: "sequence", x: networkLeft + networkW * 0.38, y: networkTop + networkH * 0.58, len: 12, phase: 2.0 },
+          { type: "sequence", x: networkLeft + networkW * 0.52, y: networkTop + networkH * 0.82, len: 11, phase: 3.1 },
+          { type: "miniHelix", x: networkLeft + networkW * 0.74, y: networkTop + networkH * 0.26, h: Math.min(networkH * 0.24, 130), phase: 0.5 },
+          { type: "miniHelix", x: networkLeft + networkW * 0.18, y: networkBottom - networkH * 0.08, h: Math.min(networkH * 0.2, 112), phase: 2.4 },
         ];
       }
     };
@@ -252,7 +254,7 @@ function NeuralNetCanvas() {
       ctx.save();
       if (bioMotifs.length) {
         const bases = ["A", "T", "G", "C"];
-        ctx.font = "500 10px 'JetBrains Mono', monospace";
+        ctx.font = "600 10px 'JetBrains Mono', monospace";
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
         bioMotifs.forEach((m, mi) => {
@@ -261,14 +263,14 @@ function NeuralNetCanvas() {
             for (let i = 0; i < m.len; i++) {
               const x = m.x + i * 18 + Math.sin(frame * 0.012 + i * 0.7 + m.phase) * 2.5;
               const y = m.y + drift;
-              const alpha = 0.16 + 0.1 * Math.sin(frame * 0.018 + i + mi);
-              ctx.fillStyle = rgba(i % 2 ? warm : accent, dark ? alpha + 0.05 : alpha);
+              const alpha = 0.24 + 0.12 * Math.sin(frame * 0.018 + i + mi);
+              ctx.fillStyle = rgba(i % 2 ? warm : accent, dark ? alpha + 0.08 : alpha);
               ctx.fillText(bases[(i + mi) % bases.length], x, y);
               if (i > 0) {
                 ctx.beginPath();
                 ctx.moveTo(x - 12, y);
                 ctx.lineTo(x - 6, y);
-                ctx.strokeStyle = rgba(dim, dark ? 0.12 : 0.09);
+                ctx.strokeStyle = rgba(dim, dark ? 0.18 : 0.13);
                 ctx.lineWidth = 0.6;
                 ctx.stroke();
               }
@@ -284,16 +286,16 @@ function NeuralNetCanvas() {
               ctx.beginPath();
               ctx.moveTo(x1, y);
               ctx.lineTo(x2, y);
-              ctx.strokeStyle = rgba(dim, dark ? 0.13 : 0.09);
-              ctx.lineWidth = 0.65;
+              ctx.strokeStyle = rgba(dim, dark ? 0.2 : 0.14);
+              ctx.lineWidth = 0.75;
               ctx.stroke();
               ctx.beginPath();
               ctx.arc(x1, y, 1.6, 0, Math.PI * 2);
-              ctx.fillStyle = rgba(accent, dark ? 0.22 : 0.16);
+              ctx.fillStyle = rgba(accent, dark ? 0.34 : 0.24);
               ctx.fill();
               ctx.beginPath();
               ctx.arc(x2, y, 1.6, 0, Math.PI * 2);
-              ctx.fillStyle = rgba(warm, dark ? 0.2 : 0.14);
+              ctx.fillStyle = rgba(warm, dark ? 0.3 : 0.22);
               ctx.fill();
             }
           }
@@ -422,6 +424,116 @@ function ParticleBG() {
   return <canvas ref={canvasRef} style={{ position: "fixed", inset: 0, zIndex: 0, pointerEvents: "none" }} />;
 }
 
+function SideDecorCanvas() {
+  const canvasRef = useRef(null);
+  const raf = useRef(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext("2d");
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    let w = 0;
+    let h = 0;
+    let frame = 0;
+
+    const resize = () => {
+      w = window.innerWidth;
+      h = window.innerHeight;
+      canvas.width = w * dpr;
+      canvas.height = h * dpr;
+      canvas.style.width = w + "px";
+      canvas.style.height = h + "px";
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    };
+    resize();
+    window.addEventListener("resize", resize);
+
+    const rgba = (rgb, alpha) => "rgba(" + rgb.join(",") + "," + alpha + ")";
+    const isDark = () => window.matchMedia("(prefers-color-scheme: dark)").matches;
+
+    const drawRail = (side, accent, warm, dim) => {
+      const railW = Math.min(Math.max(w * 0.13, 130), 220);
+      const x0 = side === "left" ? 0 : w - railW;
+      const center = side === "left" ? x0 + railW * 0.48 : x0 + railW * 0.52;
+      const dir = side === "left" ? 1 : -1;
+      const top = 95;
+      const bottom = h - 28;
+      const speed = reducedMotion ? 0 : frame * 0.006 * dir;
+
+      ctx.beginPath();
+      ctx.moveTo(center, top);
+      ctx.lineTo(center, bottom);
+      ctx.strokeStyle = rgba(dim, 0.2);
+      ctx.lineWidth = 1;
+      ctx.stroke();
+
+      for (let i = 0; i < 8; i++) {
+        const y = top + ((i * 112 + speed * 80) % (bottom - top));
+        const reach = 28 + (i % 3) * 14;
+        const x1 = center;
+        const x2 = center + dir * reach;
+        ctx.beginPath();
+        ctx.moveTo(x1, y);
+        ctx.lineTo(x2, y + Math.sin(frame * 0.012 + i) * 5);
+        ctx.strokeStyle = rgba(i % 2 ? warm : accent, 0.2);
+        ctx.lineWidth = 0.85;
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.arc(x1, y, 2.3, 0, Math.PI * 2);
+        ctx.fillStyle = rgba(i % 2 ? warm : accent, 0.34);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(x2, y + Math.sin(frame * 0.012 + i) * 5, 1.8, 0, Math.PI * 2);
+        ctx.fillStyle = rgba(i % 2 ? accent : warm, 0.26);
+        ctx.fill();
+      }
+
+      const bases = ["A", "T", "G", "C"];
+      ctx.font = "500 9px 'JetBrains Mono', monospace";
+      ctx.textBaseline = "middle";
+      ctx.textAlign = side === "left" ? "left" : "right";
+      for (let row = 0; row < 6; row++) {
+        const y = top + 42 + row * 92 + Math.sin(frame * 0.01 + row) * 8;
+        const start = side === "left" ? x0 + 22 : x0 + railW - 22;
+        for (let i = 0; i < 7; i++) {
+          const x = start + dir * i * 15;
+          ctx.fillStyle = rgba(i % 2 ? warm : accent, 0.18 + 0.08 * Math.sin(frame * 0.02 + i + row));
+          ctx.fillText(bases[(i + row) % bases.length], x, y);
+        }
+      }
+    };
+
+    const draw = () => {
+      frame++;
+      ctx.clearRect(0, 0, w, h);
+      if (w < 1080) {
+        raf.current = requestAnimationFrame(draw);
+        return;
+      }
+
+      const dark = isDark();
+      const accent = dark ? [139, 173, 230] : [47, 94, 158];
+      const warm = dark ? [214, 154, 112] : [168, 101, 63];
+      const dim = dark ? [72, 80, 92] : [165, 174, 184];
+
+      drawRail("left", accent, warm, dim);
+      drawRail("right", accent, warm, dim);
+
+      raf.current = requestAnimationFrame(draw);
+    };
+    draw();
+
+    return () => {
+      cancelAnimationFrame(raf.current);
+      window.removeEventListener("resize", resize);
+    };
+  }, []);
+
+  return <canvas ref={canvasRef} style={{ position: "fixed", inset: 0, zIndex: 1, pointerEvents: "none" }} />;
+}
+
 /* Helpers */
 function useInView(threshold = 0.12) {
   const ref = useRef(null);
@@ -489,6 +601,7 @@ export default function Portfolio() {
       <style>{CSS_TEXT}</style>
       <a className="skip" href="#about">Skip to content</a>
       <ParticleBG />
+      <SideDecorCanvas />
 
       <nav className={"nav" + (scrolled ? " scrolled" : "")}>
         <span className="nav-logo" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}>Kant W.</span>
@@ -565,9 +678,6 @@ const CSS_TEXT = `
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
 html{scroll-behavior:smooth;scroll-padding-top:80px}
 body{background:linear-gradient(180deg,var(--bg) 0%,color-mix(in srgb,var(--bg) 88%,var(--bg2)) 100%);color:var(--fg);font-family:var(--sans);line-height:1.65;-webkit-font-smoothing:antialiased;overflow-x:hidden}
-body::before,body::after{content:'';position:fixed;top:82px;bottom:0;width:clamp(104px,10vw,170px);pointer-events:none;z-index:1;opacity:.74}
-body::before{left:0;background:linear-gradient(180deg,transparent,color-mix(in srgb,var(--accent) 24%,transparent) 18%,color-mix(in srgb,var(--border) 90%,transparent) 50%,color-mix(in srgb,var(--warm) 20%,transparent) 82%,transparent) 50% 0/1px 100% no-repeat,radial-gradient(circle at 50% 14%,color-mix(in srgb,var(--accent) 55%,transparent) 0 2px,transparent 2.7px),radial-gradient(circle at 50% 36%,color-mix(in srgb,var(--warm) 48%,transparent) 0 2px,transparent 2.7px),radial-gradient(circle at 50% 62%,color-mix(in srgb,var(--accent) 48%,transparent) 0 2px,transparent 2.7px),radial-gradient(circle at 50% 84%,color-mix(in srgb,var(--warm) 42%,transparent) 0 2px,transparent 2.7px),repeating-linear-gradient(90deg,transparent 0 18px,color-mix(in srgb,var(--accent) 16%,transparent) 18px 19px,transparent 19px 36px)}
-body::after{right:0;background:linear-gradient(180deg,transparent,color-mix(in srgb,var(--border) 90%,transparent) 10%,color-mix(in srgb,var(--accent) 20%,transparent) 48%,color-mix(in srgb,var(--border) 90%,transparent) 88%,transparent) 50% 0/1px 100% no-repeat,linear-gradient(90deg,transparent 0 32%,color-mix(in srgb,var(--warm) 34%,transparent) 32% 68%,transparent 68% 100%) 50% 18%/118px 1px no-repeat,linear-gradient(90deg,transparent 0 28%,color-mix(in srgb,var(--accent) 32%,transparent) 28% 72%,transparent 72% 100%) 50% 43%/142px 1px no-repeat,linear-gradient(90deg,transparent 0 36%,color-mix(in srgb,var(--warm) 28%,transparent) 36% 64%,transparent 64% 100%) 50% 70%/98px 1px no-repeat,radial-gradient(circle at 50% 18%,color-mix(in srgb,var(--warm) 48%,transparent) 0 2.2px,transparent 2.8px),radial-gradient(circle at 50% 43%,color-mix(in srgb,var(--accent) 52%,transparent) 0 2.2px,transparent 2.8px),radial-gradient(circle at 50% 70%,color-mix(in srgb,var(--warm) 44%,transparent) 0 2.2px,transparent 2.8px)}
 ::selection{background:var(--accent);color:#fff}
 .nav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:0 clamp(1.25rem,4vw,3rem);height:60px;background:transparent;transition:background .4s,box-shadow .4s,backdrop-filter .4s}
 .nav.scrolled{background:color-mix(in srgb,var(--bg) 85%,transparent);backdrop-filter:blur(20px) saturate(1.5);-webkit-backdrop-filter:blur(20px) saturate(1.5);box-shadow:0 1px 0 var(--border)}
@@ -667,7 +777,6 @@ body::after{right:0;background:linear-gradient(180deg,transparent,color-mix(in s
 .skip{position:absolute;left:-9999px;top:0;background:var(--accent);color:#fff;padding:.5rem .75rem;border-radius:0 0 8px 0;z-index:1000;font-size:.85rem}
 .skip:focus{left:0}
 @media(max-width:920px){.timeline,.project-grid{grid-template-columns:1fr}.content{max-width:760px}.tcard,.pcard{padding:1.2rem 1.25rem}}
-@media(max-width:1080px){body::before,body::after{display:none}}
 @media(max-width:760px){.snapshot-grid,.focus-grid,.skill-grid{grid-template-columns:1fr}.hero-stats{grid-template-columns:1fr;max-width:320px}.hero-stat{display:flex;align-items:baseline;justify-content:space-between;gap:1rem;text-align:left}.hero-stat span{text-align:right}.scroll-hint{display:none}}
 @media(max-width:640px){.content{gap:3.5rem;padding-top:3rem}.hero{min-height:94svh;padding:5rem 1rem 3rem}.hero-avatar{width:92px;height:92px;margin-bottom:1.25rem}.hero-sub{font-size:.95rem}.hero-note{font-size:.92rem}.btn{width:100%;justify-content:center}.hero-cta{max-width:320px;margin-left:auto;margin-right:auto}.tcard,.pcard,.pub-card{padding:1.1rem}.hero-kicker::before,.hero-kicker::after{width:18px}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:0s!important;transition-duration:0s!important}canvas{display:none}}

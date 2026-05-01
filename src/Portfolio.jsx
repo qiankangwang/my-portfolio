@@ -905,10 +905,7 @@ body::before {
   font-size: clamp(3.2rem, 7.2vw, 6rem);
   font-weight: 400;
   line-height: 1.01;
-  background: linear-gradient(160deg, var(--fg) 45%, color-mix(in srgb, var(--fg) 68%, var(--accent)) 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: var(--fg);
   letter-spacing: -.025em;
 }
 .hero-tagline {

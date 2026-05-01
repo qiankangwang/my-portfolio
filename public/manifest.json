@@ -1,7 +1,7 @@
 {
   "short_name": "Kant Wang",
   "name": "Qiankang (Kant) Wang - Data Science, UC Berkeley",
-  "description": "Personal website of Qiankang (Kant) Wang, an undergraduate researcher at UC Berkeley studying machine learning, generative modeling, and AI for biology.",
+  "description": "Personal website of Qiankang (Kant) Wang, a UC Berkeley Data Science student interested in machine learning, AI for biology, and scientific computing.",
   "icons": [
     {
       "src": "photo.png",
@@ -21,6 +21,6 @@
   ],
   "start_url": ".",
   "display": "standalone",
-  "theme_color": "#000000",
-  "background_color": "#f8f7f5"
+  "theme_color": "#2f5e9e",
+  "background_color": "#f7f7f5"
 }

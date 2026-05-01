@@ -40,14 +40,6 @@ const D = {
         { label: "Publication", value: "JCTC 2026, second author" },
     ],
 
-    education: {
-        school: "University of California, Berkeley",
-        degree: "B.A. in Data Science",
-        period: "Expected May 2027",
-        coursework:
-            "Data science, machine learning, probability, and computer science.",
-    },
-
     experience: [
         {
             org: "Berkeley Artificial Intelligence Research (BAIR)",
@@ -55,7 +47,7 @@ const D = {
             period: "Mar 2026 - Present",
             desc: [
                 "Working on machine learning research related to scientific and biological data.",
-                "Exploring self-supervised learning, representation learning, and generative modeling.",
+                "Exploring representation learning and scientific data workflows.",
             ],
         },
         {
@@ -77,13 +69,6 @@ const D = {
             ],
         },
     ],
-
-    publication: {
-        title:
-            "AmberTorchPB: A Unified Framework for Poisson-Boltzmann-Based Reaction Field Energy Calculation via Tensor Computation",
-        journal: "Journal of Chemical Theory and Computation, 2026",
-        role: "Second author",
-    },
 
     projects: [
         {
@@ -250,7 +235,7 @@ function NeuralNetCanvas() {
       ctx.fillStyle = grad;
       ctx.fillRect(0, 0, w, h);
 
-      const helixX = w < 720 ? w * 0.5 : w * 0.14;
+      const helixX = w < 720 ? w * 0.5 : w * 0.15;
       const helixY = h * 0.5;
       const helixH = Math.min(h * 0.72, 640);
       const helixAmp = Math.min(w * 0.052, 48);
@@ -258,6 +243,7 @@ function NeuralNetCanvas() {
       const helixPhase = reducedMotion ? 0 : frame * 0.018;
       const helixTop = helixY - helixH / 2;
       const helixBottom = helixY + helixH / 2;
+      const bases = ["A", "T", "G", "C"];
       const strand = (offset) => {
         ctx.beginPath();
         for (let y = helixTop; y <= helixBottom; y += 8) {
@@ -269,21 +255,21 @@ function NeuralNetCanvas() {
       };
 
       ctx.save();
-      ctx.globalAlpha = w < 720 ? 0.18 : 0.28;
+      ctx.globalAlpha = w < 720 ? 0.28 : 0.46;
       strand(0);
-      ctx.strokeStyle = rgba(accent, dark ? 0.34 : 0.24);
-      ctx.lineWidth = 1.1;
+      ctx.strokeStyle = rgba(accent, dark ? 0.42 : 0.32);
+      ctx.lineWidth = 1.35;
       ctx.stroke();
       strand(Math.PI);
-      ctx.strokeStyle = rgba(warm, dark ? 0.32 : 0.22);
+      ctx.strokeStyle = rgba(warm, dark ? 0.4 : 0.3);
       ctx.stroke();
 
-      for (let y = helixTop + 8; y <= helixBottom; y += helixStep) {
+      for (let y = helixTop + 8, i = 0; y <= helixBottom; y += helixStep, i++) {
         const p = (y - helixTop) / helixH;
         const wave = Math.sin(p * Math.PI * 6 + helixPhase);
         const x1 = helixX + wave * helixAmp;
         const x2 = helixX - wave * helixAmp;
-        const alpha = 0.08 + Math.abs(wave) * 0.1;
+        const alpha = 0.12 + Math.abs(wave) * 0.16;
         ctx.beginPath();
         ctx.moveTo(x1, y);
         ctx.lineTo(x2, y);
@@ -298,6 +284,15 @@ function NeuralNetCanvas() {
         ctx.arc(x2, y, 2.1, 0, Math.PI * 2);
         ctx.fillStyle = rgba(warm, 0.24);
         ctx.fill();
+        if (w >= 720 && i % 2 === 0) {
+          ctx.font = "500 9px 'JetBrains Mono', monospace";
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.fillStyle = rgba(accent, dark ? 0.55 : 0.42);
+          ctx.fillText(bases[i % bases.length], x1 + (x1 < x2 ? -10 : 10), y);
+          ctx.fillStyle = rgba(warm, dark ? 0.5 : 0.38);
+          ctx.fillText(bases[(i + 1) % bases.length], x2 + (x2 < x1 ? -10 : 10), y);
+        }
       }
 
       if (nodes.length && w >= 720) {
@@ -307,11 +302,52 @@ function NeuralNetCanvas() {
           const x = helixX + Math.sin(((y - helixTop) / helixH) * Math.PI * 6 + helixPhase) * helixAmp;
           ctx.beginPath();
           ctx.moveTo(x, y);
-          ctx.bezierCurveTo(x + 80, y, n.x - 80, n.y, n.x, n.y);
-          ctx.strokeStyle = rgba(accent, dark ? 0.08 : 0.06);
-          ctx.lineWidth = 0.65;
+          ctx.lineTo(n.x, n.y);
+          ctx.strokeStyle = rgba(accent, dark ? 0.11 : 0.085);
+          ctx.lineWidth = 0.7;
           ctx.stroke();
+
+          const dataT = (frame * 0.006 + i * 0.18) % 1;
+          const dataX = x + (n.x - x) * dataT;
+          const dataY = y + (n.y - y) * dataT;
+          ctx.beginPath();
+          ctx.arc(dataX, dataY, 1.8, 0, Math.PI * 2);
+          ctx.fillStyle = rgba(warm, dark ? 0.4 : 0.28);
+          ctx.fill();
         });
+
+        const foldX = w * 0.82;
+        const foldY = h * 0.22;
+        const foldPoints = [];
+        for (let i = 0; i < 9; i++) {
+          foldPoints.push({
+            x: foldX + Math.cos(i * 0.9 + helixPhase) * (22 + i * 2.5),
+            y: foldY + i * 19 + Math.sin(i * 1.25 + helixPhase) * 14,
+          });
+        }
+        ctx.beginPath();
+        foldPoints.forEach((pt, i) => {
+          if (i === 0) ctx.moveTo(pt.x, pt.y);
+          else ctx.lineTo(pt.x, pt.y);
+        });
+        ctx.strokeStyle = rgba(warm, dark ? 0.22 : 0.16);
+        ctx.lineWidth = 1;
+        ctx.stroke();
+        foldPoints.forEach((pt, i) => {
+          ctx.beginPath();
+          ctx.arc(pt.x, pt.y, i % 3 === 0 ? 2.7 : 2.1, 0, Math.PI * 2);
+          ctx.fillStyle = rgba(i % 2 === 0 ? warm : accent, dark ? 0.3 : 0.22);
+          ctx.fill();
+        });
+
+        const labelX = Math.max(24, helixX - helixAmp - 34);
+        ctx.font = "500 10px 'JetBrains Mono', monospace";
+        ctx.textAlign = "left";
+        ctx.textBaseline = "middle";
+        ctx.fillStyle = rgba(accent, dark ? 0.45 : 0.34);
+        ctx.fillText("genomic signal", labelX, helixTop - 18);
+        ctx.fillStyle = rgba(warm, dark ? 0.38 : 0.3);
+        ctx.fillText("protein structure", foldX - 16, foldY - 18);
       }
       ctx.restore();
 
@@ -334,7 +370,7 @@ function NeuralNetCanvas() {
         const act = Math.max(a.activation, b.activation);
         ctx.beginPath();
         ctx.moveTo(a.x, a.y);
-        ctx.bezierCurveTo(a.x + (b.x - a.x) * 0.48, a.y, a.x + (b.x - a.x) * 0.52, b.y, b.x, b.y);
+        ctx.lineTo(b.x, b.y);
         ctx.strokeStyle = act > 0.08
           ? rgba(accent, 0.08 + act * 0.22)
           : rgba(dim, (dark ? 0.12 : 0.18) * e.weight);
@@ -353,13 +389,8 @@ function NeuralNetCanvas() {
           continue;
         }
         const a = nodes[p.edge.from], b = nodes[p.edge.to];
-        const cx1 = a.x + (b.x - a.x) * 0.48;
-        const cy1 = a.y;
-        const cx2 = a.x + (b.x - a.x) * 0.52;
-        const cy2 = b.y;
-        const mt = 1 - p.t;
-        const px = mt * mt * mt * a.x + 3 * mt * mt * p.t * cx1 + 3 * mt * p.t * p.t * cx2 + p.t * p.t * p.t * b.x;
-        const py = mt * mt * mt * a.y + 3 * mt * mt * p.t * cy1 + 3 * mt * p.t * p.t * cy2 + p.t * p.t * p.t * b.y;
+        const px = a.x + (b.x - a.x) * p.t;
+        const py = a.y + (b.y - a.y) * p.t;
         const glow = Math.sin(p.t * Math.PI);
         ctx.beginPath();
         ctx.arc(px, py, 2.1 + glow * 1.2, 0, Math.PI * 2);
@@ -413,17 +444,26 @@ function ParticleBG() {
   useEffect(() => {
     const canvas = canvasRef.current;
     const ctx = canvas.getContext("2d");
-    let w, h;
-    const resize = () => { w = canvas.width = window.innerWidth; h = canvas.height = window.innerHeight; };
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    let w, h, pts = [];
+    const makePoint = () => ({ x: Math.random() * w, y: Math.random() * h, vx: (Math.random() - 0.5) * 0.16, vy: (Math.random() - 0.5) * 0.16, r: Math.random() * 1.1 + 0.4 });
+    const resize = () => {
+      w = window.innerWidth;
+      h = window.innerHeight;
+      canvas.width = w * dpr;
+      canvas.height = h * dpr;
+      canvas.style.width = w + "px";
+      canvas.style.height = h + "px";
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      pts = Array.from({ length: Math.min(Math.floor((w * h) / 24000), 42) }, makePoint);
+    };
     resize(); window.addEventListener("resize", resize);
     const isDark = () => window.matchMedia("(prefers-color-scheme: dark)").matches;
-    const count = Math.min(Math.floor((w * h) / 18000), 50);
-    const pts = Array.from({ length: count }, () => ({ x: Math.random() * w, y: Math.random() * h, vx: (Math.random() - 0.5) * 0.2, vy: (Math.random() - 0.5) * 0.2, r: Math.random() * 1.2 + 0.4 }));
     const draw = () => {
       ctx.clearRect(0, 0, w, h);
       const c = isDark() ? "139,173,230" : "47,94,158";
-      for (const p of pts) { p.vx *= 0.99; p.vy *= 0.99; p.x += p.vx; p.y += p.vy; if (p.x < 0) p.x = w; if (p.x > w) p.x = 0; if (p.y < 0) p.y = h; if (p.y > h) p.y = 0; ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2); ctx.fillStyle = "rgba(" + c + ",0.2)"; ctx.fill(); }
-      for (let i = 0; i < pts.length; i++) { for (let j = i + 1; j < pts.length; j++) { const dx = pts[i].x - pts[j].x, dy = pts[i].y - pts[j].y, d2 = dx * dx + dy * dy; if (d2 < 18000) { ctx.beginPath(); ctx.moveTo(pts[i].x, pts[i].y); ctx.lineTo(pts[j].x, pts[j].y); ctx.strokeStyle = "rgba(" + c + "," + (0.04 * (1 - d2 / 18000)) + ")"; ctx.lineWidth = 0.4; ctx.stroke(); } } }
+      for (const p of pts) { p.vx *= 0.99; p.vy *= 0.99; p.x += p.vx; p.y += p.vy; if (p.x < 0) p.x = w; if (p.x > w) p.x = 0; if (p.y < 0) p.y = h; if (p.y > h) p.y = 0; ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2); ctx.fillStyle = "rgba(" + c + ",0.16)"; ctx.fill(); }
+      for (let i = 0; i < pts.length; i++) { for (let j = i + 1; j < pts.length; j++) { const dx = pts[i].x - pts[j].x, dy = pts[i].y - pts[j].y, d2 = dx * dx + dy * dy; if (d2 < 16000) { ctx.beginPath(); ctx.moveTo(pts[i].x, pts[i].y); ctx.lineTo(pts[j].x, pts[j].y); ctx.strokeStyle = "rgba(" + c + "," + (0.032 * (1 - d2 / 16000)) + ")"; ctx.lineWidth = 0.4; ctx.stroke(); } } }
       raf.current = requestAnimationFrame(draw);
     };
     draw();
@@ -474,7 +514,10 @@ export default function Portfolio() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [heroVis, setHeroVis] = useState(false);
 
-  useEffect(() => { setTimeout(() => setHeroVis(true), 100); }, []);
+  useEffect(() => {
+    const timer = setTimeout(() => setHeroVis(true), 100);
+    return () => clearTimeout(timer);
+  }, []);
 
   useEffect(() => {
     const onScroll = () => {

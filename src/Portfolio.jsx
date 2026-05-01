@@ -1,122 +1,99 @@
 import { useState, useEffect, useRef } from "react";
 
+/* ----------------------------------------------------------------------
+   Content
+   ---------------------------------------------------------------------- */
+
 const D = {
-    name: "Qiankang Wang",
-    fullName: "Qiankang (Kant) Wang",
-    title: "UC Berkeley Data Science | Machine Learning & Scientific Computing",
-    email: "qkwang@berkeley.edu",
-    linkedin: "https://linkedin.com/in/qiankang-wang-737b97279",
-    github: "https://github.com/xiaole5211314",
-    avatar: "https://github.com/xiaole5211314.png",
-    tagline: "Machine learning, AI for biology, and scientific computing.",
-    heroNote: "I work on research-oriented machine learning and scientific computing, with an interest in reliable systems for real data.",
-    about:
-        "I am Qiankang (Kant) Wang, an undergraduate at UC Berkeley studying Data Science. I am interested in machine learning, AI for biology, and scientific computing. This site is a short public overview of my work and interests.",
+  name: "Qiankang Wang",
+  fullName: "Qiankang (Kant) Wang",
+  email: "qkwang@berkeley.edu",
+  linkedin: "https://linkedin.com/in/qiankang-wang-737b97279",
+  github: "https://github.com/xiaole5211314",
+  avatar: "https://github.com/xiaole5211314.png",
 
-    highlights: [
-        { value: "ML", label: "research" },
-        { value: "AI", label: "for biology" },
-        { value: "HPC", label: "scientific computing" },
-    ],
+  tagline:
+    "Generative models for biology — diffusion and flow-based methods for protein and molecular design, grounded in scientific computing.",
 
-    focusAreas: [
-        {
-            title: "Scientific ML",
-            desc: "Learning methods for scientific and biological data.",
-        },
-        {
-            title: "GPU Computing",
-            desc: "Fast numerical workflows and scientific software.",
-        },
-        {
-            title: "Research Systems",
-            desc: "Tools for experiments, benchmarks, and analysis.",
-        },
-    ],
+  about:
+    "I'm an undergraduate at UC Berkeley studying Data Science (expected May 2027). I work at the intersection of modern machine learning and biophysics — currently on representation learning at BAIR, and previously on GPU-accelerated Poisson–Boltzmann solvers for biomolecular simulation.",
 
-    snapshot: [
-        { label: "Education", value: "UC Berkeley, B.A. Data Science" },
-        { label: "Timeline", value: "Expected May 2027" },
-        { label: "Publication", value: "JCTC 2026, second author" },
-    ],
+  affiliations: [
+    { label: "Lab", value: "BAIR" },
+    { label: "Field", value: "ML × Biophysics" },
+    { label: "Year", value: "Class of 2027" },
+  ],
 
-    experience: [
-        {
-            org: "Berkeley Artificial Intelligence Research (BAIR)",
-            role: "Research Assistant",
-            period: "Mar 2026 - Present",
-            desc: [
-                "Working on machine learning research related to scientific and biological data.",
-                "Exploring representation learning and scientific data workflows.",
-            ],
-        },
-        {
-            org: "AMBER pGM - Multi-Institutional Collaboration",
-            role: "Research Assistant",
-            period: "Nov 2025 - Mar 2026",
-            desc: [
-                "Contributed to scientific software development and validation workflows.",
-                "Supported code integration, testing, and numerical consistency checks.",
-            ],
-        },
-        {
-            org: "Computational Biophysics Lab, University of California, Irvine",
-            role: "Research Assistant",
-            period: "Jul 2024 - Nov 2025",
-            desc: [
-                "Worked on GPU-accelerated scientific computing for biomolecular simulation workflows.",
-                "Built analysis and benchmarking tools for research experiments.",
-            ],
-        },
-    ],
-
-    projects: [
-        {
-            name: "Scientific Computing Pipeline",
-            desc: "Research software for GPU-accelerated scientific computing and biomolecular simulation workflows.",
-            stack: ["C++", "CUDA", "LibTorch", "Scientific Computing"],
-            link: "https://github.com/xiaole5211314",
-        },
-        {
-            name: "Representation Learning Experiments",
-            desc: "Machine learning experiments focused on self-supervised learning and scientific data representations.",
-            stack: ["PyTorch", "Self-supervised Learning", "Representation Learning"],
-            link: "https://github.com/xiaole5211314",
-        },
-        {
-            name: "ML From Scratch",
-            desc: "Small implementations of classic machine learning ideas to better understand model training and inference.",
-            stack: ["C++", "Machine Learning", "Algorithms"],
-            link: "https://github.com/xiaole5211314",
-        },
-    ],
-
-    skills: {
-        "Languages": ["Python", "C++", "Java", "Bash"],
-        "ML & Scientific Computing": [
-            "PyTorch / LibTorch",
-            "scikit-learn",
-            "Pandas",
-            "NumPy",
-            "Matplotlib",
-            "Self-supervised Learning",
-            "Representation Learning",
-        ],
-        "Tools & Platforms": [
-            "Linux",
-            "Git",
-            "CMake",
-            "Jupyter",
-            "Slurm",
-            "VS Code",
-        ],
-        "Other": ["SQL", "React", "LaTeX"],
+  experience: [
+    {
+      org: "Berkeley Artificial Intelligence Research (BAIR)",
+      role: "Research Assistant",
+      period: "Mar 2026 — Present",
+      tag: "self-supervised learning",
+      desc: [
+        "Implementing the SimCLR contrastive learning framework for self-supervised representation learning on scientific data.",
+      ],
     },
+    {
+      org: "AMBER pGM · Multi-Institutional Collaboration",
+      role: "Research Assistant",
+      period: "Nov 2025 — Mar 2026",
+      tag: "scientific software",
+      desc: [
+        "Contributed to the AMBER pGM acceleration project: code integration, regression testing, and output-consistency checks across implementations.",
+        "Worked with the AMBER / PMEMD codebase to analyze numerical discrepancies, including stability issues and random-seed effects.",
+      ],
+    },
+    {
+      org: "Computational Biophysics Lab · UC Irvine",
+      role: "Research Assistant",
+      period: "Jul 2024 — Nov 2025",
+      tag: "GPU scientific computing",
+      desc: [
+        "Refactored core CG / BiCG solver modules into a LibTorch tensor-computation framework, achieving 2–3× faster iterative convergence via GPU parallelization and improving PBSA performance for large biomolecular systems.",
+        "Built a custom Slurm scheduling pipeline and ran 1M+ PBSA energy-calculation jobs, raising average GPU utilization by ~20%.",
+        "Produced PBSA benchmarking visualizations (heatmaps, runtime curves, error distributions) supporting algorithm optimization and the resulting publication.",
+      ],
+    },
+  ],
+
+  publication: {
+    authors: "Wu, Y., Wang, Q., et al.",
+    title:
+      "AmberTorchPB: A Unified Framework for Poisson–Boltzmann-Based Reaction Field Energy Calculation via Tensor Computation",
+    venue: "Journal of Chemical Theory and Computation",
+    year: "2026",
+    role: "Second author",
+  },
+
+  skills: {
+    Languages: ["Python", "C++", "Java", "MATLAB", "Bash", "SQL"],
+    "Machine Learning": [
+      "PyTorch",
+      "LibTorch",
+      "TensorFlow",
+      "scikit-learn",
+      "Transformers",
+      "CNNs",
+      "Contrastive / SSL",
+      "Diffusion models",
+    ],
+    "Scientific Computing": [
+      "GPU optimization",
+      "CG / BiCG solvers",
+      "Poisson–Boltzmann / PBSA",
+      "Molecular simulation",
+    ],
+    Tools: ["Linux", "Git", "Docker", "CMake", "Slurm", "Jupyter", "LaTeX"],
+  },
 };
 
-const NAV = ["About", "Experience", "Projects", "Skills"];
+const NAV = ["About", "Research", "Publication", "Skills"];
 
-/* Neural network hero canvas */
+/* ----------------------------------------------------------------------
+   Hero canvas — neural network with subtle bio motifs
+   ---------------------------------------------------------------------- */
+
 function NeuralNetCanvas() {
   const canvasRef = useRef(null);
   const raf = useRef(null);
@@ -128,34 +105,37 @@ function NeuralNetCanvas() {
     let w = 0;
     let h = 0;
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
-    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const reducedMotion = window.matchMedia(
+      "(prefers-reduced-motion: reduce)"
+    ).matches;
     const layers = [5, 7, 9, 7, 5, 3];
     let nodes = [];
     let edges = [];
     let pulses = [];
-    let bioMotifs = [];
+    let strands = [];
     let edgeCursor = 0;
     let frame = 0;
 
-    const isDark = () => window.matchMedia("(prefers-color-scheme: dark)").matches;
-    const rgba = (rgb, alpha) => "rgba(" + rgb.join(",") + "," + alpha + ")";
+    const isDark = () =>
+      window.matchMedia("(prefers-color-scheme: dark)").matches;
+    const rgba = (rgb, a) => `rgba(${rgb[0]},${rgb[1]},${rgb[2]},${a})`;
 
     const buildNetwork = () => {
       nodes = [];
       edges = [];
       pulses = [];
-      bioMotifs = [];
-      const centerX = w * 0.5;
-      const centerY = h * 0.5;
-      const networkW = Math.min(w * 0.82, 1180);
-      const networkH = Math.min(h * 0.7, 620);
-      const startX = centerX - networkW / 2;
-      const layerGap = networkW / (layers.length - 1);
+      strands = [];
+      const cx = w * 0.5;
+      const cy = h * 0.5;
+      const netW = Math.min(w * 0.82, 1180);
+      const netH = Math.min(h * 0.7, 620);
+      const startX = cx - netW / 2;
+      const layerGap = netW / (layers.length - 1);
 
       layers.forEach((count, layer) => {
         const x = startX + layerGap * layer;
-        const usableH = networkH * (0.76 + layer * 0.018);
-        const startY = centerY - usableH / 2;
+        const usableH = netH * (0.76 + layer * 0.018);
+        const startY = cy - usableH / 2;
         for (let i = 0; i < count; i++) {
           const ratio = count === 1 ? 0.5 : i / (count - 1);
           const curve = Math.sin((ratio - 0.5) * Math.PI) * 14;
@@ -182,12 +162,13 @@ function NeuralNetCanvas() {
         const bStart = layerStarts[layer + 1];
         for (let a = 0; a < layers[layer]; a++) {
           for (let b = 0; b < layers[layer + 1]; b++) {
-            const distance = Math.abs((a + 0.5) / layers[layer] - (b + 0.5) / layers[layer + 1]);
+            const distance = Math.abs(
+              (a + 0.5) / layers[layer] - (b + 0.5) / layers[layer + 1]
+            );
             if (distance < 0.38 || (a + b + layer) % 5 === 0) {
               edges.push({
                 from: aStart + a,
                 to: bStart + b,
-                layer,
                 weight: 1 - Math.min(distance, 0.45),
               });
             }
@@ -195,28 +176,16 @@ function NeuralNetCanvas() {
         }
       }
 
+      // Just 4 strands now, in the corners. Less clutter.
       if (w >= 720) {
-        const networkLeft = startX;
-        const networkTop = centerY - networkH * 0.34;
-        const networkBottom = centerY + networkH * 0.34;
-        bioMotifs = [
-          { type: "rna", x: networkLeft + networkW * 0.1, y: networkTop + networkH * 0.12, len: 17, angle: 0.02, phase: 0.2 },
-          { type: "rna", x: networkLeft + networkW * 0.2, y: networkTop + networkH * 0.32, len: 14, angle: -0.04, phase: 1.1 },
-          { type: "rna", x: networkLeft + networkW * 0.35, y: networkTop + networkH * 0.5, len: 15, angle: 0.03, phase: 2.0 },
-          { type: "rna", x: networkLeft + networkW * 0.5, y: networkTop + networkH * 0.72, len: 13, angle: -0.02, phase: 3.1 },
-          { type: "rna", x: networkLeft + networkW * 0.28, y: networkBottom - networkH * 0.08, len: 12, angle: 0.05, phase: 4.2 },
-          { type: "rna", x: networkLeft + networkW * 0.62, y: networkTop + networkH * 0.42, len: 10, angle: -0.05, phase: 5.1 },
-          { type: "rna", x: networkLeft + networkW * 0.08, y: networkTop + networkH * 0.56, len: 11, angle: 0.08, phase: 6.0 },
-          { type: "rna", x: networkLeft + networkW * 0.68, y: networkTop + networkH * 0.64, len: 9, angle: 0.04, phase: 6.9 },
-          { type: "rna", x: networkLeft + networkW * 0.44, y: networkTop + networkH * 0.18, len: 10, angle: -0.06, phase: 7.6 },
-          { type: "rna", x: networkLeft + networkW * 0.82, y: networkTop + networkH * 0.34, len: 11, angle: -0.1, phase: 8.4 },
-          { type: "rna", x: networkLeft + networkW * 0.14, y: networkTop + networkH * 0.76, len: 10, angle: 0.03, phase: 9.1 },
-          { type: "rna", x: networkLeft + networkW * 0.72, y: networkTop + networkH * 0.78, len: 12, angle: 0.08, phase: 9.8 },
-          { type: "protein", x: networkLeft + networkW * 0.74, y: networkTop + networkH * 0.2, len: 10, scale: 1.08, phase: 0.5 },
-          { type: "protein", x: networkLeft + networkW * 0.18, y: networkBottom - networkH * 0.16, len: 8, scale: 0.95, phase: 2.4 },
-          { type: "protein", x: networkLeft + networkW * 0.78, y: networkBottom - networkH * 0.28, len: 7, scale: 0.84, phase: 3.3 },
-          { type: "protein", x: networkLeft + networkW * 0.55, y: networkBottom - networkH * 0.14, len: 7, scale: 0.72, phase: 4.6 },
-          { type: "protein", x: networkLeft + networkW * 0.38, y: networkTop + networkH * 0.08, len: 6, scale: 0.68, phase: 5.4 },
+        const left = startX;
+        const top = cy - netH * 0.34;
+        const bottom = cy + netH * 0.34;
+        strands = [
+          { x: left + netW * 0.1, y: top + netH * 0.18, len: 11, angle: 0.18, phase: 0.2, bend: 9 },
+          { x: left + netW * 0.18, y: bottom - netH * 0.12, len: 10, angle: 0.22, phase: 4.2, bend: 7 },
+          { x: left + netW * 0.78, y: top + netH * 0.22, len: 11, angle: -0.2, phase: 1.5, bend: -8 },
+          { x: left + netW * 0.82, y: bottom - netH * 0.18, len: 10, angle: -0.24, phase: 5.8, bend: -7 },
         ];
       }
     };
@@ -233,7 +202,7 @@ function NeuralNetCanvas() {
     window.addEventListener("resize", resize);
 
     const spawnPulse = () => {
-      if (!edges.length || pulses.length > 18) return;
+      if (!edges.length || pulses.length > 14) return;
       const edge = edges[edgeCursor % edges.length];
       edgeCursor += 7;
       pulses.push({
@@ -256,79 +225,50 @@ function NeuralNetCanvas() {
       const my = mouse.current.y;
       const t = frame * (reducedMotion ? 0.012 : 0.035);
 
-      const grad = ctx.createRadialGradient(w * 0.58, h * 0.44, 0, w * 0.58, h * 0.44, Math.max(w, h) * 0.55);
+      const grad = ctx.createRadialGradient(
+        w * 0.58, h * 0.44, 0,
+        w * 0.58, h * 0.44, Math.max(w, h) * 0.55
+      );
       grad.addColorStop(0, rgba(accent, dark ? 0.055 : 0.045));
       grad.addColorStop(1, rgba(accent, 0));
       ctx.fillStyle = grad;
       ctx.fillRect(0, 0, w, h);
 
-      ctx.save();
-      if (bioMotifs.length) {
-        bioMotifs.forEach((m, mi) => {
-          const drift = Math.sin(frame * 0.01 + m.phase) * 9;
-          if (m.type === "rna") {
-            const step = 14;
-            const dx = Math.cos(m.angle) * step;
-            const dy = Math.sin(m.angle) * step;
-            for (let i = 0; i < m.len; i++) {
-              const wave = Math.sin(frame * 0.018 + i * 0.75 + m.phase);
-              const x = m.x + dx * i + Math.sin(m.angle + Math.PI / 2) * wave * 4;
-              const y = m.y + dy * i + drift + Math.cos(m.angle + Math.PI / 2) * wave * 4;
-              const hot = (i / Math.max(1, m.len - 1) + frame * 0.006 + mi * 0.17) % 1;
-              const active = hot > 0.42 && hot < 0.58;
-              const alpha = active ? (dark ? 0.82 : 0.66) : (dark ? 0.4 : 0.32);
-              if (i > 0) {
-                ctx.beginPath();
-                ctx.moveTo(x - dx * 0.72, y - dy * 0.72);
-                ctx.lineTo(x - dx * 0.25, y - dy * 0.25);
-                ctx.strokeStyle = rgba(dim, dark ? 0.3 : 0.22);
-                ctx.lineWidth = active ? 1 : 0.7;
-                ctx.stroke();
-              }
-              ctx.beginPath();
-              ctx.arc(x, y, active ? 2.3 : 1.55, 0, Math.PI * 2);
-              ctx.fillStyle = rgba(i % 2 ? warm : accent, alpha);
-              ctx.fill();
-              if (i % 3 === 1) {
-                ctx.beginPath();
-                ctx.moveTo(x, y);
-                ctx.lineTo(x + Math.sin(m.angle + Math.PI / 2) * 8, y + Math.cos(m.angle + Math.PI / 2) * 8);
-                ctx.strokeStyle = rgba(i % 2 ? warm : accent, active ? 0.36 : 0.2);
-                ctx.lineWidth = 0.7;
-                ctx.stroke();
-              }
-            }
-          } else if (m.type === "protein") {
-            const pts = [];
-            for (let i = 0; i < m.len; i++) {
-              pts.push({
-                x: m.x + Math.cos(i * 0.88 + frame * 0.012 + m.phase) * (12 + i * 2.4) * m.scale,
-                y: m.y + drift + i * 10 * m.scale + Math.sin(i * 1.2 + frame * 0.01 + m.phase) * 9 * m.scale,
-              });
-            }
+      strands.forEach((m, mi) => {
+        const drift = Math.sin(frame * 0.01 + m.phase) * 8;
+        const step = 14;
+        const dx = Math.cos(m.angle) * step;
+        const dy = Math.sin(m.angle) * step;
+        for (let i = 0; i < m.len; i++) {
+          const wave = Math.sin(frame * 0.018 + i * 0.75 + m.phase);
+          const arc = Math.sin((i / Math.max(1, m.len - 1)) * Math.PI) * (m.bend || 0);
+          const x = m.x + dx * i + Math.sin(m.angle + Math.PI / 2) * (wave * 5 + arc);
+          const y = m.y + dy * i + drift + Math.cos(m.angle + Math.PI / 2) * (wave * 5 + arc);
+          const hot = (i / Math.max(1, m.len - 1) + frame * 0.006 + mi * 0.17) % 1;
+          const active = hot > 0.42 && hot < 0.58;
+          if (i > 0) {
             ctx.beginPath();
-            pts.forEach((pt, i) => {
-              if (i === 0) ctx.moveTo(pt.x, pt.y);
-              else ctx.lineTo(pt.x, pt.y);
-            });
-            ctx.strokeStyle = rgba(warm, dark ? 0.34 : 0.26);
-            ctx.lineWidth = 0.85;
+            ctx.moveTo(x - dx * 0.72, y - dy * 0.72);
+            ctx.lineTo(x - dx * 0.25, y - dy * 0.25);
+            ctx.strokeStyle = rgba(dim, dark ? 0.28 : 0.2);
+            ctx.lineWidth = active ? 0.95 : 0.65;
             ctx.stroke();
-            pts.forEach((pt, i) => {
-              ctx.beginPath();
-              ctx.arc(pt.x, pt.y, i % 3 === 0 ? 2 : 1.45, 0, Math.PI * 2);
-              ctx.fillStyle = rgba(i % 2 ? warm : accent, dark ? 0.44 : 0.32);
-              ctx.fill();
-            });
           }
-        });
-      }
-      ctx.restore();
+          ctx.beginPath();
+          ctx.arc(x, y, active ? 2.1 : 1.4, 0, Math.PI * 2);
+          ctx.fillStyle = rgba(
+            i % 2 ? warm : accent,
+            active ? (dark ? 0.78 : 0.62) : (dark ? 0.36 : 0.28)
+          );
+          ctx.fill();
+        }
+      });
 
       nodes.forEach((n) => {
         n.x = n.baseX + Math.sin(t + n.phase) * 2.2;
         n.y = n.baseY + Math.cos(t * 0.7 + n.phase * 1.3) * 2.2;
-        const dx = n.x - mx, dy = n.y - my;
+        const dx = n.x - mx;
+        const dy = n.y - my;
         const dist = Math.sqrt(dx * dx + dy * dy);
         if (dist > 0 && dist < 130) {
           const pull = (130 - dist) / 130;
@@ -340,7 +280,8 @@ function NeuralNetCanvas() {
       });
 
       edges.forEach((e) => {
-        const a = nodes[e.from], b = nodes[e.to];
+        const a = nodes[e.from];
+        const b = nodes[e.to];
         const act = Math.max(a.activation, b.activation);
         ctx.beginPath();
         ctx.moveTo(a.x, a.y);
@@ -362,7 +303,8 @@ function NeuralNetCanvas() {
           pulses.splice(i, 1);
           continue;
         }
-        const a = nodes[p.edge.from], b = nodes[p.edge.to];
+        const a = nodes[p.edge.from];
+        const b = nodes[p.edge.to];
         const px = a.x + (b.x - a.x) * p.t;
         const py = a.y + (b.y - a.y) * p.t;
         const glow = Math.sin(p.t * Math.PI);
@@ -400,312 +342,129 @@ function NeuralNetCanvas() {
     };
     draw();
 
-    const onMove = (e) => { const rect = canvas.getBoundingClientRect(); mouse.current = { x: e.clientX - rect.left, y: e.clientY - rect.top }; };
-    const onLeave = () => { mouse.current = { x: -9999, y: -9999 }; };
+    const onMove = (e) => {
+      const rect = canvas.getBoundingClientRect();
+      mouse.current = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+    };
+    const onLeave = () => {
+      mouse.current = { x: -9999, y: -9999 };
+    };
     canvas.addEventListener("mousemove", onMove);
     canvas.addEventListener("mouseleave", onLeave);
-
-    return () => { cancelAnimationFrame(raf.current); window.removeEventListener("resize", resize); canvas.removeEventListener("mousemove", onMove); canvas.removeEventListener("mouseleave", onLeave); };
-  }, []);
-
-  return <canvas ref={canvasRef} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", zIndex: 0 }} />;
-}
-
-/* Subtle particle background */
-function ParticleBG() {
-  const canvasRef = useRef(null);
-  const raf = useRef(null);
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext("2d");
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
-    let w, h, pts = [];
-    const makePoint = () => ({ x: Math.random() * w, y: Math.random() * h, vx: (Math.random() - 0.5) * 0.16, vy: (Math.random() - 0.5) * 0.16, r: Math.random() * 1.1 + 0.4 });
-    const resize = () => {
-      w = window.innerWidth;
-      h = window.innerHeight;
-      canvas.width = w * dpr;
-      canvas.height = h * dpr;
-      canvas.style.width = w + "px";
-      canvas.style.height = h + "px";
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      pts = Array.from({ length: Math.min(Math.floor((w * h) / 24000), 42) }, makePoint);
-    };
-    resize(); window.addEventListener("resize", resize);
-    const isDark = () => window.matchMedia("(prefers-color-scheme: dark)").matches;
-    const draw = () => {
-      ctx.clearRect(0, 0, w, h);
-      const c = isDark() ? "139,173,230" : "47,94,158";
-      for (const p of pts) { p.vx *= 0.99; p.vy *= 0.99; p.x += p.vx; p.y += p.vy; if (p.x < 0) p.x = w; if (p.x > w) p.x = 0; if (p.y < 0) p.y = h; if (p.y > h) p.y = 0; ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2); ctx.fillStyle = "rgba(" + c + ",0.16)"; ctx.fill(); }
-      for (let i = 0; i < pts.length; i++) { for (let j = i + 1; j < pts.length; j++) { const dx = pts[i].x - pts[j].x, dy = pts[i].y - pts[j].y, d2 = dx * dx + dy * dy; if (d2 < 16000) { ctx.beginPath(); ctx.moveTo(pts[i].x, pts[i].y); ctx.lineTo(pts[j].x, pts[j].y); ctx.strokeStyle = "rgba(" + c + "," + (0.032 * (1 - d2 / 16000)) + ")"; ctx.lineWidth = 0.4; ctx.stroke(); } } }
-      raf.current = requestAnimationFrame(draw);
-    };
-    draw();
-    return () => { cancelAnimationFrame(raf.current); window.removeEventListener("resize", resize); };
-  }, []);
-  return <canvas ref={canvasRef} style={{ position: "fixed", inset: 0, zIndex: 0, pointerEvents: "none" }} />;
-}
-
-function SideDecorCanvas() {
-  const canvasRef = useRef(null);
-  const raf = useRef(null);
-
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext("2d");
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
-    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    let w = 0;
-    let h = 0;
-    let frame = 0;
-
-    const rgba = (rgb, alpha) => "rgba(" + rgb.join(",") + "," + alpha + ")";
-    const isDark = () => window.matchMedia("(prefers-color-scheme: dark)").matches;
-
-    const drawStrand = (x, y, count, angle, scale, phase, accent, warm, dim, alpha) => {
-      let prev = null;
-      const t = frame * 0.012 + phase;
-      for (let i = 0; i < count; i++) {
-        const wave = Math.sin(t + i * 0.76) * 8 * scale;
-        const px = x + Math.cos(angle) * i * 14 * scale + Math.sin(angle + Math.PI / 2) * wave;
-        const py = y + Math.sin(angle) * i * 14 * scale - Math.cos(angle + Math.PI / 2) * wave;
-        if (prev) {
-          ctx.beginPath();
-          ctx.moveTo(prev.x, prev.y);
-          ctx.lineTo(px, py);
-          ctx.strokeStyle = rgba(dim, alpha * 0.55);
-          ctx.lineWidth = 0.75;
-          ctx.stroke();
-        }
-        if (i % 4 === 1) {
-          ctx.beginPath();
-          ctx.moveTo(px, py);
-          ctx.lineTo(px + Math.sin(angle + Math.PI / 2) * 8 * scale, py - Math.cos(angle + Math.PI / 2) * 8 * scale);
-          ctx.strokeStyle = rgba(i % 2 ? warm : accent, alpha * 0.55);
-          ctx.lineWidth = 0.65;
-          ctx.stroke();
-        }
-        ctx.beginPath();
-        ctx.arc(px, py, (i % 5 === 0 ? 2.1 : 1.45) * scale, 0, Math.PI * 2);
-        ctx.fillStyle = rgba(i % 2 ? warm : accent, alpha);
-        ctx.fill();
-        prev = { x: px, y: py };
-      }
-    };
-
-    const drawFold = (x, y, count, scale, phase, accent, warm, dim, alpha) => {
-      const pts = [];
-      const t = frame * 0.01 + phase;
-      for (let i = 0; i < count; i++) {
-        pts.push({
-          x: x + Math.cos(i * 1.14 + t) * (12 + i * 1.8) * scale,
-          y: y + i * 9 * scale + Math.sin(i * 0.9 + t) * 10 * scale,
-        });
-      }
-      ctx.beginPath();
-      pts.forEach((pt, i) => {
-        if (i === 0) ctx.moveTo(pt.x, pt.y);
-        else ctx.lineTo(pt.x, pt.y);
-      });
-      ctx.strokeStyle = rgba(dim, alpha * 0.62);
-      ctx.lineWidth = 0.8;
-      ctx.stroke();
-      pts.forEach((pt, i) => {
-        ctx.beginPath();
-        ctx.arc(pt.x, pt.y, i % 3 === 0 ? 2.2 * scale : 1.35 * scale, 0, Math.PI * 2);
-        ctx.fillStyle = rgba(i % 2 ? warm : accent, alpha);
-        ctx.fill();
-      });
-    };
-
-    const drawAssay = (x, y, cols, rows, cell, dir, accent, warm, alpha) => {
-      for (let r = 0; r < rows; r++) {
-        for (let c = 0; c < cols; c++) {
-          const value = (Math.sin(r * 1.7 + c * 0.93 + frame * 0.012) + 1) / 2;
-          ctx.fillStyle = rgba((r + c) % 3 === 0 ? warm : accent, alpha * (0.34 + value * 0.8));
-          ctx.fillRect(x + dir * c * cell, y + r * cell, cell - 2, cell - 2);
-        }
-      }
-    };
-
-    const drawReadBand = (x, y, width, rows, dir, accent, warm, dim, alpha, phase) => {
-      const t = frame * 0.01 + phase;
-      for (let r = 0; r < rows; r++) {
-        const rowY = y + r * 12 + Math.sin(t + r) * 1.8;
-        for (let i = 0; i < 4; i++) {
-          const start = (i * 0.22 + ((r * 0.13 + phase * 0.07) % 0.12)) * width;
-          const len = width * (0.11 + ((i + r) % 3) * 0.025);
-          const x1 = x + dir * start;
-          const x2 = x + dir * (start + len);
-          ctx.beginPath();
-          ctx.moveTo(x1, rowY);
-          ctx.lineTo(x2, rowY + Math.sin(t + i) * 2.4);
-          ctx.strokeStyle = rgba(dim, alpha * 0.5);
-          ctx.lineWidth = 0.75;
-          ctx.stroke();
-
-          const beads = 4 + ((i + r) % 3);
-          for (let b = 0; b < beads; b++) {
-            const k = beads === 1 ? 0 : b / (beads - 1);
-            const px = x1 + (x2 - x1) * k;
-            const py = rowY + Math.sin(t + i) * 2.4 * k;
-            ctx.beginPath();
-            ctx.arc(px, py, b % 3 === 0 ? 1.35 : 0.85, 0, Math.PI * 2);
-            ctx.fillStyle = rgba((b + i + r) % 4 === 0 ? warm : accent, alpha * (0.82 + k * 0.25));
-            ctx.fill();
-          }
-        }
-      }
-    };
-
-    const drawMiniNetwork = (x, y, scale, dir, accent, warm, dim, alpha) => {
-      const pts = [
-        [0, 0], [28, -12], [46, 10], [20, 26], [62, 32], [88, 8],
-      ].map(([px, py], i) => ({
-        x: x + dir * px * scale,
-        y: y + py * scale + Math.sin(frame * 0.011 + i) * 2,
-      }));
-      [[0, 1], [0, 3], [1, 2], [2, 5], [3, 4], [4, 5], [1, 4]].forEach(([a, b]) => {
-        ctx.beginPath();
-        ctx.moveTo(pts[a].x, pts[a].y);
-        ctx.lineTo(pts[b].x, pts[b].y);
-        ctx.strokeStyle = rgba(dim, alpha * 0.48);
-        ctx.lineWidth = 0.75;
-        ctx.stroke();
-      });
-      pts.forEach((pt, i) => {
-        ctx.beginPath();
-        ctx.arc(pt.x, pt.y, (i % 2 ? 1.8 : 2.4) * scale, 0, Math.PI * 2);
-        ctx.fillStyle = rgba(i % 3 === 0 ? warm : accent, alpha);
-        ctx.fill();
-      });
-    };
-
-    const drawField = (side, accent, warm, dim) => {
-      const contentW = Math.min(1180, w - 72);
-      const contentLeft = (w - contentW) / 2;
-      const contentRight = contentLeft + contentW;
-      const zoneW = side === "left" ? contentLeft - 34 : w - contentRight - 34;
-      if (zoneW < 112) return;
-
-      const x0 = side === "left" ? 18 : contentRight + 16;
-      const dir = side === "left" ? 1 : -1;
-      const top = 86;
-      const fieldH = Math.max(360, h - 126);
-      const inner = (xp) => x0 + zoneW * xp;
-      const time = frame * 0.008;
-
-      const readBands = side === "left"
-        ? [[0.08, 0.12, 0.76, 3, 0.2], [0.42, 0.34, 0.5, 2, 1.6], [0.1, 0.7, 0.7, 3, 3.1]]
-        : [[0.86, 0.14, 0.72, 3, 0.9], [0.52, 0.38, 0.5, 2, 2.3], [0.9, 0.74, 0.68, 3, 3.8]];
-      readBands.forEach(([xp, yp, wp, rows, phase], i) => {
-        drawReadBand(inner(xp), top + fieldH * yp, zoneW * wp, rows, dir, accent, warm, dim, 0.17 + i * 0.025, phase);
-      });
-
-      const motifSet = side === "left"
-        ? [
-          ["strand", 0.18, 0.16, 13, 0.05, 0.82, 0.4],
-          ["assay", 0.7, 0.27, 8, 5, 6, 0],
-          ["fold", 0.36, 0.42, 8, 0.88, 0, 1.5],
-          ["network", 0.62, 0.58, 1, 0, 0, 2.1],
-          ["strand", 0.15, 0.76, 12, -0.08, 0.76, 3.2],
-          ["assay", 0.78, 0.88, 6, 4, 7, 0],
-        ]
-        : [
-          ["assay", 0.28, 0.16, 7, 5, 6, 0],
-          ["strand", 0.68, 0.31, 12, -0.06, 0.82, 1.1],
-          ["network", 0.3, 0.48, 1, 0, 0, 2.8],
-          ["fold", 0.72, 0.62, 9, 0.82, 0, 3.4],
-          ["strand", 0.2, 0.8, 11, 0.08, 0.72, 4.5],
-          ["assay", 0.72, 0.9, 8, 4, 7, 0],
-        ];
-
-      motifSet.forEach((m, i) => {
-        const [type, xp, yp, a, b, c, phase] = m;
-        const x = inner(xp) + Math.sin(time + phase) * 4;
-        const y = top + fieldH * yp + Math.cos(time * 0.8 + phase) * 5;
-        const alpha = 0.18 + i * 0.014;
-        if (type === "strand") drawStrand(x, y, a, b * dir, c, phase, accent, warm, dim, alpha);
-        if (type === "fold") drawFold(x, y, a, b, phase, accent, warm, dim, alpha);
-        if (type === "network") drawMiniNetwork(x, y, 0.82, dir, accent, warm, dim, alpha);
-        if (type === "assay") drawAssay(x, y, a, b, c, dir, accent, warm, alpha * 0.72);
-      });
-    };
-
-    const draw = () => {
-      frame++;
-      ctx.clearRect(0, 0, w, h);
-      if (w >= 1120) {
-        const dark = isDark();
-        const accent = dark ? [139, 173, 230] : [47, 94, 158];
-        const warm = dark ? [214, 154, 112] : [168, 101, 63];
-        const dim = dark ? [72, 80, 92] : [165, 174, 184];
-
-        drawField("left", accent, warm, dim);
-        drawField("right", accent, warm, dim);
-      }
-      if (!reducedMotion) raf.current = requestAnimationFrame(draw);
-    };
-
-    const resize = () => {
-      w = window.innerWidth;
-      h = window.innerHeight;
-      canvas.width = w * dpr;
-      canvas.height = h * dpr;
-      canvas.style.width = w + "px";
-      canvas.style.height = h + "px";
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      if (reducedMotion) draw();
-    };
-    resize();
-    window.addEventListener("resize", resize);
-    if (!reducedMotion) draw();
 
     return () => {
       cancelAnimationFrame(raf.current);
       window.removeEventListener("resize", resize);
+      canvas.removeEventListener("mousemove", onMove);
+      canvas.removeEventListener("mouseleave", onLeave);
     };
   }, []);
 
-  return <canvas ref={canvasRef} style={{ position: "fixed", inset: 0, zIndex: 1, pointerEvents: "none" }} />;
+  return (
+    <canvas
+      ref={canvasRef}
+      style={{
+        position: "absolute",
+        inset: 0,
+        width: "100%",
+        height: "100%",
+        zIndex: 0,
+      }}
+    />
+  );
 }
 
-/* Helpers */
+/* ----------------------------------------------------------------------
+   Helpers
+   ---------------------------------------------------------------------- */
+
 function useInView(threshold = 0.12) {
   const ref = useRef(null);
   const [visible, setVisible] = useState(false);
-  useEffect(() => { const el = ref.current; if (!el) return; const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) { setVisible(true); obs.disconnect(); } }, { threshold }); obs.observe(el); return () => obs.disconnect(); }, [threshold]);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(
+      ([e]) => {
+        if (e.isIntersecting) {
+          setVisible(true);
+          obs.disconnect();
+        }
+      },
+      { threshold }
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, [threshold]);
   return [ref, visible];
 }
 
 function Section({ id, children, delay = 0 }) {
   const [ref, vis] = useInView();
-  return <section ref={ref} id={id} className="sect" style={{ opacity: vis ? 1 : 0, transform: vis ? "translateY(0)" : "translateY(40px)", transition: "opacity 0.8s " + delay + "s cubic-bezier(.22,1,.36,1), transform 0.8s " + delay + "s cubic-bezier(.22,1,.36,1)" }}>{children}</section>;
+  return (
+    <section
+      ref={ref}
+      id={id}
+      className="sect"
+      style={{
+        opacity: vis ? 1 : 0,
+        transform: vis ? "translateY(0)" : "translateY(40px)",
+        transition: `opacity 0.8s ${delay}s cubic-bezier(.22,1,.36,1), transform 0.8s ${delay}s cubic-bezier(.22,1,.36,1)`,
+      }}
+    >
+      {children}
+    </section>
+  );
 }
 
 function StaggerItem({ children, index, visible }) {
-  return <div style={{ opacity: visible ? 1 : 0, transform: visible ? "translateY(0) scale(1)" : "translateY(24px) scale(0.97)", transition: "all 0.6s " + (0.1 * index) + "s cubic-bezier(.22,1,.36,1)" }}>{children}</div>;
-}
-
-function MagneticBtn({ children, className, ...props }) {
-  const ref = useRef(null);
-  const onMove = (e) => { const el = ref.current; if (!el) return; const rect = el.getBoundingClientRect(); const x = e.clientX - rect.left - rect.width / 2; const y = e.clientY - rect.top - rect.height / 2; el.style.transform = "translate(" + (x * 0.15) + "px, " + (y * 0.2) + "px)"; };
-  const onLeave = () => { if (ref.current) ref.current.style.transform = "translate(0,0)"; };
-  return <a ref={ref} className={className} onMouseMove={onMove} onMouseLeave={onLeave} {...props} style={{ transition: "transform 0.25s cubic-bezier(.22,1,.36,1)", ...props.style }}>{children}</a>;
+  return (
+    <div
+      style={{
+        opacity: visible ? 1 : 0,
+        transform: visible ? "translateY(0)" : "translateY(20px)",
+        transition: `all 0.6s ${0.08 * index}s cubic-bezier(.22,1,.36,1)`,
+      }}
+    >
+      {children}
+    </div>
+  );
 }
 
 function TextReveal({ text, tag: Tag = "h1", className }) {
   const [ref, vis] = useInView(0.3);
-    return <Tag ref={ref} className={className}>{text.split(" ").map((w, i) => <span key={i} style={{
-        display: "inline-block",
-        overflow: "hidden",
-        marginRight: "0.3em",
-        paddingRight: "0.08em",
-        paddingBottom: "0.12em"
-    }}><span style={{ display: "inline-block", transform: vis ? "translateY(0)" : "translateY(110%)", transition: "transform 0.7s " + (0.04 * i) + "s cubic-bezier(.22,1,.36,1)" }}>{w}</span></span>)}</Tag>;
+  return (
+    <Tag ref={ref} className={className}>
+      {text.split(" ").map((w, i) => (
+        <span
+          key={i}
+          style={{
+            display: "inline-block",
+            overflow: "hidden",
+            marginRight: "0.3em",
+            paddingRight: "0.08em",
+            paddingBottom: "0.12em",
+          }}
+        >
+          <span
+            style={{
+              display: "inline-block",
+              transform: vis ? "translateY(0)" : "translateY(110%)",
+              transition: `transform 0.7s ${0.05 * i}s cubic-bezier(.22,1,.36,1)`,
+            }}
+          >
+            {w}
+          </span>
+        </span>
+      ))}
+    </Tag>
+  );
 }
 
-/* Main */
+/* ----------------------------------------------------------------------
+   Main
+   ---------------------------------------------------------------------- */
+
 export default function Portfolio() {
   const [scrolled, setScrolled] = useState(false);
   const [active, setActive] = useState("");
@@ -713,22 +472,31 @@ export default function Portfolio() {
   const [heroVis, setHeroVis] = useState(false);
 
   useEffect(() => {
-    const timer = setTimeout(() => setHeroVis(true), 100);
-    return () => clearTimeout(timer);
+    const t = setTimeout(() => setHeroVis(true), 100);
+    return () => clearTimeout(t);
   }, []);
 
   useEffect(() => {
     const onScroll = () => {
       setScrolled(window.scrollY > 40);
       const sects = NAV.map((n) => document.getElementById(n.toLowerCase()));
-      for (let i = sects.length - 1; i >= 0; i--) { if (sects[i] && sects[i].getBoundingClientRect().top < 180) { setActive(NAV[i]); return; } }
+      for (let i = sects.length - 1; i >= 0; i--) {
+        if (sects[i] && sects[i].getBoundingClientRect().top < 180) {
+          setActive(NAV[i]);
+          return;
+        }
+      }
       setActive("");
     };
-    window.addEventListener("scroll", onScroll, { passive: true }); onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    onScroll();
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  const scrollTo = (id) => { document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" }); setMenuOpen(false); };
+  const scrollTo = (id) => {
+    document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+    setMenuOpen(false);
+  };
   const [expRef, expVis] = useInView();
   const [skillRef, skillVis] = useInView();
 
@@ -736,195 +504,830 @@ export default function Portfolio() {
     <>
       <style>{CSS_TEXT}</style>
       <a className="skip" href="#about">Skip to content</a>
-      <ParticleBG />
-      <SideDecorCanvas />
 
       <nav className={"nav" + (scrolled ? " scrolled" : "")}>
-        <span className="nav-logo" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}>Kant W.</span>
+        <span className="nav-logo" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}>
+          Kant W.
+        </span>
         <div className={"nav-links" + (menuOpen ? " open" : "")}>
-          {NAV.map((n) => <a key={n} href={"#" + n.toLowerCase()} className={active === n ? "active" : ""} onClick={(e) => { e.preventDefault(); scrollTo(n.toLowerCase()); }}>{n}</a>)}
+          {NAV.map((n) => (
+            <a
+              key={n}
+              href={"#" + n.toLowerCase()}
+              className={active === n ? "active" : ""}
+              onClick={(e) => {
+                e.preventDefault();
+                scrollTo(n.toLowerCase());
+              }}
+            >
+              {n}
+            </a>
+          ))}
         </div>
-        <button className="hamburger" onClick={() => setMenuOpen(!menuOpen)} aria-label="Toggle menu">{menuOpen ? "\u2715" : "\u2630"}</button>
+        <button
+          className="hamburger"
+          onClick={() => setMenuOpen(!menuOpen)}
+          aria-label="Toggle menu"
+        >
+          {menuOpen ? "\u2715" : "\u2630"}
+        </button>
       </nav>
 
       <header className="hero">
         <NeuralNetCanvas />
         <div className="hero-overlay" />
         <div className="hero-content">
-          <img className={"hero-avatar" + (heroVis ? " vis" : "")} src={D.avatar} alt={D.name + " avatar"} />
-          <div className={"hero-kicker" + (heroVis ? " vis" : "")}>UC Berkeley Data Science</div>
-          <TextReveal text={D.fullName} tag="h1" />
-          <p className={"hero-sub" + (heroVis ? " vis" : "")}>{D.title}</p>
-          <p className={"hero-tagline" + (heroVis ? " vis" : "")}>{D.tagline}</p>
-          <p className={"hero-note" + (heroVis ? " vis" : "")}>{D.heroNote}</p>
-          <div className={"hero-cta" + (heroVis ? " vis" : "")}>
-            <MagneticBtn className="btn primary" href={"mailto:" + D.email}>{"\u2709"} Email Me</MagneticBtn>
-            <MagneticBtn className="btn" href={D.linkedin} target="_blank" rel="noopener noreferrer">LinkedIn</MagneticBtn>
-            <MagneticBtn className="btn" href={D.github} target="_blank" rel="noopener noreferrer">GitHub</MagneticBtn>
+          <img
+            className={"hero-avatar" + (heroVis ? " vis" : "")}
+            src={D.avatar}
+            alt={D.name}
+          />
+          <div className={"hero-kicker" + (heroVis ? " vis" : "")}>
+            UC Berkeley · Data Science · 2027
           </div>
-          <div className={"hero-stats" + (heroVis ? " vis" : "")}>
-            {D.highlights.map((h) => <div key={h.label} className="hero-stat"><strong>{h.value}</strong><span>{h.label}</span></div>)}
+          <TextReveal text={D.fullName} tag="h1" />
+          <p className={"hero-tagline" + (heroVis ? " vis" : "")}>
+            {D.tagline}
+          </p>
+          <div className={"hero-cta" + (heroVis ? " vis" : "")}>
+            <a className="btn primary" href={"mailto:" + D.email}>
+              {"\u2709"} Email
+            </a>
+            <a className="btn" href={D.github} target="_blank" rel="noopener noreferrer">
+              GitHub
+            </a>
+            <a className="btn" href={D.linkedin} target="_blank" rel="noopener noreferrer">
+              LinkedIn
+            </a>
+          </div>
+          <div className={"hero-meta" + (heroVis ? " vis" : "")}>
+            {D.affiliations.map((a) => (
+              <div key={a.label} className="hero-meta-item">
+                <span>{a.label}</span>
+                <strong>{a.value}</strong>
+              </div>
+            ))}
           </div>
         </div>
-        <div className="scroll-hint"><div className="scroll-dot" /><span>Scroll</span></div>
+        <div className="scroll-hint">
+          <div className="scroll-dot" />
+          <span>Scroll</span>
+        </div>
       </header>
 
-      <div className="content">
+      <main className="content">
         <Section id="about">
-          <span className="sect-label">01 ABOUT</span><h2>Overview</h2>
-          <div className="overview-panel">
-            <div className="overview-main">
-              <p className="about-text">{D.about}</p>
-              <div className="focus-grid">
-                {D.focusAreas.map((area) => <article key={area.title} className="focus-card"><h3>{area.title}</h3><p>{area.desc}</p></article>)}
-              </div>
-            </div>
-            <aside className="snapshot-grid" aria-label="Profile snapshot">
-              {D.snapshot.map((item) => <div key={item.label} className="snapshot-item"><span>{item.label}</span><strong>{item.value}</strong></div>)}
-            </aside>
+          <div className="section-head">
+            <span className="sect-label">01 — About</span>
+            <h2>Background</h2>
+          </div>
+          <p className="about-text">{D.about}</p>
+        </Section>
+
+        <Section id="research" delay={0.05}>
+          <div className="section-head">
+            <span className="sect-label">02 — Research</span>
+            <h2>Experience</h2>
+          </div>
+          <div className="experience-board" ref={expRef}>
+            {D.experience.map((exp, i) => (
+              <StaggerItem key={exp.org} index={i} visible={expVis}>
+                <article className="exp-card">
+                  <div className="exp-meta">
+                    <span>{exp.tag}</span>
+                    <strong>{exp.period}</strong>
+                  </div>
+                  <div className="exp-body">
+                    <h3>{exp.role}</h3>
+                    <div className="exp-org">{exp.org}</div>
+                    <ul>
+                      {exp.desc.map((d, j) => (
+                        <li key={j}>{d}</li>
+                      ))}
+                    </ul>
+                  </div>
+                </article>
+              </StaggerItem>
+            ))}
           </div>
         </Section>
 
-        <Section id="experience" delay={0.05}>
-          <span className="sect-label">02 RESEARCH EXPERIENCE</span><h2>Experience</h2>
-          <div className="timeline" ref={expRef}>{D.experience.map((exp, i) => <StaggerItem key={exp.org} index={i} visible={expVis}><div className="tcard"><div className="tcard-head"><h3>{exp.role}</h3><span className="tcard-period">{exp.period}</span></div><div className="tcard-org">{exp.org}</div><ul>{exp.desc.map((d, j) => <li key={j}>{d}</li>)}</ul></div></StaggerItem>)}</div>
-        </Section>
-
-        <Section id="projects" delay={0.05}>
-          <span className="sect-label">03 SELECTED WORK</span><h2>Selected Work</h2>
-          <div className="project-grid">{D.projects.map((p) => <div key={p.name} className="pcard"><h3>{p.name}</h3><p>{p.desc}</p><div className="pcard-tags">{p.stack.map((t) => <span key={t} className="ptag">{t}</span>)}</div><a className="pcard-link" href={p.link} target="_blank" rel="noopener noreferrer">View on GitHub {"\u2192"}</a></div>)}</div>
+        <Section id="publication" delay={0.05}>
+          <div className="section-head">
+            <span className="sect-label">03 — Publication</span>
+            <h2>Selected Publication</h2>
+          </div>
+          <article className="pub-card">
+            <div className="pub-venue">
+              <span>{D.publication.venue}</span>
+              <strong>{D.publication.year}</strong>
+            </div>
+            <h3>{D.publication.title}</h3>
+            <p className="pub-authors">
+              {D.publication.authors}{" "}
+              <em>· {D.publication.role}</em>
+            </p>
+          </article>
         </Section>
 
         <Section id="skills" delay={0.05}>
-          <span className="sect-label">04 SKILLS</span><h2>Technical Skills</h2>
-          <div className="skill-grid" ref={skillRef}>{Object.entries(D.skills).map(([cat, items], ci) => <StaggerItem key={cat} index={ci} visible={skillVis}><div><div className="skill-cat">{cat}</div><div className="skill-pills">{items.map((s) => <span key={s} className="pill">{s}</span>)}</div></div></StaggerItem>)}</div>
+          <div className="section-head">
+            <span className="sect-label">04 — Skills</span>
+            <h2>Technical Skills</h2>
+          </div>
+          <div className="skill-grid" ref={skillRef}>
+            {Object.entries(D.skills).map(([cat, items], ci) => (
+              <StaggerItem key={cat} index={ci} visible={skillVis}>
+                <article className="skill-card">
+                  <div className="skill-cat">{cat}</div>
+                  <div className="skill-pills">
+                    {items.map((s) => (
+                      <span key={s} className="pill">
+                        {s}
+                      </span>
+                    ))}
+                  </div>
+                </article>
+              </StaggerItem>
+            ))}
+          </div>
         </Section>
-      </div>
+      </main>
 
       <footer className="foot">
-        <div className="foot-cta">Research interests across machine learning, scientific computing, and AI for biology.</div>
-        <div className="foot-links"><a href={"mailto:" + D.email}>Email</a><a href={D.linkedin} target="_blank" rel="noopener noreferrer">LinkedIn</a><a href={D.github} target="_blank" rel="noopener noreferrer">GitHub</a></div>
-        <div>{"\u00a9"} {new Date().getFullYear()} {D.fullName}</div>
+        <div className="foot-cta">
+          Open to research collaborations and conversations about ML for biology.
+        </div>
+        <div className="foot-links">
+          <a href={"mailto:" + D.email}>Email</a>
+          <a href={D.github} target="_blank" rel="noopener noreferrer">
+            GitHub
+          </a>
+          <a href={D.linkedin} target="_blank" rel="noopener noreferrer">
+            LinkedIn
+          </a>
+        </div>
+        <div className="foot-copy">
+          {"\u00a9"} {new Date().getFullYear()} {D.fullName}
+        </div>
       </footer>
 
-      <button className={"btt" + (scrolled ? " show" : "")} onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })} aria-label="Back to top">{"\u2191"}</button>
+      <button
+        className={"btt" + (scrolled ? " show" : "")}
+        onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+        aria-label="Back to top"
+      >
+        {"\u2191"}
+      </button>
     </>
   );
 }
 
 const CSS_TEXT = `
 @import url('https://fonts.googleapis.com/css2?family=Instrument+Serif&family=Satoshi:wght@400;500;700;900&family=JetBrains+Mono:wght@400;500&display=swap');
-:root{--bg:#F7F7F5;--bg2:#ECEDEB;--fg:#151719;--fg2:#4E565D;--fg3:#7D858B;--accent:#2F5E9E;--accent2:#173D72;--warm:#A8653F;--accent-soft:rgba(47,94,158,.08);--border:#DADDE0;--card:#FFFFFF;--glow-color:rgba(47,94,158,.04);--serif:'Instrument Serif',Georgia,serif;--sans:'Satoshi',system-ui,sans-serif;--mono:'JetBrains Mono',monospace;--radius:8px}
-@media(prefers-color-scheme:dark){:root{--bg:#0F1114;--bg2:#171A1F;--fg:#EEF0F2;--fg2:#B8BEC5;--fg3:#78818A;--accent:#8BADE6;--accent2:#B7C8F0;--warm:#D69A70;--accent-soft:rgba(139,173,230,.1);--border:#292E35;--card:#171B20;--glow-color:rgba(139,173,230,.05)}}
-*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
-html{scroll-behavior:smooth;scroll-padding-top:80px}
-body{background:linear-gradient(180deg,var(--bg) 0%,color-mix(in srgb,var(--bg) 88%,var(--bg2)) 100%);color:var(--fg);font-family:var(--sans);line-height:1.65;-webkit-font-smoothing:antialiased;overflow-x:hidden}
-body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;background:linear-gradient(90deg,color-mix(in srgb,var(--border) 42%,transparent) 1px,transparent 1px),linear-gradient(180deg,color-mix(in srgb,var(--border) 34%,transparent) 1px,transparent 1px);background-size:152px 152px;-webkit-mask-image:radial-gradient(ellipse at 50% 18%,transparent 0%,transparent 28%,#000 58%,transparent 100%);mask-image:radial-gradient(ellipse at 50% 18%,transparent 0%,transparent 28%,#000 58%,transparent 100%);opacity:.28}
-::selection{background:var(--accent);color:#fff}
-.nav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:0 clamp(1.25rem,4vw,3rem);height:60px;background:transparent;transition:background .4s,box-shadow .4s,backdrop-filter .4s}
-.nav.scrolled{background:color-mix(in srgb,var(--bg) 85%,transparent);backdrop-filter:blur(20px) saturate(1.5);-webkit-backdrop-filter:blur(20px) saturate(1.5);box-shadow:0 1px 0 var(--border)}
-.nav-logo{font-family:var(--serif);font-size:1.35rem;color:var(--fg);text-decoration:none;cursor:pointer}
-.nav-links{display:flex;gap:0}
-.nav-links a{color:var(--fg3);text-decoration:none;font-size:.78rem;font-weight:500;letter-spacing:.05em;text-transform:uppercase;padding:.5rem .75rem;border-radius:8px;transition:color .2s,background .2s;cursor:pointer;position:relative}
-.nav-links a::after{content:'';position:absolute;bottom:4px;left:50%;transform:translateX(-50%) scaleX(0);width:4px;height:4px;border-radius:50%;background:var(--accent);transition:transform .3s cubic-bezier(.22,1,.36,1)}
-.nav-links a.active::after{transform:translateX(-50%) scaleX(1)}
-.nav-links a:hover{color:var(--fg)}
-.nav-links a.active{color:var(--accent)}
-.hamburger{display:none;background:none;border:none;color:var(--fg);font-size:1.4rem;cursor:pointer;padding:.25rem}
-@media(max-width:700px){.nav-links{position:fixed;top:0;left:0;right:0;bottom:0;flex-direction:column;align-items:center;justify-content:center;gap:.75rem;background:color-mix(in srgb,var(--bg) 97%,transparent);backdrop-filter:blur(24px);opacity:0;pointer-events:none;transition:opacity .3s}.nav-links.open{opacity:1;pointer-events:auto}.nav-links a{font-size:1.2rem;padding:.85rem 1.5rem}.hamburger{display:block}}
-.hero{min-height:92svh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:6rem 1.5rem 4.5rem;position:relative;overflow:hidden;border-bottom:1px solid var(--border)}
-.hero-overlay{position:absolute;inset:0;z-index:1;background:radial-gradient(ellipse at 50% 42%,color-mix(in srgb,var(--bg) 36%,transparent) 0%,color-mix(in srgb,var(--bg) 22%,transparent) 34%,color-mix(in srgb,var(--bg) 12%,transparent) 58%,color-mix(in srgb,var(--bg) 58%,transparent) 100%),linear-gradient(180deg,transparent 0%,color-mix(in srgb,var(--bg) 64%,transparent) 100%);pointer-events:none}
-.hero-content{position:relative;z-index:2;max-width:920px;padding:0 1rem;text-shadow:0 1px 14px color-mix(in srgb,var(--bg) 82%,transparent)}
-.hero-avatar{width:112px;height:112px;border-radius:50%;object-fit:cover;border:1px solid var(--border);box-shadow:0 10px 32px rgba(15,23,42,.08);margin-bottom:1.75rem;opacity:0;transform:scale(.8);transition:opacity .8s .1s cubic-bezier(.22,1,.36,1),transform .8s .1s cubic-bezier(.22,1,.36,1)}
-.hero-avatar.vis{opacity:1;transform:scale(1)}
-.hero-kicker{display:inline-flex;align-items:center;gap:.5rem;margin-bottom:.7rem;font-family:var(--mono);font-size:.68rem;letter-spacing:.11em;text-transform:uppercase;color:var(--accent);opacity:0;transform:translateY(12px);transition:all .7s .25s cubic-bezier(.22,1,.36,1)}
-.hero-kicker::before,.hero-kicker::after{content:'';width:28px;height:1px;background:var(--accent)}
-.hero-kicker.vis{opacity:1;transform:translateY(0)}
-.hero h1{font-family:var(--serif);font-size:clamp(3.1rem,6.4vw,5.35rem);font-weight:400;letter-spacing:0;line-height:1.05;color:var(--fg)}
-.hero-sub{font-size:1.12rem;color:var(--fg2);margin-top:.75rem;font-weight:500;letter-spacing:.02em;opacity:0;transform:translateY(16px);transition:all .7s .5s cubic-bezier(.22,1,.36,1)}
-.hero-sub.vis{opacity:1;transform:translateY(0)}
-.hero-tagline{max-width:500px;color:var(--fg3);margin:.75rem auto 0;font-size:.92rem;line-height:1.65;opacity:0;transform:translateY(16px);transition:all .7s .6s cubic-bezier(.22,1,.36,1)}
-.hero-tagline.vis{opacity:1;transform:translateY(0)}
-.hero-note{max-width:620px;margin:.9rem auto 0;color:var(--fg2);font-size:1rem;line-height:1.65;opacity:0;transform:translateY(16px);transition:all .7s .68s cubic-bezier(.22,1,.36,1)}
-.hero-note.vis{opacity:1;transform:translateY(0)}
-.hero-cta{display:flex;gap:.6rem;flex-wrap:wrap;justify-content:center;margin-top:1.8rem;opacity:0;transform:translateY(16px);transition:all .7s .78s cubic-bezier(.22,1,.36,1)}
-.hero-cta.vis{opacity:1;transform:translateY(0)}
-.btn{display:inline-flex;align-items:center;gap:.4rem;padding:.7rem 1.4rem;border-radius:9999px;font-size:.85rem;font-weight:600;text-decoration:none;border:1px solid var(--border);background:var(--card);color:var(--fg);letter-spacing:.01em}
-.btn:hover{box-shadow:0 5px 18px rgba(15,23,42,.08)}
-.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
-.btn.primary:hover{background:var(--accent2);box-shadow:0 4px 24px color-mix(in srgb,var(--accent) 30%,transparent)}
-.hero-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.75rem;max-width:560px;margin:1.6rem auto 0;opacity:0;transform:translateY(16px);transition:all .7s .88s cubic-bezier(.22,1,.36,1)}
-.hero-stats.vis{opacity:1;transform:translateY(0)}
-.hero-stat{padding:.85rem .7rem;border:1px solid var(--border);border-radius:var(--radius);background:color-mix(in srgb,var(--card) 84%,transparent);backdrop-filter:blur(12px)}
-.hero-stat strong{display:block;font-family:var(--serif);font-size:1.65rem;font-weight:400;line-height:1;color:var(--fg)}
-.hero-stat span{display:block;margin-top:.3rem;font-family:var(--mono);font-size:.64rem;letter-spacing:.06em;text-transform:uppercase;color:var(--fg3)}
-.scroll-hint{position:absolute;bottom:2rem;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:.35rem;color:var(--fg3);font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;font-weight:500;z-index:2;opacity:0;animation:fadeIn 1s 1.4s forwards}
-@keyframes fadeIn{to{opacity:1}}
-.scroll-dot{width:5px;height:5px;border-radius:50%;background:var(--accent);animation:bounce 2s ease-in-out infinite}
-@keyframes bounce{0%,100%{transform:translateY(0);opacity:.4}50%{transform:translateY(12px);opacity:1}}
-.content{max-width:1180px;margin:0 auto;padding:5rem 1.75rem 6.75rem;display:flex;flex-direction:column;gap:5rem;position:relative;z-index:2}
-.sect-label{font-family:var(--mono);font-size:.68rem;letter-spacing:.1em;color:var(--accent);font-weight:500;margin-bottom:.75rem;display:flex;align-items:center;gap:.6rem}
-.sect-label::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,var(--border),transparent)}
-.sect h2{font-family:var(--serif);font-size:clamp(1.7rem,3vw,2.2rem);font-weight:400;letter-spacing:0;color:var(--fg);margin-bottom:1rem}
-.sect>p,.about-text{color:var(--fg2);font-size:.96rem;line-height:1.75}
-.overview-panel{display:grid;grid-template-columns:minmax(0,1fr) 310px;gap:1.15rem;align-items:start}
-.overview-main{min-width:0}
-.about-text{max-width:760px}
-.snapshot-grid{display:grid;grid-template-columns:1fr;gap:.75rem;margin-top:0}
-.snapshot-item{padding:1rem 1.05rem;border:1px solid var(--border);border-radius:var(--radius);background:color-mix(in srgb,var(--card) 88%,transparent);box-shadow:0 10px 30px rgba(15,23,42,.035)}
-.snapshot-item span{display:block;font-family:var(--mono);font-size:.62rem;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);margin-bottom:.25rem}
-.snapshot-item strong{display:block;font-size:.82rem;line-height:1.45;color:var(--fg);font-weight:650}
-.focus-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.9rem;margin-top:1.5rem}
-.focus-card{padding:1.1rem 1.15rem;background:color-mix(in srgb,var(--card) 90%,transparent);border:1px solid var(--border);border-radius:var(--radius);box-shadow:0 10px 30px rgba(15,23,42,.035)}
-.focus-card h3{font-size:.85rem;color:var(--fg);font-weight:700;margin-bottom:.35rem}
-.focus-card p{font-size:.8rem;line-height:1.55;color:var(--fg2)}
-.timeline{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1rem;align-items:stretch}
-.timeline>div{height:100%}
-.tcard{height:100%;display:flex;flex-direction:column;padding:1.4rem 1.5rem;background:color-mix(in srgb,var(--card) 94%,transparent);border:1px solid var(--border);border-radius:var(--radius);position:relative;overflow:hidden;transition:border-color .3s,box-shadow .3s,transform .3s}
-.tcard::before{content:'';position:absolute;top:0;left:0;width:3px;height:100%;background:linear-gradient(180deg,var(--accent),transparent);opacity:0;transition:opacity .3s}
-.tcard:hover::before{opacity:1}
-.tcard:hover{border-color:color-mix(in srgb,var(--accent) 20%,var(--border));box-shadow:0 12px 30px rgba(15,23,42,.065);transform:translateY(-2px)}
-.tcard-head{display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:.5rem}
-.tcard h3{font-size:.92rem;font-weight:700;color:var(--fg)}
-.tcard-period{font-family:var(--mono);font-size:.73rem;color:var(--fg3)}
-.tcard-org{font-size:.85rem;color:var(--accent);font-weight:600;margin-top:.2rem}
-.edu-facts{display:flex;gap:1.5rem;margin-top:.6rem;flex-wrap:wrap}
-.edu-facts span{font-size:.85rem;color:var(--fg2)}
-.edu-facts strong{color:var(--fg)}
-.muted-copy{font-size:.85rem;color:var(--fg3);margin-top:.5rem}
-.tcard ul{margin-top:.7rem;padding-left:0;list-style:none}
-.tcard li{position:relative;font-size:.87rem;color:var(--fg2);padding:.25rem 0 .25rem 1.1rem;line-height:1.6}
-.tcard li::before{content:'\u203A';position:absolute;left:0;top:.25rem;color:var(--accent);font-weight:700;font-size:.9rem}
-.pub-card{padding:1.4rem 1.5rem;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);border-left:3px solid var(--accent)}
-.pub-title{font-size:.9rem;font-weight:600;color:var(--fg);font-style:italic;line-height:1.5}
-.pub-meta{font-size:.82rem;color:var(--fg3);margin-top:.4rem}
-.project-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1rem;align-items:stretch}
-.pcard{height:100%;display:flex;flex-direction:column;padding:1.4rem 1.5rem;background:color-mix(in srgb,var(--card) 94%,transparent);border:1px solid var(--border);border-radius:var(--radius);transition:border-color .3s,box-shadow .3s,transform .3s}
-.pcard:hover{border-color:color-mix(in srgb,var(--accent) 25%,var(--border));box-shadow:0 8px 24px rgba(15,23,42,.055);transform:translateY(-2px)}
-.pcard h3{font-size:.92rem;font-weight:700;color:var(--fg)}
-.pcard p{font-size:.87rem;color:var(--fg2);margin-top:.35rem;line-height:1.6}
-.pcard-tags{display:flex;gap:.4rem;flex-wrap:wrap;margin-top:auto;padding-top:.85rem}
-.ptag{font-family:var(--mono);font-size:.7rem;padding:.25rem .65rem;border-radius:6px;background:var(--accent-soft);color:var(--accent);font-weight:500}
-.pcard-link{display:inline-flex;align-items:center;gap:.3rem;margin-top:.85rem;font-size:.83rem;font-weight:600;color:var(--accent);text-decoration:none;transition:gap .2s}
-.pcard-link:hover{gap:.55rem}
-.skill-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1.5rem 2rem}
-.skill-cat{font-family:var(--mono);font-size:.7rem;text-transform:uppercase;letter-spacing:.08em;color:var(--fg3);font-weight:500;margin-bottom:.55rem}
-.skill-pills{display:flex;flex-wrap:wrap;gap:.4rem}
-.pill{font-size:.82rem;font-weight:500;padding:.4rem .9rem;border-radius:8px;background:var(--card);border:1px solid var(--border);color:var(--fg2);transition:all .25s cubic-bezier(.22,1,.36,1);cursor:default}
-.pill:hover{color:var(--accent);border-color:var(--accent);transform:translateY(-2px);box-shadow:0 4px 12px var(--accent-soft)}
-.foot{text-align:center;padding:3.5rem 1.5rem;border-top:1px solid var(--border);color:var(--fg3);font-size:.82rem;position:relative;z-index:2;background:linear-gradient(90deg,transparent,color-mix(in srgb,var(--accent) 5%,transparent),transparent),linear-gradient(180deg,color-mix(in srgb,var(--card) 26%,transparent),transparent)}
-.foot-cta{max-width:620px;margin:0 auto 1.25rem;font-family:var(--serif);font-size:clamp(1.35rem,3vw,1.9rem);line-height:1.25;color:var(--fg)}
-.foot-links{display:flex;justify-content:center;gap:1.5rem;margin-bottom:.85rem}
-.foot-links a{color:var(--fg2);text-decoration:none;font-weight:500;transition:color .2s}
-.foot-links a:hover{color:var(--accent)}
-.btt{position:fixed;right:1.25rem;bottom:1.25rem;width:42px;height:42px;border-radius:50%;border:1px solid var(--border);background:var(--card);color:var(--fg);cursor:pointer;display:grid;place-items:center;font-size:.95rem;box-shadow:0 4px 16px rgba(0,0,0,.08);opacity:0;transform:translateY(10px) scale(.9);transition:opacity .3s,transform .3s,background .2s,border-color .2s;pointer-events:none;z-index:50}
-.btt.show{opacity:1;transform:translateY(0) scale(1);pointer-events:auto}
-.btt:hover{background:var(--accent);color:#fff;border-color:var(--accent)}
-.skip{position:absolute;left:-9999px;top:0;background:var(--accent);color:#fff;padding:.5rem .75rem;border-radius:0 0 8px 0;z-index:1000;font-size:.85rem}
-.skip:focus{left:0}
-@media(max-width:920px){.overview-panel{grid-template-columns:1fr}.snapshot-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.timeline,.project-grid{grid-template-columns:1fr}.content{max-width:760px}.tcard,.pcard{padding:1.2rem 1.25rem}}
-@media(max-width:760px){.snapshot-grid,.focus-grid,.skill-grid{grid-template-columns:1fr}.hero-stats{grid-template-columns:1fr;max-width:320px}.hero-stat{display:flex;align-items:baseline;justify-content:space-between;gap:1rem;text-align:left}.hero-stat span{text-align:right}.scroll-hint{display:none}}
-@media(max-width:640px){.content{gap:3.5rem;padding-top:3rem}.hero{min-height:94svh;padding:5rem 1rem 3rem}.hero-avatar{width:92px;height:92px;margin-bottom:1.25rem}.hero-sub{font-size:.95rem}.hero-note{font-size:.92rem}.btn{width:100%;justify-content:center}.hero-cta{max-width:320px;margin-left:auto;margin-right:auto}.tcard,.pcard,.pub-card{padding:1.1rem}.hero-kicker::before,.hero-kicker::after{width:18px}}
-@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:0s!important;transition-duration:0s!important}canvas{display:none}}
-`;
 
+:root {
+  --bg: #F7F7F5;
+  --bg2: #ECEDEB;
+  --fg: #151719;
+  --fg2: #4E565D;
+  --fg3: #7D858B;
+  --accent: #2F5E9E;
+  --accent2: #173D72;
+  --warm: #A8653F;
+  --accent-soft: rgba(47,94,158,.08);
+  --border: #DADDE0;
+  --card: #FFFFFF;
+  --serif: 'Instrument Serif', Georgia, serif;
+  --sans: 'Satoshi', system-ui, sans-serif;
+  --mono: 'JetBrains Mono', monospace;
+  --radius: 10px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0F1114;
+    --bg2: #171A1F;
+    --fg: #EEF0F2;
+    --fg2: #B8BEC5;
+    --fg3: #78818A;
+    --accent: #8BADE6;
+    --accent2: #B7C8F0;
+    --warm: #D69A70;
+    --accent-soft: rgba(139,173,230,.1);
+    --border: #292E35;
+    --card: #171B20;
+  }
+}
+
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; scroll-padding-top: 80px; }
+body {
+  background: linear-gradient(180deg, var(--bg) 0%, color-mix(in srgb, var(--bg) 88%, var(--bg2)) 100%);
+  color: var(--fg);
+  font-family: var(--sans);
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(90deg, color-mix(in srgb, var(--border) 42%, transparent) 1px, transparent 1px),
+    linear-gradient(180deg, color-mix(in srgb, var(--border) 34%, transparent) 1px, transparent 1px);
+  background-size: 152px 152px;
+  -webkit-mask-image: radial-gradient(ellipse at 50% 18%, transparent 0%, transparent 28%, #000 58%, transparent 100%);
+  mask-image: radial-gradient(ellipse at 50% 18%, transparent 0%, transparent 28%, #000 58%, transparent 100%);
+  opacity: .26;
+}
+::selection { background: var(--accent); color: #fff; }
+
+.nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 clamp(1.25rem, 4vw, 3rem); height: 60px;
+  background: transparent;
+  transition: background .4s, box-shadow .4s, backdrop-filter .4s;
+}
+.nav.scrolled {
+  background: color-mix(in srgb, var(--bg) 85%, transparent);
+  backdrop-filter: blur(20px) saturate(1.5);
+  -webkit-backdrop-filter: blur(20px) saturate(1.5);
+  box-shadow: 0 1px 0 var(--border);
+}
+.nav-logo {
+  font-family: var(--serif);
+  font-size: 1.35rem;
+  color: var(--fg);
+  cursor: pointer;
+}
+.nav-links { display: flex; gap: 0; }
+.nav-links a {
+  color: var(--fg3);
+  text-decoration: none;
+  font-size: .76rem;
+  font-weight: 500;
+  letter-spacing: .07em;
+  text-transform: uppercase;
+  padding: .5rem .85rem;
+  border-radius: 8px;
+  transition: color .2s;
+  cursor: pointer;
+  position: relative;
+}
+.nav-links a::after {
+  content: '';
+  position: absolute;
+  bottom: 4px;
+  left: 50%;
+  transform: translateX(-50%) scaleX(0);
+  width: 4px; height: 4px;
+  border-radius: 50%;
+  background: var(--accent);
+  transition: transform .3s cubic-bezier(.22,1,.36,1);
+}
+.nav-links a.active::after { transform: translateX(-50%) scaleX(1); }
+.nav-links a:hover { color: var(--fg); }
+.nav-links a.active { color: var(--accent); }
+.hamburger {
+  display: none;
+  background: none; border: none;
+  color: var(--fg);
+  font-size: 1.4rem;
+  cursor: pointer;
+  padding: .25rem;
+}
+@media (max-width: 700px) {
+  .nav-links {
+    position: fixed; inset: 0;
+    flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: .75rem;
+    background: color-mix(in srgb, var(--bg) 97%, transparent);
+    backdrop-filter: blur(24px);
+    opacity: 0; pointer-events: none;
+    transition: opacity .3s;
+  }
+  .nav-links.open { opacity: 1; pointer-events: auto; }
+  .nav-links a { font-size: 1.2rem; padding: .85rem 1.5rem; }
+  .hamburger { display: block; }
+}
+
+.hero {
+  min-height: 92svh;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  text-align: center;
+  padding: 6rem 1.5rem 4.5rem;
+  position: relative;
+  overflow: hidden;
+  border-bottom: 1px solid var(--border);
+}
+.hero-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse at 50% 42%,
+      color-mix(in srgb, var(--bg) 36%, transparent) 0%,
+      color-mix(in srgb, var(--bg) 22%, transparent) 34%,
+      color-mix(in srgb, var(--bg) 12%, transparent) 58%,
+      color-mix(in srgb, var(--bg) 58%, transparent) 100%),
+    linear-gradient(180deg, transparent 0%, color-mix(in srgb, var(--bg) 64%, transparent) 100%);
+}
+.hero-content {
+  position: relative;
+  z-index: 2;
+  max-width: 780px;
+  padding: 0 1rem;
+}
+.hero-avatar {
+  width: 104px; height: 104px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1px solid var(--border);
+  box-shadow: 0 10px 32px rgba(15,23,42,.08);
+  margin-bottom: 1.6rem;
+  opacity: 0;
+  transform: scale(.85);
+  transition: opacity .8s .1s cubic-bezier(.22,1,.36,1), transform .8s .1s cubic-bezier(.22,1,.36,1);
+}
+.hero-avatar.vis { opacity: 1; transform: scale(1); }
+.hero-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: .55rem;
+  margin-bottom: .8rem;
+  font-family: var(--mono);
+  font-size: .68rem;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--accent);
+  opacity: 0;
+  transform: translateY(10px);
+  transition: all .7s .25s cubic-bezier(.22,1,.36,1);
+}
+.hero-kicker::before, .hero-kicker::after {
+  content: '';
+  width: 28px; height: 1px;
+  background: var(--accent);
+}
+.hero-kicker.vis { opacity: 1; transform: translateY(0); }
+.hero h1 {
+  font-family: var(--serif);
+  font-size: clamp(3rem, 6.4vw, 5.25rem);
+  font-weight: 400;
+  line-height: 1.05;
+  color: var(--fg);
+}
+.hero-tagline {
+  max-width: 580px;
+  margin: 1rem auto 0;
+  color: var(--fg2);
+  font-size: 1.02rem;
+  line-height: 1.65;
+  opacity: 0;
+  transform: translateY(14px);
+  transition: all .7s .55s cubic-bezier(.22,1,.36,1);
+}
+.hero-tagline.vis { opacity: 1; transform: translateY(0); }
+.hero-cta {
+  display: flex; gap: .55rem;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-top: 1.85rem;
+  opacity: 0;
+  transform: translateY(14px);
+  transition: all .7s .7s cubic-bezier(.22,1,.36,1);
+}
+.hero-cta.vis { opacity: 1; transform: translateY(0); }
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: .45rem;
+  padding: .68rem 1.35rem;
+  border-radius: 9999px;
+  font-size: .85rem;
+  font-weight: 600;
+  text-decoration: none;
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--fg);
+  letter-spacing: .01em;
+  transition: transform .2s, box-shadow .2s, background .2s;
+}
+.btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 5px 18px rgba(15,23,42,.08);
+}
+.btn.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+.btn.primary:hover {
+  background: var(--accent2);
+  box-shadow: 0 4px 24px color-mix(in srgb, var(--accent) 30%, transparent);
+}
+.hero-meta {
+  display: flex;
+  gap: 0;
+  justify-content: center;
+  margin: 1.85rem auto 0;
+  opacity: 0;
+  transform: translateY(14px);
+  transition: all .7s .82s cubic-bezier(.22,1,.36,1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--card) 80%, transparent);
+  backdrop-filter: blur(12px);
+  overflow: hidden;
+  width: fit-content;
+  max-width: 100%;
+}
+.hero-meta.vis { opacity: 1; transform: translateY(0); }
+.hero-meta-item {
+  padding: .7rem 1.2rem;
+  text-align: left;
+  border-right: 1px solid var(--border);
+}
+.hero-meta-item:last-child { border-right: none; }
+.hero-meta-item span {
+  display: block;
+  font-family: var(--mono);
+  font-size: .58rem;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--fg3);
+  margin-bottom: .2rem;
+}
+.hero-meta-item strong {
+  display: block;
+  font-size: .85rem;
+  color: var(--fg);
+  font-weight: 700;
+  letter-spacing: -.005em;
+}
+.scroll-hint {
+  position: absolute;
+  bottom: 2rem;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: .35rem;
+  color: var(--fg3);
+  font-size: .66rem;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  font-weight: 500;
+  z-index: 2;
+  opacity: 0;
+  animation: fadeIn 1s 1.4s forwards;
+}
+@keyframes fadeIn { to { opacity: 1; } }
+.scroll-dot {
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: var(--accent);
+  animation: bounce 2s ease-in-out infinite;
+}
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); opacity: .4; }
+  50%      { transform: translateY(12px); opacity: 1; }
+}
+
+.content {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 5.5rem 1.75rem 6.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 5.5rem;
+  position: relative;
+  z-index: 2;
+}
+.section-head {
+  display: grid;
+  grid-template-columns: minmax(140px, 200px) minmax(0, 1fr);
+  align-items: end;
+  gap: 1.25rem;
+  margin-bottom: 1.5rem;
+}
+.sect-label {
+  font-family: var(--mono);
+  font-size: .68rem;
+  letter-spacing: .1em;
+  color: var(--accent);
+  font-weight: 500;
+  margin-bottom: .25rem;
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+}
+.sect-label::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, var(--border), transparent);
+}
+.sect h2 {
+  font-family: var(--serif);
+  font-size: clamp(2rem, 3.2vw, 2.85rem);
+  font-weight: 400;
+  color: var(--fg);
+  line-height: 1;
+}
+.about-text {
+  max-width: 720px;
+  color: var(--fg2);
+  font-size: 1.02rem;
+  line-height: 1.75;
+}
+
+.experience-board { display: grid; gap: .9rem; }
+.experience-board > div { height: 100%; }
+.exp-card {
+  position: relative;
+  display: grid;
+  grid-template-columns: 200px minmax(0, 1fr);
+  gap: 1.5rem;
+  padding: 1.4rem 1.5rem;
+  background: color-mix(in srgb, var(--card) 92%, transparent);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 12px 32px rgba(15,23,42,.035);
+  transition: border-color .3s, box-shadow .3s, transform .3s;
+}
+.exp-card::before {
+  content: '';
+  position: absolute;
+  left: 200px;
+  top: 1.4rem;
+  bottom: 1.4rem;
+  width: 1px;
+  background: linear-gradient(180deg, var(--border), transparent);
+}
+.exp-card:hover {
+  border-color: color-mix(in srgb, var(--accent) 24%, var(--border));
+  box-shadow: 0 16px 38px rgba(15,23,42,.06);
+  transform: translateY(-2px);
+}
+.exp-meta {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 1rem;
+}
+.exp-meta span {
+  font-family: var(--mono);
+  font-size: .62rem;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--warm);
+}
+.exp-meta strong {
+  font-family: var(--mono);
+  font-size: .74rem;
+  color: var(--fg3);
+  font-weight: 500;
+  line-height: 1.4;
+}
+.exp-body h3 {
+  font-size: 1.02rem;
+  font-weight: 750;
+  color: var(--fg);
+}
+.exp-org {
+  font-size: .85rem;
+  color: var(--accent);
+  font-weight: 600;
+  margin-top: .2rem;
+}
+.exp-body ul {
+  margin-top: .9rem;
+  padding-left: 0;
+  list-style: none;
+  display: grid;
+  gap: .5rem;
+}
+.exp-body li {
+  position: relative;
+  font-size: .9rem;
+  color: var(--fg2);
+  padding-left: 1rem;
+  line-height: 1.6;
+}
+.exp-body li::before {
+  content: '\u203A';
+  position: absolute;
+  left: 0; top: 0;
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.pub-card {
+  padding: 1.6rem 1.75rem;
+  background: linear-gradient(135deg,
+    color-mix(in srgb, var(--card) 94%, transparent),
+    color-mix(in srgb, var(--accent) 6%, transparent));
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 12px 32px rgba(15,23,42,.04);
+}
+.pub-venue {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: .9rem;
+  flex-wrap: wrap;
+}
+.pub-venue span {
+  font-family: var(--mono);
+  font-size: .7rem;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--accent);
+  font-weight: 500;
+}
+.pub-venue strong {
+  font-family: var(--mono);
+  font-size: .72rem;
+  color: var(--fg3);
+  font-weight: 500;
+}
+.pub-card h3 {
+  font-family: var(--serif);
+  font-size: clamp(1.2rem, 2vw, 1.55rem);
+  font-weight: 400;
+  line-height: 1.35;
+  color: var(--fg);
+  letter-spacing: -.01em;
+}
+.pub-authors {
+  margin-top: .8rem;
+  font-size: .88rem;
+  color: var(--fg2);
+}
+.pub-authors em {
+  font-style: normal;
+  color: var(--warm);
+  font-weight: 500;
+  font-family: var(--mono);
+  font-size: .78rem;
+  letter-spacing: .04em;
+}
+
+.skill-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: .9rem;
+}
+.skill-grid > div { height: 100%; }
+.skill-card {
+  height: 100%;
+  padding: 1.2rem 1.15rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--card) 92%, transparent);
+  box-shadow: 0 10px 28px rgba(15,23,42,.035);
+}
+.skill-cat {
+  font-family: var(--mono);
+  font-size: .68rem;
+  text-transform: uppercase;
+  letter-spacing: .1em;
+  color: var(--fg3);
+  font-weight: 500;
+  margin-bottom: .7rem;
+}
+.skill-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .4rem;
+}
+.pill {
+  font-size: .8rem;
+  font-weight: 500;
+  padding: .38rem .85rem;
+  border-radius: 8px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  color: var(--fg2);
+  transition: all .25s cubic-bezier(.22,1,.36,1);
+}
+.pill:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px var(--accent-soft);
+}
+
+.foot {
+  text-align: center;
+  padding: 3.5rem 1.5rem 2.5rem;
+  border-top: 1px solid var(--border);
+  color: var(--fg3);
+  font-size: .82rem;
+  position: relative;
+  z-index: 2;
+  background: linear-gradient(90deg,
+    transparent,
+    color-mix(in srgb, var(--accent) 4%, transparent),
+    transparent);
+}
+.foot-cta {
+  max-width: 540px;
+  margin: 0 auto 1.4rem;
+  font-family: var(--serif);
+  font-size: clamp(1.3rem, 2.6vw, 1.75rem);
+  line-height: 1.3;
+  color: var(--fg);
+}
+.foot-links {
+  display: flex;
+  justify-content: center;
+  gap: 1.5rem;
+  margin-bottom: 1rem;
+}
+.foot-links a {
+  color: var(--fg2);
+  text-decoration: none;
+  font-weight: 500;
+  transition: color .2s;
+}
+.foot-links a:hover { color: var(--accent); }
+.foot-copy { color: var(--fg3); }
+
+.btt {
+  position: fixed;
+  right: 1.25rem;
+  bottom: 1.25rem;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--fg);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  font-size: .95rem;
+  box-shadow: 0 4px 16px rgba(0,0,0,.08);
+  opacity: 0;
+  transform: translateY(10px) scale(.9);
+  transition: opacity .3s, transform .3s, background .2s, border-color .2s, color .2s;
+  pointer-events: none;
+  z-index: 50;
+}
+.btt.show { opacity: 1; transform: translateY(0) scale(1); pointer-events: auto; }
+.btt:hover { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+.skip {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  background: var(--accent);
+  color: #fff;
+  padding: .5rem .75rem;
+  border-radius: 0 0 8px 0;
+  z-index: 1000;
+  font-size: .85rem;
+}
+.skip:focus { left: 0; }
+
+@media (max-width: 920px) {
+  .section-head { grid-template-columns: 1fr; gap: .35rem; }
+  .exp-card { grid-template-columns: 1fr; gap: .9rem; }
+  .exp-card::before { display: none; }
+  .exp-meta { flex-direction: row; align-items: center; }
+  .skill-grid { grid-template-columns: 1fr; }
+  .content { max-width: 760px; }
+}
+
+@media (max-width: 640px) {
+  body::before { opacity: .14; }
+  .content { gap: 4rem; padding-top: 3.25rem; }
+  .hero { min-height: 94svh; padding: 5rem 1rem 3rem; }
+  .hero-avatar { width: 88px; height: 88px; margin-bottom: 1.1rem; }
+  .hero-tagline { font-size: .94rem; }
+  .btn { flex: 1; justify-content: center; min-width: 0; }
+  .hero-cta { max-width: 320px; margin-left: auto; margin-right: auto; }
+  .hero-meta-item { padding: .55rem .8rem; }
+  .hero-meta-item strong { font-size: .78rem; }
+  .scroll-hint { display: none; }
+  .exp-card, .pub-card, .skill-card { padding: 1.15rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0s !important; transition-duration: 0s !important; }
+  canvas { display: none; }
+}
+`;

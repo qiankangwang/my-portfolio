@@ -1,10 +1,5 @@
 import { useEffect, useRef } from "react";
 
-const AMINO_ACIDS = [
-  "ALA","ARG","ASN","ASP","CYS","GLN","GLU","GLY","HIS","ILE",
-  "LEU","LYS","MET","PHE","PRO","SER","THR","TRP","TYR","VAL",
-];
-
 export default function NeuralNetCanvas() {
   const canvasRef = useRef(null);
   const raf = useRef(null);
@@ -30,68 +25,6 @@ export default function NeuralNetCanvas() {
     const onDarkChange = (e) => { dark = e.matches; };
     darkMq.addEventListener("change", onDarkChange);
     const rgba = (rgb, a) => `rgba(${rgb[0]},${rgb[1]},${rgb[2]},${a})`;
-
-    /* ── DNA double helix helper ─────────────────────────── */
-    const drawDNAHelix = (mx, my, sx, sy, len, angle, phase, scale) => {
-      const step = 13 * scale;
-      const dx = Math.cos(angle) * step;
-      const dy = Math.sin(angle) * step;
-      const perpX = Math.cos(angle + Math.PI / 2);
-      const perpY = Math.sin(angle + Math.PI / 2);
-      const accent = dark ? [120, 165, 235] : [55, 110, 225];
-      const warm   = dark ? [220, 158, 115] : [200, 105, 55];
-      const dim    = dark ? [48, 55, 66]   : [190, 198, 210];
-
-      for (let i = 0; i < len; i++) {
-        const t = i / Math.max(1, len - 1);
-        const wave = Math.sin(frame * 0.012 + t * Math.PI * 6 + phase) * 12 * scale;
-        const x = sx + dx * i;
-        const y = sy + dy * i;
-
-        const s1x = x + perpX * wave;
-        const s1y = y + perpY * wave;
-        const s2x = x - perpX * wave;
-        const s2y = y - perpY * wave;
-
-        // Base-pair rungs
-        if (i % 2 === 0) {
-          ctx.beginPath();
-          ctx.moveTo(s1x, s1y);
-          ctx.lineTo(s2x, s2y);
-          ctx.strokeStyle = rgba(dim, dark ? 0.18 : 0.12);
-          ctx.lineWidth = 0.6;
-          ctx.stroke();
-        }
-
-        // Hot spot traveling along helix
-        const hot = ((t + frame * 0.004 + phase * 0.3) % 1);
-        const glow = hot > 0.36 && hot < 0.5;
-
-        // Strand 1 nodes (blue accent)
-        ctx.beginPath();
-        ctx.arc(s1x, s1y, glow ? 2.8 : 1.6, 0, Math.PI * 2);
-        ctx.fillStyle = rgba(accent, glow ? 0.72 : 0.38);
-        ctx.fill();
-
-        // Strand 2 nodes (warm accent)
-        ctx.beginPath();
-        ctx.arc(s2x, s2y, glow ? 2.8 : 1.6, 0, Math.PI * 2);
-        ctx.fillStyle = rgba(warm, glow ? 0.72 : 0.38);
-        ctx.fill();
-
-        // Phosphate backbone highlights
-        if (i % 5 === 0) {
-          ctx.beginPath();
-          ctx.arc(s1x, s1y, 3.6, 0, Math.PI * 2);
-          ctx.fillStyle = rgba(accent, 0.08);
-          ctx.fill();
-          ctx.beginPath();
-          ctx.arc(s2x, s2y, 3.6, 0, Math.PI * 2);
-          ctx.fillStyle = rgba(warm, 0.08);
-          ctx.fill();
-        }
-      }
-    };
 
     const buildNetwork = () => {
       nodes = [];
@@ -121,7 +54,6 @@ export default function NeuralNetCanvas() {
             r: 3.2 + (layer === 0 || layer === layers.length - 1 ? 0.4 : 0.9),
             phase: Math.random() * Math.PI * 2,
             activation: layer === 0 ? 0.4 : 0,
-            aa: Math.random() < 0.35 ? AMINO_ACIDS[Math.floor(Math.random() * AMINO_ACIDS.length)] : null,
           });
         }
       });
@@ -155,19 +87,14 @@ export default function NeuralNetCanvas() {
         const top = cy - netH * 0.34;
         const bottom = cy + netH * 0.34;
         bioMotifs = [
-          // DNA double helices ─────────────────────────
-          { type: "dna", sx: left + netW * 0.06, sy: top + netH * 0.18, len: 18, angle: 0.22,  phase: 0.3, scale: 0.9 },
-          { type: "dna", sx: left + netW * 0.56, sy: bottom - netH * 0.1, len: 22, angle: -0.18, phase: 2.1, scale: 1.05 },
-          { type: "dna", sx: left + netW * 0.48, sy: top + netH * 0.62, len: 16, angle: -0.3,  phase: 5.7, scale: 0.82 },
-
-          // Existing RNA motifs ────────────────────────
+          // RNA motifs
           { type: "rna", x: left + netW * 0.1,  y: top + netH * 0.12, len: 13, angle: 0.15,  phase: 0.2, bend: 10 },
           { type: "rna", x: left + netW * 0.22, y: top + netH * 0.34, len: 11, angle: -0.22, phase: 1.1, bend: -8 },
           { type: "rna", x: left + netW * 0.5,  y: top + netH * 0.74, len: 10, angle: -0.2,  phase: 3.1, bend: -7 },
           { type: "rna", x: left + netW * 0.08, y: top + netH * 0.58, len: 9,  angle: 0.32,  phase: 6.0, bend: 6 },
           { type: "rna", x: left + netW * 0.82, y: top + netH * 0.34, len: 9,  angle: -0.3,  phase: 8.4, bend: -6 },
 
-          // Existing protein motifs ────────────────────
+          // Protein motifs
           { type: "protein", x: left + netW * 0.76, y: top + netH * 0.18, len: 10, scale: 1.05, phase: 0.5 },
           { type: "protein", x: left + netW * 0.18, y: bottom - netH * 0.16, len: 8, scale: 0.92, phase: 2.4 },
           { type: "protein", x: left + netW * 0.42, y: top + netH * 0.06, len: 7, scale: 0.7, phase: 5.4 },
@@ -218,13 +145,11 @@ export default function NeuralNetCanvas() {
       ctx.fillStyle = grad;
       ctx.fillRect(0, 0, w, h);
 
-      /* ── Bio motifs: DNA, RNA, Protein ─────────────── */
+      /* ── Bio motifs: RNA, Protein ─────────────── */
       bioMotifs.forEach((m, mi) => {
         const drift = Math.sin(frame * 0.01 + m.phase) * 9;
 
-        if (m.type === "dna") {
-          drawDNAHelix(mx, my, m.sx, m.sy, m.len, m.angle, m.phase, m.scale);
-        } else if (m.type === "rna") {
+        if (m.type === "rna") {
           const step = 14;
           const dx = Math.cos(m.angle) * step;
           const dy = Math.sin(m.angle) * step;
@@ -279,24 +204,17 @@ export default function NeuralNetCanvas() {
         }
       });
 
-      /* ── Node physics with Brownian repulsion ──────── */
+      /* ── Node physics ──────── */
       nodes.forEach((n) => {
         n.x = n.baseX + Math.sin(t + n.phase) * 2.2;
         n.y = n.baseY + Math.cos(t * 0.7 + n.phase * 1.3) * 2.2;
         const dx = n.x - mx;
         const dy = n.y - my;
         const dist = Math.sqrt(dx * dx + dy * dy);
-
-        // Brownian-like scattering: stronger push + random jitter
-        if (dist > 0 && dist < 140) {
-          const pull = (140 - dist) / 140;
-          const pushStrength = pull * pull * 13;
-          n.x += (dx / dist) * pushStrength;
-          n.y += (dy / dist) * pushStrength;
-          // Add random Brownian jitter when scattered
-          const jitter = pull * 4.5;
-          n.x += (Math.random() - 0.5) * jitter;
-          n.y += (Math.random() - 0.5) * jitter;
+        if (dist > 0 && dist < 130) {
+          const pull = (130 - dist) / 130;
+          n.x += (dx / dist) * pull * 8;
+          n.y += (dy / dist) * pull * 8;
           n.activation = Math.max(n.activation, pull * 0.7);
         }
         n.activation *= 0.93;
@@ -343,11 +261,7 @@ export default function NeuralNetCanvas() {
         ctx.fill();
       }
 
-      /* ── Draw nodes + amino acid labels ─────────────── */
-      ctx.font = `${dark ? 8 : 7}px "JetBrains Mono", monospace`;
-      ctx.textAlign = "center";
-      ctx.textBaseline = "bottom";
-
+      /* ── Draw nodes ─────────────── */
       nodes.forEach((n) => {
         const mix = Math.min(1, n.activation);
         if (mix > 0.08) {
@@ -366,12 +280,6 @@ export default function NeuralNetCanvas() {
         ctx.strokeStyle = rgba(accent, 0.16 + mix * 0.25);
         ctx.lineWidth = 0.75;
         ctx.stroke();
-
-        // Show amino acid label when node is activated by mouse
-        if (n.aa && mix > 0.28) {
-          ctx.fillStyle = rgba(accent, mix * 0.85);
-          ctx.fillText(n.aa, n.x, n.y - n.r - 4);
-        }
       });
 
       raf.current = requestAnimationFrame(draw);

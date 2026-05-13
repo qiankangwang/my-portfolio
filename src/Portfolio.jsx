@@ -3,7 +3,6 @@ import D from "./data";
 import "./Portfolio.css";
 
 const NeuralNetCanvas = lazy(() => import("./NeuralNetCanvas"));
-const GitHubHeatmap    = lazy(() => import("./GitHubHeatmap"));
 
 /* ----------------------------------------------------------------------
    Helpers
@@ -157,7 +156,7 @@ function useTheme() {
    Main
    ---------------------------------------------------------------------- */
 
-const NAV = ["About", "Research", "Publication", "Skills", "Activity"];
+const NAV = ["About", "Research", "Publication", "Skills"];
 
 export default function Portfolio() {
   const [theme, toggleTheme]     = useTheme();
@@ -386,17 +385,6 @@ export default function Portfolio() {
               </StaggerItem>
             ))}
           </div>
-        </Section>
-
-        {/* ── Activity / GitHub Heatmap ──────────────────────── */}
-        <Section id="activity" delay={0.05} data-n="05">
-          <div className="section-head">
-            <span className="sect-n">05</span>
-            <h2>Activity</h2>
-          </div>
-          <Suspense fallback={<div className="heatmap-card"><div className="heatmap-loading">Loading...</div></div>}>
-            <GitHubHeatmap theme={theme} />
-          </Suspense>
         </Section>
 
       </main>

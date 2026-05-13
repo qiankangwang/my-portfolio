@@ -288,22 +288,22 @@ export default function Portfolio() {
   const [particles, setParticles] = useState([]);
 
   const spawnParticles = useCallback(() => {
-    const colors = ["#3B82F6", "#60A5FA", "#F59E0B", "#34D399", "#A78BFA", "#F472B6", "#F87171", "#22D3EE"];
-    const newParticles = Array.from({ length: 24 }, (_, i) => {
-      const angle = (Math.PI * 2 * i) / 24 + (Math.random() - 0.5) * 0.5;
-      const dist = 40 + Math.random() * 80;
+    const items = ["🧬", "⚡", "⭐", "✨", "🎉", "🔬", "💻", "🚀"];
+    const newParticles = Array.from({ length: 18 }, (_, i) => {
+      const angle = (Math.PI * 2 * i) / 18 + (Math.random() - 0.5) * 0.6;
+      const dist = 30 + Math.random() * 90;
       return {
         id: Date.now() + i,
-        color: colors[Math.floor(Math.random() * colors.length)],
+        emoji: items[Math.floor(Math.random() * items.length)],
         x: Math.cos(angle) * dist,
         y: Math.sin(angle) * dist,
-        rot: (Math.random() - 0.5) * 360,
-        delay: i * 0.015,
-        size: 3 + Math.random() * 5,
+        rot: (Math.random() - 0.5) * 180,
+        delay: i * 0.02,
+        scale: 0.8 + Math.random() * 0.5,
       };
     });
     setParticles(newParticles);
-    setTimeout(() => setParticles([]), 1000);
+    setTimeout(() => setParticles([]), 1200);
   }, []);
 
   const onAvatarClick = useCallback(() => {
@@ -372,13 +372,12 @@ export default function Portfolio() {
                 style={{
                   left: `calc(50% + ${p.x}px)`,
                   top: `calc(50% + ${p.y}px)`,
-                  background: p.color,
-                  width: `${p.size}px`,
-                  height: `${p.size}px`,
-                  transform: `translate(-50%, -50%) rotate(${p.rot}deg)`,
+                  transform: `translate(-50%, -50%) rotate(${p.rot}deg) scale(${p.scale})`,
                   animationDelay: `${p.delay}s`,
                 }}
-              />
+              >
+                {p.emoji}
+              </span>
             ))}
           </div>
           <div className={`hero-kicker${heroVis ? " vis" : ""}`}>

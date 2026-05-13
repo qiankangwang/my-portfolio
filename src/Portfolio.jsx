@@ -211,6 +211,15 @@ export default function Portfolio() {
 
   const [expRef, expVis]     = useInView();
   const [skillRef, skillVis] = useInView();
+  const [copied, setCopied]  = useState(false);
+
+  const copyEmail = async () => {
+    try {
+      await navigator.clipboard.writeText(D.email);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {}
+  };
 
   return (
     <>
@@ -362,6 +371,21 @@ export default function Portfolio() {
             <p className="pub-authors">
               {D.publication.authors} <em>· {D.publication.role}</em>
             </p>
+            {D.publication.links && D.publication.links.length > 0 && (
+              <div className="pub-links">
+                {D.publication.links.map((l) => (
+                  <a
+                    key={l.label}
+                    href={l.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="pub-link"
+                  >
+                    {l.label} →
+                  </a>
+                ))}
+              </div>
+            )}
           </article>
         </Section>
 
@@ -396,9 +420,14 @@ export default function Portfolio() {
           I&rsquo;m always open to discussing research collaborations, new opportunities,
           and interesting problems at the intersection of ML and science.
         </p>
-        <a className="btn primary" href={"mailto:" + D.email}>
-          {"✉"}  Get in touch
-        </a>
+        <div className="cta-actions">
+          <a className="btn primary" href="/resume.pdf" download>
+            {"↓"} Download CV
+          </a>
+          <button className="btn" onClick={copyEmail}>
+            {copied ? "✓ Copied" : "✉ Copy Email"}
+          </button>
+        </div>
         <div className="cta-links">
           <a href={D.github}   target="_blank" rel="noopener noreferrer">GitHub</a>
           <span className="cta-sep" />

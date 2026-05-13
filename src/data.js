@@ -51,6 +51,10 @@ const D = {
     venue: "Journal of Chemical Theory and Computation",
     year: "2026",
     role: "Second author",
+    links: [
+      { label: "DOI", url: "https://doi.org/10.1021/acs.jctc.XXXXXX" },
+      { label: "arXiv", url: "https://arxiv.org/abs/XXXX.XXXXX" },
+    ],
   },
 
   skills: {

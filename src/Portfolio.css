@@ -339,15 +339,15 @@ body::before {
 }
 .avatar-particle {
   position: absolute;
-  font-size: 1.4rem;
+  border-radius: 2px;
   pointer-events: none;
   z-index: 3;
   animation: particleFly 1s cubic-bezier(.22,1,.36,1) forwards;
 }
 @keyframes particleFly {
-  0%   { opacity: 1; transform: translate(-50%, -50%) scale(0.3); }
-  20%  { opacity: 1; transform: translate(-50%, -50%) scale(1.2); }
-  100% { opacity: 0; transform: translate(-50%, -150%) scale(0.6); }
+  0%   { opacity: 1; transform: translate(-50%, -50%) scale(0); }
+  15%  { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, -180%) scale(0.4); }
 }
 
 .hero-kicker {

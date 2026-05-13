@@ -288,15 +288,15 @@ export default function Portfolio() {
   const [particles, setParticles] = useState([]);
 
   const spawnParticles = useCallback(() => {
-    const emojis = ["🧬", "⚡", "🔬", "⭐", "🎉", "💻", "🧠", "✨", "🚀", "🔥"];
-    const newParticles = emojis.map((emoji, i) => ({
+    const colors = ["#3B82F6", "#60A5FA", "#F59E0B", "#34D399", "#A78BFA", "#F472B6"];
+    const newParticles = Array.from({ length: 18 }, (_, i) => ({
       id: Date.now() + i,
-      emoji,
-      x: (Math.random() - 0.5) * 120,
-      y: -(Math.random() * 80 + 40),
-      rot: (Math.random() - 0.5) * 180,
-      delay: i * 0.05,
-      scale: 0.8 + Math.random() * 0.6,
+      color: colors[Math.floor(Math.random() * colors.length)],
+      x: (Math.random() - 0.5) * 140,
+      y: -(Math.random() * 60 + 30),
+      rot: (Math.random() - 0.5) * 360,
+      delay: i * 0.02,
+      size: 4 + Math.random() * 6,
     }));
     setParticles(newParticles);
     setTimeout(() => setParticles([]), 1200);
@@ -317,7 +317,7 @@ export default function Portfolio() {
       {/* ── Nav ── */}
       <nav className={`nav${scrolled ? " scrolled" : ""}`}>
         <span className="nav-logo" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}>
-          <img src="/photo.png" alt="K" className="nav-logo-img" />
+          <img src={`${process.env.PUBLIC_URL}/photo.png`} alt="K" className="nav-logo-img" />
         </span>
         <div className="nav-right">
           <div className={`nav-links${menuOpen ? " open" : ""}`}>
@@ -368,12 +368,13 @@ export default function Portfolio() {
                 style={{
                   left: `calc(50% + ${p.x}px)`,
                   top: `calc(50% + ${p.y}px)`,
-                  transform: `translate(-50%, -50%) rotate(${p.rot}deg) scale(${p.scale})`,
+                  background: p.color,
+                  width: `${p.size}px`,
+                  height: `${p.size}px`,
+                  transform: `translate(-50%, -50%) rotate(${p.rot}deg)`,
                   animationDelay: `${p.delay}s`,
                 }}
-              >
-                {p.emoji}
-              </span>
+              />
             ))}
           </div>
           <div className={`hero-kicker${heroVis ? " vis" : ""}`}>

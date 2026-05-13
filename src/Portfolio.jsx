@@ -448,23 +448,22 @@ export default function Portfolio() {
           {repoLoading ? (
             <div className="projects-loading">Loading repositories…</div>
           ) : (
-            <div className="projects-grid" ref={projRef}>
-              {(repos.length > 0 ? repos : D.projects).map((repo, i) => (
-                <StaggerItem key={repo.id || repo.name} index={i} visible={projVis}>
-                  <a
-                    href={repo.html_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="project-card"
-                  >
-                    <h3>{repo.name}</h3>
-                    <p>{repo.description || "No description provided."}</p>
-                    <div className="project-meta">
-                      {repo.language && <span>{repo.language}</span>}
-                      <span>⭐ {repo.stargazers_count}</span>
-                    </div>
-                  </a>
-                </StaggerItem>
+            <div className="projects-grid">
+              {(repos.length > 0 ? repos : D.projects).map((repo) => (
+                <a
+                  key={repo.id || repo.name}
+                  href={repo.html_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="project-card"
+                >
+                  <h3>{repo.name}</h3>
+                  <p>{repo.description || "No description provided."}</p>
+                  <div className="project-meta">
+                    {repo.language && <span>{repo.language}</span>}
+                    <span>⭐ {repo.stargazers_count}</span>
+                  </div>
+                </a>
               ))}
             </div>
           )}

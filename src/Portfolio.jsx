@@ -156,7 +156,7 @@ function useTheme() {
    Main
    ---------------------------------------------------------------------- */
 
-const NAV = ["About", "Research", "Publication", "Skills"];
+const NAV = ["About", "Research", "Publication", "Projects", "Skills"];
 
 export default function Portfolio() {
   const [theme, toggleTheme]     = useTheme();
@@ -204,6 +204,16 @@ export default function Portfolio() {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [menuOpen]);
 
+  useEffect(() => {
+    fetch("https://api.github.com/users/xiaole5211314/repos?sort=updated&per_page=6")
+      .then((r) => r.json())
+      .then((data) => {
+        setRepos(Array.isArray(data) ? data : []);
+        setRepoLoading(false);
+      })
+      .catch(() => setRepoLoading(false));
+  }, []);
+
   const scrollTo = (id) => {
     document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
     setMenuOpen(false);
@@ -212,6 +222,8 @@ export default function Portfolio() {
   const [expRef, expVis]     = useInView();
   const [skillRef, skillVis] = useInView();
   const [copied, setCopied]  = useState(false);
+  const [repos, setRepos]         = useState([]);
+  const [repoLoading, setRepoLoading] = useState(true);
 
   const copyEmail = async () => {
     try {
@@ -389,8 +401,38 @@ export default function Portfolio() {
           </article>
         </Section>
 
+        {/* ── Projects ────────────────────────────────────────── */}
+        <Section id="projects" delay={0.05} data-n="04">
+          <div className="section-head">
+            <span className="sect-n">04</span>
+            <h2>Projects</h2>
+          </div>
+          {repoLoading ? (
+            <div className="projects-loading">Loading repositories…</div>
+          ) : (
+            <div className="projects-grid">
+              {repos.map((repo) => (
+                <a
+                  key={repo.id}
+                  href={repo.html_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="project-card"
+                >
+                  <h3>{repo.name}</h3>
+                  <p>{repo.description || "No description provided."}</p>
+                  <div className="project-meta">
+                    {repo.language && <span>{repo.language}</span>}
+                    <span>⭐ {repo.stargazers_count}</span>
+                  </div>
+                </a>
+              ))}
+            </div>
+          )}
+        </Section>
+
         {/* ── Skills / Bento ──────────────────────────────────── */}
-        <Section id="skills" delay={0.05} data-n="04">
+        <Section id="skills" delay={0.05} data-n="05">
           <div className="section-head">
             <span className="sect-n">04</span>
             <h2>Skills</h2>

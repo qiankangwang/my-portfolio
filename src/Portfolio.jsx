@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, lazy, Suspense } from "react";
+import { useState, useEffect, useRef, useCallback, lazy, Suspense } from "react";
 import D from "./data";
 import "./Portfolio.css";
 
@@ -104,6 +104,53 @@ function TextReveal({ text, tag: Tag = "h1", className, wordColors = null }) {
   );
 }
 
+function CountUp({ target, suffix = "", duration = 1800 }) {
+  const [ref, visible] = useInView(0.5);
+  const raf = useRef(null);
+
+  useEffect(() => {
+    if (!visible) return;
+    const el = ref.current;
+    if (!el) return;
+    const start = performance.now();
+    const tick = (now) => {
+      const p = Math.min((now - start) / duration, 1);
+      const eased = 1 - Math.pow(1 - p, 3);
+      el.textContent = Math.round(eased * target) + suffix;
+      if (p < 1) raf.current = requestAnimationFrame(tick);
+      else el.textContent = target + suffix;
+    };
+    raf.current = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf.current);
+  }, [visible, target, suffix, duration, ref]);
+
+  return <span ref={ref}>0{suffix}</span>;
+}
+
+/* ----------------------------------------------------------------------
+   Dark mode hook
+   ---------------------------------------------------------------------- */
+
+function useTheme() {
+  const [theme, setTheme] = useState(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("theme");
+      if (saved === "light" || saved === "dark") return saved;
+      return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+    }
+    return "light";
+  });
+
+  useEffect(() => {
+    document.documentElement.setAttribute("data-theme", theme);
+    localStorage.setItem("theme", theme);
+  }, [theme]);
+
+  const toggle = useCallback(() => setTheme((t) => (t === "dark" ? "light" : "dark")), []);
+
+  return [theme, toggle];
+}
+
 /* ----------------------------------------------------------------------
    Main
    ---------------------------------------------------------------------- */
@@ -111,10 +158,11 @@ function TextReveal({ text, tag: Tag = "h1", className, wordColors = null }) {
 const NAV = ["About", "Research", "Publication", "Skills"];
 
 export default function Portfolio() {
-  const [scrolled, setScrolled]   = useState(false);
-  const [active, setActive]       = useState("");
-  const [menuOpen, setMenuOpen]   = useState(false);
-  const [heroVis, setHeroVis]     = useState(false);
+  const [theme, toggleTheme]     = useTheme();
+  const [scrolled, setScrolled]  = useState(false);
+  const [active, setActive]      = useState("");
+  const [menuOpen, setMenuOpen]  = useState(false);
+  const [heroVis, setHeroVis]    = useState(false);
 
   useEffect(() => {
     const t = setTimeout(() => setHeroVis(true), 100);
@@ -173,21 +221,26 @@ export default function Portfolio() {
         <span className="nav-logo" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}>
           Kant W.
         </span>
-        <div className={"nav-links" + (menuOpen ? " open" : "")}>
-          {NAV.map((n) => (
-            <a
-              key={n}
-              href={"#" + n.toLowerCase()}
-              className={active === n ? "active" : ""}
-              onClick={(e) => { e.preventDefault(); scrollTo(n.toLowerCase()); }}
-            >
-              {n}
-            </a>
-          ))}
+        <div className="nav-right">
+          <div className={"nav-links" + (menuOpen ? " open" : "")}>
+            {NAV.map((n) => (
+              <a
+                key={n}
+                href={"#" + n.toLowerCase()}
+                className={active === n ? "active" : ""}
+                onClick={(e) => { e.preventDefault(); scrollTo(n.toLowerCase()); }}
+              >
+                {n}
+              </a>
+            ))}
+          </div>
+          <button className="theme-toggle" onClick={toggleTheme} aria-label="Toggle dark mode">
+            {theme === "dark" ? "☀" : "☾"}
+          </button>
+          <button className="hamburger" onClick={() => setMenuOpen(!menuOpen)} aria-label="Toggle menu">
+            {menuOpen ? "✕" : "☰"}
+          </button>
         </div>
-        <button className="hamburger" onClick={() => setMenuOpen(!menuOpen)} aria-label="Toggle menu">
-          {menuOpen ? "✕" : "☰"}
-        </button>
       </nav>
 
       {/* ── Hero ────────────────────────────────────────────── */}
@@ -205,7 +258,7 @@ export default function Portfolio() {
           <div className={"hero-kicker" + (heroVis ? " vis" : "")}>
             UC Berkeley · Data Science · 2027
           </div>
-          <TextReveal text={D.fullName} tag="h1" />
+          <TextReveal text={D.fullName} tag="h1" className="gradient-text" />
           <div className={"hero-rule" + (heroVis ? " vis" : "")} />
           <p className={"hero-tagline" + (heroVis ? " vis" : "")}>{D.tagline}</p>
           <div className={"hero-focuses" + (heroVis ? " vis" : "")}>
@@ -241,6 +294,10 @@ export default function Portfolio() {
                   <span className="stat-l">{s.l}</span>
                 </div>
               ))}
+              <div className="stat">
+                <span className="stat-n"><CountUp target={new Date().getFullYear() - 2024} suffix="+" /></span>
+                <span className="stat-l">Years in Research</span>
+              </div>
             </div>
             <p className="about-text">{D.about}</p>
           </div>
@@ -280,7 +337,22 @@ export default function Portfolio() {
             <span className="sect-n">03</span>
             <h2>Publication</h2>
           </div>
-          <article className="pub-card" onMouseMove={(e) => { const r = e.currentTarget.getBoundingClientRect(); e.currentTarget.style.setProperty('--gx', `${e.clientX - r.left}px`); e.currentTarget.style.setProperty('--gy', `${e.clientY - r.top}px`); }}>
+          <article
+            className="pub-card"
+            onMouseMove={(e) => {
+              const r = e.currentTarget.getBoundingClientRect();
+              const x = (e.clientX - r.left) / r.width - 0.5;
+              const y = (e.clientY - r.top) / r.height - 0.5;
+              e.currentTarget.style.setProperty('--gx', `${e.clientX - r.left}px`);
+              e.currentTarget.style.setProperty('--gy', `${e.clientY - r.top}px`);
+              e.currentTarget.style.setProperty('--rx', `${y * -8}deg`);
+              e.currentTarget.style.setProperty('--ry', `${x * 8}deg`);
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.setProperty('--rx', '0deg');
+              e.currentTarget.style.setProperty('--ry', '0deg');
+            }}
+          >
             <div className="pub-venue">
               <span>{D.publication.venue}</span>
               <strong>{D.publication.year}</strong>

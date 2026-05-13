@@ -316,14 +316,26 @@ export default function Portfolio() {
 
       </main>
 
-      {/* ── Footer ──────────────────────────────────────────── */}
-      <footer className="foot">
-        <div className="foot-links">
-          <a href={"mailto:" + D.email}>Email</a>
+      {/* ── CTA ──────────────────────────────────────────────── */}
+      <section className="cta">
+        <h2>Let&rsquo;s connect</h2>
+        <p>
+          I&rsquo;m always open to discussing research collaborations, new opportunities,
+          and interesting problems at the intersection of ML and science.
+        </p>
+        <a className="btn primary" href={"mailto:" + D.email}>
+          {"✉"}  Get in touch
+        </a>
+        <div className="cta-links">
           <a href={D.github}   target="_blank" rel="noopener noreferrer">GitHub</a>
+          <span className="cta-sep" />
           <a href={D.linkedin} target="_blank" rel="noopener noreferrer">LinkedIn</a>
         </div>
-        <div className="foot-copy">{"©"} {new Date().getFullYear()} {D.fullName}</div>
+      </section>
+
+      {/* ── Footer ──────────────────────────────────────────── */}
+      <footer className="foot">
+        <div className="foot-copy">{"©"} {new Date().getFullYear()} {D.fullName} &mdash; Built with React</div>
       </footer>
 
       <button

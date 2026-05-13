@@ -284,38 +284,33 @@ export default function Portfolio() {
 
   const [expRef, expVis] = useInView();
   const [skillRef, skillVis] = useInView();
-  const [headpat, setHeadpat] = useState(false);
   const [patCount, setPatCount] = useState(0);
   const patTimer = useRef(null);
-  const [particles, setParticles] = useState([]);
-
-  const spawnParticles = useCallback(() => {
-    const items = ["⭐", "✨", "💫", "🌟", "🧬", "⚡", "🔬", "🚀"];
-    const newParticles = Array.from({ length: 18 }, (_, i) => {
-      const angle = (Math.PI * 2 * i) / 18 + (Math.random() - 0.5) * 0.6;
-      const dist = 30 + Math.random() * 90;
-      return {
-        id: Date.now() + i,
-        emoji: items[Math.floor(Math.random() * items.length)],
-        x: Math.cos(angle) * dist,
-        y: Math.sin(angle) * dist,
-        rot: (Math.random() - 0.5) * 180,
-        delay: i * 0.02,
-        scale: 0.8 + Math.random() * 0.5,
-      };
-    });
-    setParticles(newParticles);
-    setTimeout(() => setParticles([]), 1200);
-  }, []);
+  const patCountRef = useRef(0);
+  const avatarRef = useRef(null);
 
   const onAvatarClick = useCallback(() => {
-    setPatCount((c) => Math.min(c + 1, 8));
+    const nextCount = Math.min(patCountRef.current + 1, 8);
+    patCountRef.current = nextCount;
+    setPatCount(nextCount);
     if (patTimer.current) clearTimeout(patTimer.current);
-    patTimer.current = setTimeout(() => setPatCount(0), 1500);
+    patTimer.current = setTimeout(() => {
+      patCountRef.current = 0;
+      setPatCount(0);
+    }, 1500);
 
-    setHeadpat(false);
-    requestAnimationFrame(() => setHeadpat(true));
-    setTimeout(() => setHeadpat(false), 120);
+    const el = avatarRef.current;
+    if (!el) return;
+    const s = Math.min(0.55 + nextCount * 0.05, 0.88);
+    const t = Math.min(6 + nextCount * 2, 22);
+    el.animate(
+      [
+        { transform: "scale(1) translateY(0)" },
+        { transform: `scale(1.06, ${s}) translateY(${t}px)`, offset: 0.4 },
+        { transform: "scale(1) translateY(0)" },
+      ],
+      { duration: 380, easing: "cubic-bezier(.22, 1, .36, 1)" }
+    );
   }, []);
 
   return (
@@ -363,32 +358,14 @@ export default function Portfolio() {
           </div>
           <div className="hero-avatar-wrap">
             <img
-              className={`hero-avatar${heroVis ? " vis" : ""}${headpat ? " headpat" : ""}`}
+              ref={avatarRef}
+              className={`hero-avatar${heroVis ? " vis" : ""}`}
               src={D.avatar}
               alt={D.name}
               loading="eager"
               onClick={onAvatarClick}
               title="Click me!"
-              style={headpat ? {
-                "--pat-s": `${Math.min(0.55 + patCount * 0.05, 0.88)}`,
-                "--pat-t": `${Math.min(6 + patCount * 2, 22)}px`,
-                "--pat-d": `${Math.min(0.35 + patCount * 0.04, 0.6)}s`,
-              } : {}}
             />
-            {particles.map((p) => (
-              <span
-                key={p.id}
-                className="avatar-particle"
-                style={{
-                  left: `calc(50% + ${p.x}px)`,
-                  top: `calc(50% + ${p.y}px)`,
-                  transform: `translate(-50%, -50%) rotate(${p.rot}deg) scale(${p.scale})`,
-                  animationDelay: `${p.delay}s`,
-                }}
-              >
-                {p.emoji}
-              </span>
-            ))}
           </div>
           <div className={`hero-kicker${heroVis ? " vis" : ""}`}>
             UC Berkeley · Data Science · 2027

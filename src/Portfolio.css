@@ -332,22 +332,10 @@ body::before {
   opacity: 1;
   transform: scale(1) translateY(0);
 }
-.hero-avatar.headpat {
-  transition: transform 0.12s cubic-bezier(.22,1,.36,1);
-  transform: scale(1.06, var(--pat-s, 0.78)) translateY(var(--pat-t, 8px)) !important;
-}
-.avatar-particle {
-  position: absolute;
-  font-size: 1.2rem;
-  line-height: 1;
-  pointer-events: none;
-  z-index: 3;
-  animation: particlePop 1s cubic-bezier(.22,1,.36,1) forwards;
-}
-@keyframes particlePop {
-  0%   { opacity: 0; transform: translate(-50%, -50%) scale(0); }
-  15%  { opacity: 1; transform: translate(-50%, -50%) scale(1.2); }
-  100% { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
+.hero-avatar-wrap {
+  position: relative;
+  display: inline-block;
+  margin-bottom: 1.8rem;
 }
 
 .hero-kicker {

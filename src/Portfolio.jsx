@@ -128,6 +128,33 @@ function CountUp({ target, suffix = "", duration = 1800 }) {
   return <span ref={ref}>0{suffix}</span>;
 }
 
+function TypeWriter({ text, speed = 35, start = false }) {
+  const [display, setDisplay] = useState("");
+  const [done, setDone] = useState(false);
+
+  useEffect(() => {
+    if (!start) return;
+    let i = 0;
+    const timer = setInterval(() => {
+      if (i < text.length) {
+        setDisplay(text.slice(0, i + 1));
+        i++;
+      } else {
+        setDone(true);
+        clearInterval(timer);
+      }
+    }, speed);
+    return () => clearInterval(timer);
+  }, [text, speed, start]);
+
+  return (
+    <span>
+      {display}
+      <span className={"type-cursor" + (done ? " blink" : "")}>|</span>
+    </span>
+  );
+}
+
 /* ----------------------------------------------------------------------
    Dark mode hook
    ---------------------------------------------------------------------- */
@@ -171,29 +198,37 @@ export default function Portfolio() {
   }, []);
 
   useEffect(() => {
-    let ticking = false;
+    const tickingRef = { current: false };
     const onScroll = () => {
-      if (!ticking) {
-        requestAnimationFrame(() => {
-          setScrolled(window.scrollY > 40);
-          const sects = NAV.map((n) => document.getElementById(n.toLowerCase()));
-          for (let i = sects.length - 1; i >= 0; i--) {
-            if (sects[i] && sects[i].getBoundingClientRect().top < 180) {
-              setActive(NAV[i]);
-              ticking = false;
-              return;
-            }
+      if (tickingRef.current) return;
+      tickingRef.current = true;
+      requestAnimationFrame(() => {
+        setScrolled(window.scrollY > 40);
+        const sects = NAV.map((n) => document.getElementById(n.toLowerCase()));
+        for (let i = sects.length - 1; i >= 0; i--) {
+          if (sects[i] && sects[i].getBoundingClientRect().top < 180) {
+            setActive(NAV[i]);
+            tickingRef.current = false;
+            return;
           }
-          setActive("");
-          ticking = false;
-        });
-        ticking = true;
-      }
+        }
+        setActive("");
+        tickingRef.current = false;
+      });
     };
     window.addEventListener("scroll", onScroll, { passive: true });
     onScroll();
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
+
+  useEffect(() => {
+    if (menuOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => { document.body.style.overflow = ""; };
+  }, [menuOpen]);
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -221,6 +256,7 @@ export default function Portfolio() {
 
   const [expRef, expVis]     = useInView();
   const [skillRef, skillVis] = useInView();
+  const [projRef, projVis]   = useInView();
   const [copied, setCopied]  = useState(false);
   const [repos, setRepos]         = useState([]);
   const [repoLoading, setRepoLoading] = useState(true);
@@ -282,7 +318,9 @@ export default function Portfolio() {
           </div>
           <TextReveal text={D.fullName} tag="h1" className="gradient-text" />
           <div className={"hero-rule" + (heroVis ? " vis" : "")} />
-          <p className={"hero-tagline" + (heroVis ? " vis" : "")}>{D.tagline}</p>
+          <p className={"hero-tagline" + (heroVis ? " vis" : "")}>
+            <TypeWriter text={D.tagline} start={heroVis} />
+          </p>
           <div className={"hero-focuses" + (heroVis ? " vis" : "")}>
             {D.focuses.map((f) => <span key={f} className="focus-tag">{f}</span>)}
           </div>
@@ -410,22 +448,23 @@ export default function Portfolio() {
           {repoLoading ? (
             <div className="projects-loading">Loading repositories…</div>
           ) : (
-            <div className="projects-grid">
-              {repos.map((repo) => (
-                <a
-                  key={repo.id}
-                  href={repo.html_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="project-card"
-                >
-                  <h3>{repo.name}</h3>
-                  <p>{repo.description || "No description provided."}</p>
-                  <div className="project-meta">
-                    {repo.language && <span>{repo.language}</span>}
-                    <span>⭐ {repo.stargazers_count}</span>
-                  </div>
-                </a>
+            <div className="projects-grid" ref={projRef}>
+              {repos.map((repo, i) => (
+                <StaggerItem key={repo.id} index={i} visible={projVis}>
+                  <a
+                    href={repo.html_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="project-card"
+                  >
+                    <h3>{repo.name}</h3>
+                    <p>{repo.description || "No description provided."}</p>
+                    <div className="project-meta">
+                      {repo.language && <span>{repo.language}</span>}
+                      <span>⭐ {repo.stargazers_count}</span>
+                    </div>
+                  </a>
+                </StaggerItem>
               ))}
             </div>
           )}
@@ -434,7 +473,7 @@ export default function Portfolio() {
         {/* ── Skills / Bento ──────────────────────────────────── */}
         <Section id="skills" delay={0.05} data-n="05">
           <div className="section-head">
-            <span className="sect-n">04</span>
+            <span className="sect-n">05</span>
             <h2>Skills</h2>
           </div>
           <div className="skill-bento" ref={skillRef}>

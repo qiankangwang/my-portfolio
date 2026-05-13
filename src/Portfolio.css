@@ -694,6 +694,18 @@ body::before {
   color: var(--fg3);
   margin-top: auto;
 }
+.type-cursor {
+  color: var(--accent);
+  font-weight: 300;
+  margin-left: 1px;
+}
+.type-cursor.blink {
+  animation: blink 1s step-end infinite;
+}
+@keyframes blink {
+  50% { opacity: 0; }
+}
+
 .projects-loading {
   text-align: center;
   color: var(--fg3);

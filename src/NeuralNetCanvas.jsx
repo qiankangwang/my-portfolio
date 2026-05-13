@@ -130,10 +130,10 @@ export default function NeuralNetCanvas() {
       if (!running) return;
       frame++;
       ctx.clearRect(0, 0, w, h);
-      const accent = dark ? [139, 173, 230] : [47, 94, 158];
-      const cool   = dark ? [83, 106, 137]  : [126, 145, 164];
-      const dim    = dark ? [45, 51, 59]    : [200, 205, 210];
-      const warm   = dark ? [214, 154, 112] : [168, 101, 63];
+      const accent = dark ? [120, 165, 235] : [55, 110, 225];
+      const cool   = dark ? [80, 105, 140]  : [105, 125, 148];
+      const dim    = dark ? [48, 55, 66]    : [190, 198, 210];
+      const warm   = dark ? [220, 158, 115] : [200, 105, 55];
       const mx = mouse.current.x;
       const my = mouse.current.y;
       const t = frame * (reducedMotion ? 0.012 : 0.035);

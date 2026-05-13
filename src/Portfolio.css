@@ -3,72 +3,72 @@
    ════════════════════════════════════════════════════════════════════ */
 
 :root {
-  --bg:          #FAF8F5;
-  --bg2:         #F2EFE9;
+  --bg:          #F5F7FA;
+  --bg2:         #EBEFF4;
   --fg:          #0D1117;
-  --fg2:         #3D4A5C;
-  --fg3:         #8B95A4;
-  --accent:      #1A56DB;
-  --accent2:     #1242AD;
-  --warm:        #C2410C;
-  --accent-soft: rgba(26,86,219,.08);
-  --warm-soft:   rgba(194,65,12,.09);
-  --border:      rgba(0,0,0,.07);
-  --border-strong: rgba(0,0,0,.11);
+  --fg2:         #3B4855;
+  --fg3:         #8893A0;
+  --accent:      #2563EB;
+  --accent2:     #1D4ED8;
+  --warm:        #D65D2E;
+  --accent-soft: rgba(37,99,235,.08);
+  --warm-soft:   rgba(214,93,46,.09);
+  --border:      rgba(0,0,0,.06);
+  --border-strong: rgba(0,0,0,.10);
   --card:        #FFFFFF;
-  --card2:       #FCFBFA;
+  --card2:       #F8F9FC;
   --serif: 'Instrument Serif', Georgia, serif;
   --sans:  'Satoshi', system-ui, -apple-system, sans-serif;
   --mono:  'JetBrains Mono', ui-monospace, monospace;
   --r:     16px;
   --r-sm:  12px;
-  --sh-sm: 0 1px 2px rgba(0,0,0,.03), 0 2px 8px rgba(0,0,0,.05);
-  --sh:    0 1px 3px rgba(0,0,0,.04), 0 4px 20px rgba(0,0,0,.06), 0 1px 0 rgba(0,0,0,.02);
-  --sh2:   0 2px 8px rgba(0,0,0,.06), 0 8px 40px rgba(0,0,0,.09), 0 1px 0 rgba(0,0,0,.03);
-  --sh3:   0 4px 16px rgba(0,0,0,.08), 0 16px 56px rgba(0,0,0,.11);
+  --sh-sm: 0 1px 2px rgba(0,0,0,.02), 0 2px 6px rgba(0,0,0,.04);
+  --sh:    0 1px 2px rgba(0,0,0,.03), 0 4px 16px rgba(0,0,0,.05);
+  --sh2:   0 2px 6px rgba(0,0,0,.05), 0 8px 32px rgba(0,0,0,.07);
+  --sh3:   0 4px 12px rgba(0,0,0,.06), 0 16px 48px rgba(0,0,0,.10);
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     --bg:          #06080D;
-    --bg2:         #0B0F19;
+    --bg2:         #0C1019;
     --fg:          #EDF1FA;
-    --fg2:         #8B98B0;
-    --fg3:         #4B5568;
+    --fg2:         #8896AE;
+    --fg3:         #4A5468;
     --accent:      #6B9FF5;
-    --accent2:     #95BEFF;
+    --accent2:     #90BAFF;
     --warm:        #E8925A;
     --accent-soft: rgba(107,159,245,.10);
     --warm-soft:   rgba(232,146,90,.10);
     --border:      rgba(255,255,255,.06);
-    --border-strong: rgba(255,255,255,.10);
-    --card:        #0B0F19;
-    --card2:       #0E1220;
-    --sh-sm: 0 1px 2px rgba(0,0,0,.25), 0 2px 8px rgba(0,0,0,.18);
-    --sh:    0 1px 3px rgba(0,0,0,.30), 0 4px 20px rgba(0,0,0,.24);
-    --sh2:   0 2px 8px rgba(0,0,0,.35), 0 8px 40px rgba(0,0,0,.30);
-    --sh3:   0 4px 16px rgba(0,0,0,.40), 0 16px 56px rgba(0,0,0,.36);
+    --border-strong: rgba(255,255,255,.09);
+    --card:        #0C1019;
+    --card2:       #0F1420;
+    --sh-sm: 0 1px 2px rgba(0,0,0,.20), 0 2px 6px rgba(0,0,0,.15);
+    --sh:    0 1px 3px rgba(0,0,0,.25), 0 4px 16px rgba(0,0,0,.20);
+    --sh2:   0 2px 6px rgba(0,0,0,.30), 0 8px 32px rgba(0,0,0,.25);
+    --sh3:   0 4px 12px rgba(0,0,0,.35), 0 16px 48px rgba(0,0,0,.30);
   }
 }
 [data-theme="dark"] {
   --bg:          #06080D;
-  --bg2:         #0B0F19;
+  --bg2:         #0C1019;
   --fg:          #EDF1FA;
-  --fg2:         #8B98B0;
-  --fg3:         #4B5568;
+  --fg2:         #8896AE;
+  --fg3:         #4A5468;
   --accent:      #6B9FF5;
-  --accent2:     #95BEFF;
+  --accent2:     #90BAFF;
   --warm:        #E8925A;
   --accent-soft: rgba(107,159,245,.10);
   --warm-soft:   rgba(232,146,90,.10);
   --border:      rgba(255,255,255,.06);
-  --border-strong: rgba(255,255,255,.10);
-  --card:        #0B0F19;
-  --card2:       #0E1220;
-  --sh-sm: 0 1px 2px rgba(0,0,0,.25), 0 2px 8px rgba(0,0,0,.18);
-  --sh:    0 1px 3px rgba(0,0,0,.30), 0 4px 20px rgba(0,0,0,.24);
-  --sh2:   0 2px 8px rgba(0,0,0,.35), 0 8px 40px rgba(0,0,0,.30);
-  --sh3:   0 4px 16px rgba(0,0,0,.40), 0 16px 56px rgba(0,0,0,.36);
+  --border-strong: rgba(255,255,255,.09);
+  --card:        #0C1019;
+  --card2:       #0F1420;
+  --sh-sm: 0 1px 2px rgba(0,0,0,.20), 0 2px 6px rgba(0,0,0,.15);
+  --sh:    0 1px 3px rgba(0,0,0,.25), 0 4px 16px rgba(0,0,0,.20);
+  --sh2:   0 2px 6px rgba(0,0,0,.30), 0 8px 32px rgba(0,0,0,.25);
+  --sh3:   0 4px 12px rgba(0,0,0,.35), 0 16px 48px rgba(0,0,0,.30);
 }
 
 /* ════════════════════════════════════════════════════════════════════
@@ -259,7 +259,7 @@ body::before {
   white-space: nowrap;
 }
 .gradient-text span span {
-  color: var(--accent);
+  color: var(--fg);
 }
 .hero-rule {
   width: 0;

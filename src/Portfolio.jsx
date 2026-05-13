@@ -421,10 +421,7 @@ export default function Portfolio() {
           and interesting problems at the intersection of ML and science.
         </p>
         <div className="cta-actions">
-          <a className="btn primary" href="/resume.pdf" download>
-            {"↓"} Download CV
-          </a>
-          <button className="btn" onClick={copyEmail}>
+          <button className="btn primary" onClick={copyEmail}>
             {copied ? "✓ Copied" : "✉ Copy Email"}
           </button>
         </div>

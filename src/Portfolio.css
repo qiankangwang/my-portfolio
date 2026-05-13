@@ -329,13 +329,13 @@ body::before {
 }
 .hero-avatar.vis { opacity: 1; transform: scale(1) translateY(0); }
 .hero-avatar.headpat {
-  animation: headpat 0.5s cubic-bezier(.22,1,.36,1);
+  animation: headpat var(--pat-d, 0.5s) cubic-bezier(.22,1,.36,1);
 }
 @keyframes headpat {
   0%   { transform: scale(1) translateY(0); }
-  25%  { transform: scale(1.08, 0.82) translateY(6px); }
-  50%  { transform: scale(0.95, 1.1) translateY(-8px); }
-  75%  { transform: scale(1.02, 0.98) translateY(2px); }
+  25%  { transform: scale(1.06, var(--pat-s, 0.82)) translateY(var(--pat-t, 6px)); }
+  50%  { transform: scale(0.96, 1.08) translateY(calc(var(--pat-t, 6px) * -1.2)); }
+  75%  { transform: scale(1.01, 0.98) translateY(calc(var(--pat-t, 6px) * 0.25)); }
   100% { transform: scale(1) translateY(0); }
 }
 .avatar-particle {

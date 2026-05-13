@@ -285,6 +285,8 @@ export default function Portfolio() {
   const [expRef, expVis] = useInView();
   const [skillRef, skillVis] = useInView();
   const [headpat, setHeadpat] = useState(false);
+  const [patCount, setPatCount] = useState(0);
+  const patTimer = useRef(null);
   const [particles, setParticles] = useState([]);
 
   const spawnParticles = useCallback(() => {
@@ -307,11 +309,14 @@ export default function Portfolio() {
   }, []);
 
   const onAvatarClick = useCallback(() => {
-    if (headpat) return;
+    setPatCount((c) => Math.min(c + 1, 8));
     setHeadpat(true);
-    spawnParticles();
-    setTimeout(() => setHeadpat(false), 800);
-  }, [headpat, spawnParticles]);
+    if (patTimer.current) clearTimeout(patTimer.current);
+    patTimer.current = setTimeout(() => {
+      setPatCount(0);
+    }, 1500);
+    setTimeout(() => setHeadpat(false), 450);
+  }, []);
 
   return (
     <>
@@ -364,6 +369,11 @@ export default function Portfolio() {
               loading="eager"
               onClick={onAvatarClick}
               title="Click me!"
+              style={headpat ? {
+                "--pat-s": `${Math.min(0.55 + patCount * 0.05, 0.88)}`,
+                "--pat-t": `${Math.min(6 + patCount * 2, 22)}px`,
+                "--pat-d": `${Math.min(0.35 + patCount * 0.04, 0.6)}s`,
+              } : {}}
             />
             {particles.map((p) => (
               <span

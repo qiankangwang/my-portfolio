@@ -383,7 +383,7 @@ export default function Portfolio() {
           <TextReveal text={D.fullName} tag="h1" className="gradient-text" />
           <div className={`hero-rule${heroVis ? " vis" : ""}`} />
           <p className={`hero-tagline${heroVis ? " vis" : ""}`}>
-            <TypeWriter text={D.tagline} start={heroVis} />
+            <TypeWriter text={D.tagline} start={heroVis} speed={28} />
           </p>
           <div className={`hero-focuses${heroVis ? " vis" : ""}`}>
             {D.focuses.map((f) => <span key={f} className="focus-tag">{f}</span>)}

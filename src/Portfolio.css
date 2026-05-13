@@ -329,13 +329,14 @@ body::before {
 }
 .hero-avatar.vis { opacity: 1; transform: scale(1) translateY(0); }
 .hero-avatar.spin {
-  animation: avatarSpin 0.8s cubic-bezier(.22,1,.36,1);
+  animation: avatarBounce 0.7s cubic-bezier(.22,1,.36,1);
 }
-@keyframes avatarSpin {
-  0%   { transform: scale(1) rotate(0deg); }
-  30%  { transform: scale(0.85) rotate(180deg); }
-  60%  { transform: scale(1.1) rotate(300deg); }
-  100% { transform: scale(1) rotate(360deg); }
+@keyframes avatarBounce {
+  0%   { transform: scale(1) translateY(0); }
+  25%  { transform: scale(0.88) translateY(8px); }
+  50%  { transform: scale(1.15) translateY(-12px); }
+  75%  { transform: scale(0.95) translateY(4px); }
+  100% { transform: scale(1) translateY(0); }
 }
 .avatar-particle {
   position: absolute;

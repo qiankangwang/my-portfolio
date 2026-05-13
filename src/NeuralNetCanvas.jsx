@@ -95,6 +95,7 @@ export default function NeuralNetCanvas() {
           { type: "rna", x: left + netW * 0.82, y: top + netH * 0.34, len: 9,  angle: -0.3,  phase: 8.4, bend: -6 },
           { type: "rna", x: left + netW * 0.65, y: top + netH * 0.55, len: 12, angle: 0.08,  phase: 2.8, bend: 9 },
           { type: "rna", x: left + netW * 0.35, y: top + netH * 0.20, len: 8,  angle: -0.35, phase: 4.5, bend: -5 },
+          { type: "rna", x: left + netW * 0.92, y: top + netH * 0.65, len: 7,  angle: 0.25,  phase: 7.2, bend: 7 },
 
           // Protein motifs
           { type: "protein", x: left + netW * 0.76, y: top + netH * 0.18, len: 10, scale: 1.05, phase: 0.5 },

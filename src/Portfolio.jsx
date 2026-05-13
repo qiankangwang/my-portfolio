@@ -1,134 +1,127 @@
-import { useState, useEffect, useRef, useCallback, lazy, Suspense } from "react";
+import { useState, useEffect, useRef, useCallback, lazy, Suspense, memo } from "react";
 import D from "./data";
 import "./Portfolio.css";
 
 const NeuralNetCanvas = lazy(() => import("./NeuralNetCanvas"));
 
-/* ----------------------------------------------------------------------
-   Helpers
-   ---------------------------------------------------------------------- */
-
+/* ── Ambient background orbs ── */
 function AmbientBg() {
   return (
     <div className="ambient" aria-hidden="true">
       <div className="amb-orb amb-1" />
       <div className="amb-orb amb-2" />
+      <div className="amb-orb amb-3" />
     </div>
   );
 }
 
-function useInView(threshold = 0.12) {
+/* ── Intersection Observer hook ── */
+function useInView(threshold = 0.12, once = true) {
   const ref = useRef(null);
   const [visible, setVisible] = useState(false);
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
     const obs = new IntersectionObserver(
-      ([e]) => { if (e.isIntersecting) { setVisible(true); obs.disconnect(); } },
+      ([e]) => {
+        if (e.isIntersecting) {
+          setVisible(true);
+          if (once) obs.disconnect();
+        }
+      },
       { threshold }
     );
     obs.observe(el);
     return () => obs.disconnect();
-  }, [threshold]);
+  }, [threshold, once]);
   return [ref, visible];
 }
 
-function Section({ id, children, delay = 0, ...rest }) {
-  const [ref, vis] = useInView();
+/* ── Scroll reveal wrapper ── */
+const Section = memo(function Section({ id, children, delay = 0, className = "" }) {
+  const [ref, vis] = useInView(0.08);
   return (
     <section
       ref={ref}
       id={id}
-      className="sect"
-      {...rest}
+      className={`sect ${className}`}
       style={{
         opacity: vis ? 1 : 0,
-        transform: vis ? "translateY(0)" : "translateY(40px)",
-        transition: `opacity 0.8s ${delay}s cubic-bezier(.22,1,.36,1), transform 0.8s ${delay}s cubic-bezier(.22,1,.36,1)`,
+        transform: vis ? "translateY(0)" : "translateY(50px)",
+        transition: `opacity 0.9s ${delay}s cubic-bezier(.22,1,.36,1), transform 0.9s ${delay}s cubic-bezier(.22,1,.36,1)`,
       }}
     >
       {children}
     </section>
   );
-}
+});
 
-function StaggerItem({ children, index, visible }) {
+/* ── Stagger children wrapper ── */
+const StaggerItem = memo(function StaggerItem({ children, index, visible }) {
   return (
     <div
       style={{
         opacity: visible ? 1 : 0,
-        transform: visible ? "translateY(0)" : "translateY(20px)",
-        transition: `all 0.6s ${0.08 * index}s cubic-bezier(.22,1,.36,1)`,
+        transform: visible ? "translateY(0) scale(1)" : "translateY(24px) scale(0.98)",
+        transition: `all 0.7s ${0.1 * index}s cubic-bezier(.22,1,.36,1)`,
       }}
     >
       {children}
     </div>
   );
-}
+});
 
-function TextReveal({ text, tag: Tag = "h1", className, wordColors = null }) {
+/* ── Word-by-word text reveal ── */
+const TextReveal = memo(function TextReveal({ text, tag: Tag = "h1", className }) {
   const [ref, vis] = useInView(0.3);
   const words = text.split(" ");
-  const last  = Math.max(1, words.length - 1);
   return (
     <Tag ref={ref} className={className} aria-label={text}>
-      {words.map((w, i) => {
-        const color = wordColors
-          ? wordColors[Math.round((i / last) * (wordColors.length - 1))]
-          : undefined;
-        return (
+      {words.map((w, i) => (
+        <span
+          key={i}
+          aria-hidden="true"
+          className="word-wrap"
+        >
           <span
-            key={i}
-            aria-hidden="true"
+            className="word-inner"
             style={{
-              display: "inline-block",
-              overflow: "hidden",
-              marginRight: "0.3em",
-              paddingRight: "0.08em",
-              paddingBottom: "0.12em",
+              transform: vis ? "translateY(0)" : "translateY(110%)",
+              transition: `transform 0.65s ${0.04 * i}s cubic-bezier(.22,1,.36,1)`,
             }}
           >
-            <span
-              style={{
-                display: "inline-block",
-                transform: vis ? "translateY(0)" : "translateY(110%)",
-                transition: `transform 0.7s ${0.05 * i}s cubic-bezier(.22,1,.36,1)`,
-                ...(color ? { color } : {}),
-              }}
-            >
-              {w}
-            </span>
+            {w}
           </span>
-        );
-      })}
+        </span>
+      ))}
     </Tag>
   );
-}
+});
 
-function CountUp({ target, suffix = "", duration = 1800 }) {
+/* ── Animated counter ── */
+const CountUp = memo(function CountUp({ target, suffix = "", duration = 2000 }) {
   const [ref, visible] = useInView(0.5);
   const raf = useRef(null);
+  const [val, setVal] = useState(0);
 
   useEffect(() => {
     if (!visible) return;
-    const el = ref.current;
-    if (!el) return;
     const start = performance.now();
     const tick = (now) => {
       const p = Math.min((now - start) / duration, 1);
-      const eased = 1 - Math.pow(1 - p, 3);
-      el.textContent = Math.round(eased * target) + suffix;
+      const eased = 1 - Math.pow(1 - p, 4);
+      setVal(Math.round(eased * target));
       if (p < 1) raf.current = requestAnimationFrame(tick);
-      else el.textContent = target + suffix;
     };
     raf.current = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf.current);
-  }, [visible, target, suffix, duration, ref]);
+  }, [visible, target, duration]);
 
-  return <span ref={ref}>0{suffix}</span>;
-}
+  return <span ref={ref}>{val}{suffix}</span>;
+});
 
-function TypeWriter({ text, speed = 35, start = false }) {
+/* ── Typewriter effect ── */
+const TypeWriter = memo(function TypeWriter({ text, speed = 40, start = false }) {
   const [display, setDisplay] = useState("");
   const [done, setDone] = useState(false);
 
@@ -148,17 +141,14 @@ function TypeWriter({ text, speed = 35, start = false }) {
   }, [text, speed, start]);
 
   return (
-    <span>
+    <span className="typewriter">
       {display}
       {!done && <span className="type-cursor">|</span>}
     </span>
   );
-}
+});
 
-/* ----------------------------------------------------------------------
-   Dark mode hook
-   ---------------------------------------------------------------------- */
-
+/* ── Dark mode hook ── */
 function useTheme() {
   const [theme, setTheme] = useState(() => {
     if (typeof window !== "undefined") {
@@ -179,41 +169,85 @@ function useTheme() {
   return [theme, toggle];
 }
 
-/* ----------------------------------------------------------------------
-   Main
-   ---------------------------------------------------------------------- */
+/* ── 3D Tilt card hook ── */
+function useTilt(intensity = 8) {
+  const ref = useRef(null);
+  const [style, setStyle] = useState({});
 
+  const onMove = useCallback((e) => {
+    const el = ref.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const x = (e.clientX - rect.left) / rect.width;
+    const y = (e.clientY - rect.top) / rect.height;
+    const rotateX = (y - 0.5) * -intensity;
+    const rotateY = (x - 0.5) * intensity;
+    setStyle({
+      transform: `perspective(800px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale3d(1.01, 1.01, 1.01)`,
+      transition: "transform 0.15s ease-out",
+    });
+  }, [intensity]);
+
+  const onLeave = useCallback(() => {
+    setStyle({
+      transform: "perspective(800px) rotateX(0) rotateY(0) scale3d(1, 1, 1)",
+      transition: "transform 0.4s cubic-bezier(.22,1,.36,1)",
+    });
+  }, []);
+
+  return [ref, style, onMove, onLeave];
+}
+
+/* ── Tilt card wrapper ── */
+const TiltCard = memo(function TiltCard({ children, className = "" }) {
+  const [ref, style, onMove, onLeave] = useTilt(6);
+  return (
+    <div
+      ref={ref}
+      className={className}
+      style={style}
+      onMouseMove={onMove}
+      onMouseLeave={onLeave}
+    >
+      {children}
+    </div>
+  );
+});
+
+/* ── Main ── */
 const NAV = ["About", "Research", "Publication", "Projects", "Skills"];
 
 export default function Portfolio() {
-  const [theme, toggleTheme]     = useTheme();
-  const [scrolled, setScrolled]  = useState(false);
-  const [active, setActive]      = useState("");
-  const [menuOpen, setMenuOpen]  = useState(false);
-  const [heroVis, setHeroVis]    = useState(false);
+  const [theme, toggleTheme] = useTheme();
+  const [scrolled, setScrolled] = useState(false);
+  const [active, setActive] = useState("");
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [heroVis, setHeroVis] = useState(false);
+  const [repos, setRepos] = useState([]);
+  const [repoLoading, setRepoLoading] = useState(true);
 
   useEffect(() => {
-    const t = setTimeout(() => setHeroVis(true), 100);
+    const t = setTimeout(() => setHeroVis(true), 150);
     return () => clearTimeout(t);
   }, []);
 
   useEffect(() => {
-    const tickingRef = { current: false };
+    let ticking = false;
     const onScroll = () => {
-      if (tickingRef.current) return;
-      tickingRef.current = true;
+      if (ticking) return;
+      ticking = true;
       requestAnimationFrame(() => {
         setScrolled(window.scrollY > 40);
         const sects = NAV.map((n) => document.getElementById(n.toLowerCase()));
         for (let i = sects.length - 1; i >= 0; i--) {
-          if (sects[i] && sects[i].getBoundingClientRect().top < 180) {
+          if (sects[i] && sects[i].getBoundingClientRect().top < 200) {
             setActive(NAV[i]);
-            tickingRef.current = false;
+            ticking = false;
             return;
           }
         }
         setActive("");
-        tickingRef.current = false;
+        ticking = false;
       });
     };
     window.addEventListener("scroll", onScroll, { passive: true });
@@ -222,19 +256,13 @@ export default function Portfolio() {
   }, []);
 
   useEffect(() => {
-    if (menuOpen) {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "";
-    }
+    document.body.style.overflow = menuOpen ? "hidden" : "";
     return () => { document.body.style.overflow = ""; };
   }, [menuOpen]);
 
   useEffect(() => {
     if (!menuOpen) return;
-    const onKeyDown = (e) => {
-      if (e.key === "Escape") setMenuOpen(false);
-    };
+    const onKeyDown = (e) => { if (e.key === "Escape") setMenuOpen(false); };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [menuOpen]);
@@ -249,42 +277,30 @@ export default function Portfolio() {
       .catch(() => setRepoLoading(false));
   }, []);
 
-  const scrollTo = (id) => {
+  const scrollTo = useCallback((id) => {
     document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
     setMenuOpen(false);
-  };
+  }, []);
 
-  const [expRef, expVis]     = useInView();
+  const [expRef, expVis] = useInView();
   const [skillRef, skillVis] = useInView();
-  const [projRef, projVis]   = useInView();
-  const [copied, setCopied]  = useState(false);
-  const [repos, setRepos]         = useState([]);
-  const [repoLoading, setRepoLoading] = useState(true);
-
-  const copyEmail = async () => {
-    try {
-      await navigator.clipboard.writeText(D.email);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch {}
-  };
 
   return (
     <>
       <AmbientBg />
       <a className="skip" href="#about">Skip to content</a>
 
-      {/* ── Nav ─────────────────────────────────────────────── */}
-      <nav className={"nav" + (scrolled ? " scrolled" : "")}>
+      {/* ── Nav ── */}
+      <nav className={`nav${scrolled ? " scrolled" : ""}`}>
         <span className="nav-logo" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}>
           Kant W.
         </span>
         <div className="nav-right">
-          <div className={"nav-links" + (menuOpen ? " open" : "")}>
+          <div className={`nav-links${menuOpen ? " open" : ""}`}>
             {NAV.map((n) => (
               <a
                 key={n}
-                href={"#" + n.toLowerCase()}
+                href={`#${n.toLowerCase()}`}
                 className={active === n ? "active" : ""}
                 onClick={(e) => { e.preventDefault(); scrollTo(n.toLowerCase()); }}
               >
@@ -296,51 +312,65 @@ export default function Portfolio() {
             {theme === "dark" ? "☀" : "☾"}
           </button>
           <button className="hamburger" onClick={() => setMenuOpen(!menuOpen)} aria-label="Toggle menu">
-            {menuOpen ? "✕" : "☰"}
+            <span className={`hamburger-line ${menuOpen ? "open" : ""}`} />
           </button>
         </div>
       </nav>
 
-      {/* ── Hero ────────────────────────────────────────────── */}
+      {/* ── Hero ── */}
       <header className="hero">
         <Suspense fallback={<div className="canvas-placeholder" />}>
           <NeuralNetCanvas />
         </Suspense>
         <div className="hero-overlay" />
         <div className="hero-content">
+          <div className={`hero-badge${heroVis ? " vis" : ""}`}>
+            <span className="hero-badge-dot" />
+            Available for Research
+          </div>
           <img
-            className={"hero-avatar" + (heroVis ? " vis" : "")}
+            className={`hero-avatar${heroVis ? " vis" : ""}`}
             src={D.avatar}
             alt={D.name}
+            loading="eager"
           />
-          <div className={"hero-kicker" + (heroVis ? " vis" : "")}>
+          <div className={`hero-kicker${heroVis ? " vis" : ""}`}>
             UC Berkeley · Data Science · 2027
           </div>
           <TextReveal text={D.fullName} tag="h1" className="gradient-text" />
-          <div className={"hero-rule" + (heroVis ? " vis" : "")} />
-          <p className={"hero-tagline" + (heroVis ? " vis" : "")}>
+          <div className={`hero-rule${heroVis ? " vis" : ""}`} />
+          <p className={`hero-tagline${heroVis ? " vis" : ""}`}>
             <TypeWriter text={D.tagline} start={heroVis} />
           </p>
-          <div className={"hero-focuses" + (heroVis ? " vis" : "")}>
+          <div className={`hero-focuses${heroVis ? " vis" : ""}`}>
             {D.focuses.map((f) => <span key={f} className="focus-tag">{f}</span>)}
           </div>
-          <div className={"hero-cta" + (heroVis ? " vis" : "")}>
-            <a className="btn primary" href={"mailto:" + D.email}>{"✉"} Email</a>
-            <a className="btn" href={D.github}   target="_blank" rel="noopener noreferrer">GitHub</a>
-            <a className="btn" href={D.linkedin} target="_blank" rel="noopener noreferrer">LinkedIn</a>
+          <div className={`hero-cta${heroVis ? " vis" : ""}`}>
+            <a className="btn primary" href={`mailto:${D.email}`}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+              Email
+            </a>
+            <a className="btn" href={D.github} target="_blank" rel="noopener noreferrer">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+              GitHub
+            </a>
+            <a className="btn" href={D.linkedin} target="_blank" rel="noopener noreferrer">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+              LinkedIn
+            </a>
           </div>
         </div>
         <div className="scroll-hint">
           <div className="scroll-mouse">
             <div className="scroll-wheel" />
           </div>
-          <span>Scroll</span>
+          <span>Scroll to explore</span>
         </div>
       </header>
 
       <main className="content">
 
-        {/* ── About ───────────────────────────────────────────── */}
+        {/* ── About ── */}
         <Section id="about" data-n="01">
           <div className="section-head">
             <span className="sect-n">01</span>
@@ -359,11 +389,36 @@ export default function Portfolio() {
                 <span className="stat-l">Years in Research</span>
               </div>
             </div>
-            <p className="about-text">{D.about}</p>
+            <div className="about-text-wrap">
+              <p className="about-text">{D.about}</p>
+              <div className="about-highlights">
+                <div className="about-highlight">
+                  <div className="about-hl-icon">🧬</div>
+                  <div className="about-hl-text">
+                    <strong>AI for Biology</strong>
+                    <span>Applying ML to biophysics & molecular simulation</span>
+                  </div>
+                </div>
+                <div className="about-highlight">
+                  <div className="about-hl-icon">⚡</div>
+                  <div className="about-hl-text">
+                    <strong>Scientific Computing</strong>
+                    <span>GPU acceleration & high-performance workflows</span>
+                  </div>
+                </div>
+                <div className="about-highlight">
+                  <div className="about-hl-icon">🔬</div>
+                  <div className="about-hl-text">
+                    <strong>Research</strong>
+                    <span>Self-supervised learning & representation learning</span>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </Section>
 
-        {/* ── Research / Timeline ─────────────────────────────── */}
+        {/* ── Research ── */}
         <Section id="research" delay={0.05} data-n="02">
           <div className="section-head">
             <span className="sect-n">02</span>
@@ -372,74 +427,95 @@ export default function Portfolio() {
           <div className="timeline" ref={expRef}>
             {D.experience.map((exp, i) => (
               <StaggerItem key={exp.org} index={i} visible={expVis}>
-                <div className="tl-item">
-                  <div className="tl-rail">
-                    <div className="tl-dot" />
-                  </div>
-                  <div className="tl-card">
-                    <div className="tl-top">
-                      <span className="tl-tag">{exp.tag}</span>
-                      <time className="tl-period">{exp.period}</time>
+                <TiltCard className="tl-card-wrap">
+                  <div className="tl-item">
+                    <div className="tl-rail">
+                      <div className="tl-dot" />
                     </div>
-                    <h3 className="tl-role">{exp.role}</h3>
-                    <div className="tl-org">{exp.org}</div>
-                    <p className="tl-desc">{exp.desc}</p>
+                    <div className="tl-card">
+                      <div className="tl-top">
+                        <span className="tl-tag">{exp.tag}</span>
+                        <time className="tl-period">{exp.period}</time>
+                      </div>
+                      <h3 className="tl-role">{exp.role}</h3>
+                      <div className="tl-org">{exp.org}</div>
+                      <p className="tl-desc">{exp.desc}</p>
+                    </div>
                   </div>
-                </div>
+                </TiltCard>
               </StaggerItem>
             ))}
           </div>
         </Section>
 
-        {/* ── Publication ─────────────────────────────────────── */}
+        {/* ── Publication ── */}
         <Section id="publication" delay={0.05} data-n="03">
           <div className="section-head">
             <span className="sect-n">03</span>
             <h2>Publication</h2>
           </div>
-          <a
-            href={D.publication.links[0]?.url || "#"}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="pub-card"
-          >
-            <div className="pub-venue">
-              <span>{D.publication.venue}</span>
-              <strong>{D.publication.year}</strong>
-            </div>
-            <h3>{D.publication.title}</h3>
-            <p className="pub-authors">
-              {D.publication.authors} <em>· {D.publication.role}</em>
-            </p>
-            <div className="pub-cta">
-              <span className="pub-btn">Read Paper →</span>
-            </div>
-          </a>
+          <TiltCard className="pub-card-wrap">
+            <a
+              href={D.publication.links[0]?.url || "#"}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="pub-card"
+            >
+              <div className="pub-venue">
+                <span>{D.publication.venue}</span>
+                <strong>{D.publication.year}</strong>
+              </div>
+              <h3>{D.publication.title}</h3>
+              <p className="pub-authors">
+                {D.publication.authors} <em>· {D.publication.role}</em>
+              </p>
+              <div className="pub-cta">
+                <span className="pub-btn">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                  Read Paper
+                </span>
+              </div>
+            </a>
+          </TiltCard>
         </Section>
 
-        {/* ── Projects ────────────────────────────────────────── */}
+        {/* ── Projects ── */}
         <Section id="projects" delay={0.05} data-n="04">
           <div className="section-head">
             <span className="sect-n">04</span>
             <h2>Projects</h2>
           </div>
           {repoLoading ? (
-            <div className="projects-loading">Loading repositories…</div>
+            <div className="projects-loading">
+              <div className="spinner" />
+              <span>Loading repositories…</span>
+            </div>
           ) : (
             <div className="projects-grid">
-              {(repos.length > 0 ? repos : D.projects).map((repo) => (
+              {(repos.length > 0 ? repos : D.projects).map((repo, i) => (
                 <a
                   key={repo.id || repo.name}
                   href={repo.html_url}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="project-card"
+                  style={{
+                    opacity: 1,
+                    animation: `fadeUp 0.6s ${0.08 * i}s cubic-bezier(.22,1,.36,1) forwards`,
+                  }}
                 >
+                  <div className="project-card-top">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="project-icon"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
+                    <span className="project-lang">{repo.language}</span>
+                  </div>
                   <h3>{repo.name}</h3>
                   <p>{repo.description || "No description provided."}</p>
                   <div className="project-meta">
-                    {repo.language && <span>{repo.language}</span>}
-                    <span>⭐ {repo.stargazers_count}</span>
+                    <span className="project-stars">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                      {repo.stargazers_count}
+                    </span>
+                    <span className="project-arrow">→</span>
                   </div>
                 </a>
               ))}
@@ -447,7 +523,7 @@ export default function Portfolio() {
           )}
         </Section>
 
-        {/* ── Skills / Bento ──────────────────────────────────── */}
+        {/* ── Skills ── */}
         <Section id="skills" delay={0.05} data-n="05">
           <div className="section-head">
             <span className="sect-n">05</span>
@@ -456,14 +532,16 @@ export default function Portfolio() {
           <div className="skill-bento" ref={skillRef}>
             {Object.entries(D.skills).map(([cat, items], ci) => (
               <StaggerItem key={cat} index={ci} visible={skillVis}>
-                <article className="skill-card">
-                  <div className="skill-cat">{cat}</div>
-                  <div className="skill-pills">
-                    {items.map((s) => (
-                      <span key={s} className="pill">{s}</span>
-                    ))}
-                  </div>
-                </article>
+                <TiltCard className="skill-card-wrap">
+                  <article className={`skill-card${ci < 2 ? " featured" : ""}`}>
+                    <div className="skill-cat">{cat}</div>
+                    <div className="skill-pills">
+                      {items.map((s) => (
+                        <span key={s} className="pill">{s}</span>
+                      ))}
+                    </div>
+                  </article>
+                </TiltCard>
               </StaggerItem>
             ))}
           </div>
@@ -471,18 +549,25 @@ export default function Portfolio() {
 
       </main>
 
-
-      {/* ── Footer ──────────────────────────────────────────── */}
+      {/* ── Footer ── */}
       <footer className="foot">
-        <div className="foot-copy">{"©"} {new Date().getFullYear()} {D.fullName}</div>
+        <div className="foot-inner">
+          <div className="foot-brand">Kant W.</div>
+          <div className="foot-links">
+            <a href={`mailto:${D.email}`}>Email</a>
+            <a href={D.github} target="_blank" rel="noopener noreferrer">GitHub</a>
+            <a href={D.linkedin} target="_blank" rel="noopener noreferrer">LinkedIn</a>
+          </div>
+          <div className="foot-copy">© {new Date().getFullYear()} {D.fullName} · Built with React</div>
+        </div>
       </footer>
 
       <button
-        className={"btt" + (scrolled ? " show" : "")}
+        className={`btt${scrolled ? " show" : ""}`}
         onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
         aria-label="Back to top"
       >
-        {"↑"}
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
       </button>
     </>
   );

@@ -396,6 +396,7 @@ body::before {
   background: var(--card);
   box-shadow: var(--sh-sm);
   transition: all .3s cubic-bezier(.22,1,.36,1);
+  cursor: default;
 }
 .focus-tag:hover {
   color: var(--accent);

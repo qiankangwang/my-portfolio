@@ -52,8 +52,7 @@ const D = {
     year: "2026",
     role: "Second author",
     links: [
-      { label: "DOI", url: "https://doi.org/10.1021/acs.jctc.XXXXXX" },
-      { label: "arXiv", url: "https://arxiv.org/abs/XXXX.XXXXX" },
+      { label: "DOI", url: "https://pubs.acs.org/doi/pdf/10.1021/acs.jctc.6c00085" },
     ],
   },
 

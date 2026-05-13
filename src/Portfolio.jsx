@@ -33,13 +33,14 @@ function useInView(threshold = 0.12) {
   return [ref, visible];
 }
 
-function Section({ id, children, delay = 0 }) {
+function Section({ id, children, delay = 0, ...rest }) {
   const [ref, vis] = useInView();
   return (
     <section
       ref={ref}
       id={id}
       className="sect"
+      {...rest}
       style={{
         opacity: vis ? 1 : 0,
         transform: vis ? "translateY(0)" : "translateY(40px)",
@@ -281,7 +282,7 @@ export default function Portfolio() {
       <main className="content">
 
         {/* ── About ───────────────────────────────────────────── */}
-        <Section id="about">
+        <Section id="about" data-n="01">
           <div className="section-head">
             <span className="sect-n">01</span>
             <h2>About</h2>
@@ -304,7 +305,7 @@ export default function Portfolio() {
         </Section>
 
         {/* ── Research / Timeline ─────────────────────────────── */}
-        <Section id="research" delay={0.05}>
+        <Section id="research" delay={0.05} data-n="02">
           <div className="section-head">
             <span className="sect-n">02</span>
             <h2>Research</h2>
@@ -332,7 +333,7 @@ export default function Portfolio() {
         </Section>
 
         {/* ── Publication ─────────────────────────────────────── */}
-        <Section id="publication" delay={0.05}>
+        <Section id="publication" delay={0.05} data-n="03">
           <div className="section-head">
             <span className="sect-n">03</span>
             <h2>Publication</h2>
@@ -365,7 +366,7 @@ export default function Portfolio() {
         </Section>
 
         {/* ── Skills / Bento ──────────────────────────────────── */}
-        <Section id="skills" delay={0.05}>
+        <Section id="skills" delay={0.05} data-n="04">
           <div className="section-head">
             <span className="sect-n">04</span>
             <h2>Skills</h2>
@@ -407,7 +408,7 @@ export default function Portfolio() {
 
       {/* ── Footer ──────────────────────────────────────────── */}
       <footer className="foot">
-        <div className="foot-copy">{"©"} {new Date().getFullYear()} {D.fullName} &mdash; Built with React</div>
+        <div className="foot-copy">{"©"} {new Date().getFullYear()} {D.fullName}</div>
       </footer>
 
       <button

@@ -33,8 +33,8 @@ export default function NeuralNetCanvas() {
       bioMotifs = [];
       const cx = w * 0.5;
       const cy = h * 0.5;
-      const netW = Math.min(w * 0.82, 1180);
-      const netH = Math.min(h * 0.7, 620);
+      const netW = Math.min(w * 0.92, 1400);
+      const netH = Math.min(h * 0.82, 760);
       const startX = cx - netW / 2;
       const layerGap = netW / (layers.length - 1);
 
@@ -82,7 +82,7 @@ export default function NeuralNetCanvas() {
         }
       }
 
-      if (w >= 720) {
+      if (w >= 480) {
         const left = startX;
         const top = cy - netH * 0.34;
         const bottom = cy + netH * 0.34;

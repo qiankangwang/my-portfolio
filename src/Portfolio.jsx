@@ -310,12 +310,12 @@ export default function Portfolio() {
 
   const onAvatarClick = useCallback(() => {
     setPatCount((c) => Math.min(c + 1, 8));
-    setHeadpat(true);
     if (patTimer.current) clearTimeout(patTimer.current);
-    patTimer.current = setTimeout(() => {
-      setPatCount(0);
-    }, 1500);
-    setTimeout(() => setHeadpat(false), 450);
+    patTimer.current = setTimeout(() => setPatCount(0), 1500);
+
+    setHeadpat(false);
+    requestAnimationFrame(() => setHeadpat(true));
+    setTimeout(() => setHeadpat(false), 120);
   }, []);
 
   return (

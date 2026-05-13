@@ -322,21 +322,19 @@ body::before {
   border: 3px solid var(--accent);
   box-shadow: 0 0 0 6px var(--accent-soft), 0 0 0 1px var(--accent-soft2), var(--sh2);
   opacity: 0; transform: scale(.85) translateY(16px);
-  transition: opacity .8s .15s cubic-bezier(.22,1,.36,1), transform .8s .15s cubic-bezier(.22,1,.36,1);
+  transition: opacity .8s .15s cubic-bezier(.22,1,.36,1),
+              transform .8s .15s cubic-bezier(.22,1,.36,1);
   cursor: pointer;
   position: relative;
   z-index: 2;
 }
-.hero-avatar.vis { opacity: 1; transform: scale(1) translateY(0); }
-.hero-avatar.headpat {
-  animation: headpat var(--pat-d, 0.5s) cubic-bezier(.22,1,.36,1);
+.hero-avatar.vis {
+  opacity: 1;
+  transform: scale(1) translateY(0);
 }
-@keyframes headpat {
-  0%   { transform: scale(1) translateY(0); }
-  25%  { transform: scale(1.06, var(--pat-s, 0.82)) translateY(var(--pat-t, 6px)); }
-  50%  { transform: scale(0.96, 1.08) translateY(calc(var(--pat-t, 6px) * -1.2)); }
-  75%  { transform: scale(1.01, 0.98) translateY(calc(var(--pat-t, 6px) * 0.25)); }
-  100% { transform: scale(1) translateY(0); }
+.hero-avatar.headpat {
+  transition: transform 0.12s cubic-bezier(.22,1,.36,1);
+  transform: scale(1.06, var(--pat-s, 0.78)) translateY(var(--pat-t, 8px)) !important;
 }
 .avatar-particle {
   position: absolute;

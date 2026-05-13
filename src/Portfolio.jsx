@@ -376,7 +376,7 @@ export default function Portfolio() {
                   <div className="tl-rail">
                     <div className="tl-dot" />
                   </div>
-                  <div className="tl-card" onMouseMove={(e) => { const r = e.currentTarget.getBoundingClientRect(); e.currentTarget.style.setProperty('--gx', `${e.clientX - r.left}px`); e.currentTarget.style.setProperty('--gy', `${e.clientY - r.top}px`); }}>
+                  <div className="tl-card">
                     <div className="tl-top">
                       <span className="tl-tag">{exp.tag}</span>
                       <time className="tl-period">{exp.period}</time>
@@ -397,21 +397,11 @@ export default function Portfolio() {
             <span className="sect-n">03</span>
             <h2>Publication</h2>
           </div>
-          <article
+          <a
+            href={D.publication.links[0]?.url || "#"}
+            target="_blank"
+            rel="noopener noreferrer"
             className="pub-card"
-            onMouseMove={(e) => {
-              const r = e.currentTarget.getBoundingClientRect();
-              const x = (e.clientX - r.left) / r.width - 0.5;
-              const y = (e.clientY - r.top) / r.height - 0.5;
-              e.currentTarget.style.setProperty('--gx', `${e.clientX - r.left}px`);
-              e.currentTarget.style.setProperty('--gy', `${e.clientY - r.top}px`);
-              e.currentTarget.style.setProperty('--rx', `${y * -8}deg`);
-              e.currentTarget.style.setProperty('--ry', `${x * 8}deg`);
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.setProperty('--rx', '0deg');
-              e.currentTarget.style.setProperty('--ry', '0deg');
-            }}
           >
             <div className="pub-venue">
               <span>{D.publication.venue}</span>
@@ -421,22 +411,10 @@ export default function Portfolio() {
             <p className="pub-authors">
               {D.publication.authors} <em>· {D.publication.role}</em>
             </p>
-            {D.publication.links && D.publication.links.length > 0 && (
-              <div className="pub-links">
-                {D.publication.links.map((l) => (
-                  <a
-                    key={l.label}
-                    href={l.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="pub-link"
-                  >
-                    {l.label} →
-                  </a>
-                ))}
-              </div>
-            )}
-          </article>
+            <div className="pub-cta">
+              <span className="pub-btn">Read Paper →</span>
+            </div>
+          </a>
         </Section>
 
         {/* ── Projects ────────────────────────────────────────── */}
@@ -478,7 +456,7 @@ export default function Portfolio() {
           <div className="skill-bento" ref={skillRef}>
             {Object.entries(D.skills).map(([cat, items], ci) => (
               <StaggerItem key={cat} index={ci} visible={skillVis}>
-                <article className="skill-card" onMouseMove={(e) => { const r = e.currentTarget.getBoundingClientRect(); e.currentTarget.style.setProperty('--gx', `${e.clientX - r.left}px`); e.currentTarget.style.setProperty('--gy', `${e.clientY - r.top}px`); }}>
+                <article className="skill-card">
                   <div className="skill-cat">{cat}</div>
                   <div className="skill-pills">
                     {items.map((s) => (
@@ -493,24 +471,6 @@ export default function Portfolio() {
 
       </main>
 
-      {/* ── CTA ──────────────────────────────────────────────── */}
-      <section className="cta">
-        <h2>Let&rsquo;s connect</h2>
-        <p>
-          I&rsquo;m always open to discussing research collaborations, new opportunities,
-          and interesting problems at the intersection of ML and science.
-        </p>
-        <div className="cta-actions">
-          <button className="btn primary" onClick={copyEmail}>
-            {copied ? "✓ Copied" : "✉ Copy Email"}
-          </button>
-        </div>
-        <div className="cta-links">
-          <a href={D.github}   target="_blank" rel="noopener noreferrer">GitHub</a>
-          <span className="cta-sep" />
-          <a href={D.linkedin} target="_blank" rel="noopener noreferrer">LinkedIn</a>
-        </div>
-      </section>
 
       {/* ── Footer ──────────────────────────────────────────── */}
       <footer className="foot">

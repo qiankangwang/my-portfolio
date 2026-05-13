@@ -284,6 +284,30 @@ export default function Portfolio() {
 
   const [expRef, expVis] = useInView();
   const [skillRef, skillVis] = useInView();
+  const [avatarSpin, setAvatarSpin] = useState(false);
+  const [particles, setParticles] = useState([]);
+
+  const spawnParticles = useCallback(() => {
+    const emojis = ["🧬", "⚡", "🔬", "⭐", "🎉", "💻", "🧠", "✨", "🚀", "🔥"];
+    const newParticles = emojis.map((emoji, i) => ({
+      id: Date.now() + i,
+      emoji,
+      x: (Math.random() - 0.5) * 120,
+      y: -(Math.random() * 80 + 40),
+      rot: (Math.random() - 0.5) * 180,
+      delay: i * 0.05,
+      scale: 0.8 + Math.random() * 0.6,
+    }));
+    setParticles(newParticles);
+    setTimeout(() => setParticles([]), 1200);
+  }, []);
+
+  const onAvatarClick = useCallback(() => {
+    if (avatarSpin) return;
+    setAvatarSpin(true);
+    spawnParticles();
+    setTimeout(() => setAvatarSpin(false), 800);
+  }, [avatarSpin, spawnParticles]);
 
   return (
     <>
@@ -328,12 +352,30 @@ export default function Portfolio() {
             <span className="hero-badge-dot" />
             Available for Research
           </div>
-          <img
-            className={`hero-avatar${heroVis ? " vis" : ""}`}
-            src={D.avatar}
-            alt={D.name}
-            loading="eager"
-          />
+          <div className="hero-avatar-wrap">
+            <img
+              className={`hero-avatar${heroVis ? " vis" : ""}${avatarSpin ? " spin" : ""}`}
+              src={D.avatar}
+              alt={D.name}
+              loading="eager"
+              onClick={onAvatarClick}
+              title="Click me!"
+            />
+            {particles.map((p) => (
+              <span
+                key={p.id}
+                className="avatar-particle"
+                style={{
+                  left: `calc(50% + ${p.x}px)`,
+                  top: `calc(50% + ${p.y}px)`,
+                  transform: `translate(-50%, -50%) rotate(${p.rot}deg) scale(${p.scale})`,
+                  animationDelay: `${p.delay}s`,
+                }}
+              >
+                {p.emoji}
+              </span>
+            ))}
+          </div>
           <div className={`hero-kicker${heroVis ? " vis" : ""}`}>
             UC Berkeley · Data Science · 2027
           </div>

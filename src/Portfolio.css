@@ -302,17 +302,45 @@ body::before {
   50% { opacity: .5; transform: scale(1.3); }
 }
 
+.hero-avatar-wrap {
+  position: relative;
+  display: inline-block;
+  margin-bottom: 1.8rem;
+}
 .hero-avatar {
   width: 120px; height: 120px;
   border-radius: 50%;
   object-fit: cover;
   border: 3px solid var(--accent);
   box-shadow: 0 0 0 6px var(--accent-soft), 0 0 0 1px var(--accent-soft2), var(--sh2);
-  margin-bottom: 1.8rem;
   opacity: 0; transform: scale(.85) translateY(16px);
   transition: opacity .8s .15s cubic-bezier(.22,1,.36,1), transform .8s .15s cubic-bezier(.22,1,.36,1);
+  cursor: pointer;
+  position: relative;
+  z-index: 2;
 }
 .hero-avatar.vis { opacity: 1; transform: scale(1) translateY(0); }
+.hero-avatar.spin {
+  animation: avatarSpin 0.8s cubic-bezier(.22,1,.36,1);
+}
+@keyframes avatarSpin {
+  0%   { transform: scale(1) rotate(0deg); }
+  30%  { transform: scale(0.85) rotate(180deg); }
+  60%  { transform: scale(1.1) rotate(300deg); }
+  100% { transform: scale(1) rotate(360deg); }
+}
+.avatar-particle {
+  position: absolute;
+  font-size: 1.4rem;
+  pointer-events: none;
+  z-index: 3;
+  animation: particleFly 1s cubic-bezier(.22,1,.36,1) forwards;
+}
+@keyframes particleFly {
+  0%   { opacity: 1; transform: translate(-50%, -50%) scale(0.3); }
+  20%  { opacity: 1; transform: translate(-50%, -50%) scale(1.2); }
+  100% { opacity: 0; transform: translate(-50%, -150%) scale(0.6); }
+}
 
 .hero-kicker {
   display: inline-flex; align-items: center; gap: .8rem;

@@ -218,7 +218,9 @@ export default function Portfolio() {
           </div>
         </div>
         <div className="scroll-hint">
-          <div className="scroll-dot" />
+          <div className="scroll-mouse">
+            <div className="scroll-wheel" />
+          </div>
           <span>Scroll</span>
         </div>
       </header>
@@ -257,7 +259,7 @@ export default function Portfolio() {
                   <div className="tl-rail">
                     <div className="tl-dot" />
                   </div>
-                  <div className="tl-body">
+                  <div className="tl-card" onMouseMove={(e) => { const r = e.currentTarget.getBoundingClientRect(); e.currentTarget.style.setProperty('--gx', `${e.clientX - r.left}px`); e.currentTarget.style.setProperty('--gy', `${e.clientY - r.top}px`); }}>
                     <div className="tl-top">
                       <span className="tl-tag">{exp.tag}</span>
                       <time className="tl-period">{exp.period}</time>

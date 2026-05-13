@@ -56,6 +56,33 @@ const D = {
     ],
   },
 
+  projects: [
+    {
+      id: "fallback-1",
+      name: "simclr-cifar10-pytorch",
+      description: "SimCLR-style self-supervised learning on CIFAR-10 with ResNet-18 and k-NN evaluation.",
+      language: "Python",
+      stargazers_count: 1,
+      html_url: "https://github.com/xiaole5211314/simclr-cifar10-pytorch",
+    },
+    {
+      id: "fallback-2",
+      name: "regal",
+      description: "AI legal operations platform with real-time deposition transcription and intelligent assistance.",
+      language: "TypeScript",
+      stargazers_count: 0,
+      html_url: "https://github.com/xiaole5211314/regal",
+    },
+    {
+      id: "fallback-3",
+      name: "Decision-Tree",
+      description: "From-scratch C++ decision tree classifier with Gini impurity on the Titanic dataset.",
+      language: "C++",
+      stargazers_count: 0,
+      html_url: "https://github.com/xiaole5211314/Decision-Tree",
+    },
+  ],
+
   skills: {
     "Machine Learning": [
       "PyTorch", "LibTorch", "Contrastive / SSL", "Diffusion models", "Transformers",

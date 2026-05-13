@@ -449,8 +449,8 @@ export default function Portfolio() {
             <div className="projects-loading">Loading repositories…</div>
           ) : (
             <div className="projects-grid" ref={projRef}>
-              {repos.map((repo, i) => (
-                <StaggerItem key={repo.id} index={i} visible={projVis}>
+              {(repos.length > 0 ? repos : D.projects).map((repo, i) => (
+                <StaggerItem key={repo.id || repo.name} index={i} visible={projVis}>
                   <a
                     href={repo.html_url}
                     target="_blank"

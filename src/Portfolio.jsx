@@ -284,11 +284,11 @@ export default function Portfolio() {
 
   const [expRef, expVis] = useInView();
   const [skillRef, skillVis] = useInView();
-  const [avatarSpin, setAvatarSpin] = useState(false);
+  const [headpat, setHeadpat] = useState(false);
   const [particles, setParticles] = useState([]);
 
   const spawnParticles = useCallback(() => {
-    const items = ["🧬", "⚡", "⭐", "✨", "🎉", "🔬", "💻", "🚀"];
+    const items = ["❤️", "💖", "💗", "⭐", "✨", "💫", "🌟"];
     const newParticles = Array.from({ length: 18 }, (_, i) => {
       const angle = (Math.PI * 2 * i) / 18 + (Math.random() - 0.5) * 0.6;
       const dist = 30 + Math.random() * 90;
@@ -307,11 +307,11 @@ export default function Portfolio() {
   }, []);
 
   const onAvatarClick = useCallback(() => {
-    if (avatarSpin) return;
-    setAvatarSpin(true);
+    if (headpat) return;
+    setHeadpat(true);
     spawnParticles();
-    setTimeout(() => setAvatarSpin(false), 800);
-  }, [avatarSpin, spawnParticles]);
+    setTimeout(() => setHeadpat(false), 800);
+  }, [headpat, spawnParticles]);
 
   return (
     <>
@@ -358,7 +358,7 @@ export default function Portfolio() {
           </div>
           <div className="hero-avatar-wrap">
             <img
-              className={`hero-avatar${heroVis ? " vis" : ""}${avatarSpin ? " spin" : ""}`}
+              className={`hero-avatar${heroVis ? " vis" : ""}${headpat ? " headpat" : ""}`}
               src={D.avatar}
               alt={D.name}
               loading="eager"

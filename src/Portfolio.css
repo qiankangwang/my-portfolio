@@ -176,13 +176,21 @@ body::before {
   height: 64px;
 }
 .nav-logo {
-  font-family: var(--serif);
-  font-size: 1.6rem; font-style: italic;
-  color: var(--fg); cursor: pointer;
-  letter-spacing: -.01em;
-  transition: color .3s, transform .3s;
+  display: flex; align-items: center;
+  cursor: pointer;
+  transition: transform .3s;
 }
-.nav-logo:hover { color: var(--accent); transform: translateY(-1px); }
+.nav-logo-img {
+  width: 36px; height: 36px;
+  border-radius: 10px;
+  object-fit: cover;
+  transition: transform .3s, box-shadow .3s;
+}
+.nav-logo:hover { transform: translateY(-1px); }
+.nav-logo:hover .nav-logo-img {
+  transform: scale(1.08);
+  box-shadow: 0 4px 16px var(--accent-soft2);
+}
 .nav-right { display: flex; align-items: center; gap: .5rem; }
 .nav-links { display: flex; gap: .35rem; }
 .nav-links a {

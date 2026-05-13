@@ -317,7 +317,7 @@ export default function Portfolio() {
       {/* ── Nav ── */}
       <nav className={`nav${scrolled ? " scrolled" : ""}`}>
         <span className="nav-logo" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}>
-          Kant W.
+          <img src="/photo.png" alt="K" className="nav-logo-img" />
         </span>
         <div className="nav-right">
           <div className={`nav-links${menuOpen ? " open" : ""}`}>

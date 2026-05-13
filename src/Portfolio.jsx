@@ -150,7 +150,7 @@ function TypeWriter({ text, speed = 35, start = false }) {
   return (
     <span>
       {display}
-      <span className={"type-cursor" + (done ? " blink" : "")}>|</span>
+      {!done && <span className="type-cursor">|</span>}
     </span>
   );
 }

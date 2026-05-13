@@ -93,11 +93,19 @@ export default function NeuralNetCanvas() {
           { type: "rna", x: left + netW * 0.5,  y: top + netH * 0.74, len: 10, angle: -0.2,  phase: 3.1, bend: -7 },
           { type: "rna", x: left + netW * 0.08, y: top + netH * 0.58, len: 9,  angle: 0.32,  phase: 6.0, bend: 6 },
           { type: "rna", x: left + netW * 0.82, y: top + netH * 0.34, len: 9,  angle: -0.3,  phase: 8.4, bend: -6 },
+          { type: "rna", x: left + netW * 0.65, y: top + netH * 0.55, len: 12, angle: 0.08,  phase: 2.8, bend: 9 },
+          { type: "rna", x: left + netW * 0.35, y: top + netH * 0.20, len: 8,  angle: -0.35, phase: 4.5, bend: -5 },
+          { type: "rna", x: left + netW * 0.92, y: top + netH * 0.65, len: 7,  angle: 0.25,  phase: 7.2, bend: 7 },
+          { type: "rna", x: left + netW * 0.15, y: top + netH * 0.82, len: 10, angle: -0.12, phase: 1.8, bend: -9 },
+          { type: "rna", x: left + netW * 0.60, y: top + netH * 0.05, len: 6,  angle: 0.40,  phase: 9.1, bend: 4 },
 
           // Protein motifs
           { type: "protein", x: left + netW * 0.76, y: top + netH * 0.18, len: 10, scale: 1.05, phase: 0.5 },
           { type: "protein", x: left + netW * 0.18, y: bottom - netH * 0.16, len: 8, scale: 0.92, phase: 2.4 },
           { type: "protein", x: left + netW * 0.42, y: top + netH * 0.06, len: 7, scale: 0.7, phase: 5.4 },
+          { type: "protein", x: left + netW * 0.58, y: bottom - netH * 0.10, len: 9, scale: 0.85, phase: 3.7 },
+          { type: "protein", x: left + netW * 0.88, y: bottom - netH * 0.28, len: 6, scale: 0.65, phase: 6.8 },
+          { type: "protein", x: left + netW * 0.30, y: top + netH * 0.48, len: 7, scale: 0.78, phase: 1.3 },
         ];
       }
     };

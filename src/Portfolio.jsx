@@ -288,18 +288,22 @@ export default function Portfolio() {
   const [particles, setParticles] = useState([]);
 
   const spawnParticles = useCallback(() => {
-    const colors = ["#3B82F6", "#60A5FA", "#F59E0B", "#34D399", "#A78BFA", "#F472B6"];
-    const newParticles = Array.from({ length: 18 }, (_, i) => ({
-      id: Date.now() + i,
-      color: colors[Math.floor(Math.random() * colors.length)],
-      x: (Math.random() - 0.5) * 140,
-      y: -(Math.random() * 60 + 30),
-      rot: (Math.random() - 0.5) * 360,
-      delay: i * 0.02,
-      size: 4 + Math.random() * 6,
-    }));
+    const colors = ["#3B82F6", "#60A5FA", "#F59E0B", "#34D399", "#A78BFA", "#F472B6", "#F87171", "#22D3EE"];
+    const newParticles = Array.from({ length: 24 }, (_, i) => {
+      const angle = (Math.PI * 2 * i) / 24 + (Math.random() - 0.5) * 0.5;
+      const dist = 40 + Math.random() * 80;
+      return {
+        id: Date.now() + i,
+        color: colors[Math.floor(Math.random() * colors.length)],
+        x: Math.cos(angle) * dist,
+        y: Math.sin(angle) * dist,
+        rot: (Math.random() - 0.5) * 360,
+        delay: i * 0.015,
+        size: 3 + Math.random() * 5,
+      };
+    });
     setParticles(newParticles);
-    setTimeout(() => setParticles([]), 1200);
+    setTimeout(() => setParticles([]), 1000);
   }, []);
 
   const onAvatarClick = useCallback(() => {

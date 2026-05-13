@@ -329,26 +329,28 @@ body::before {
 }
 .hero-avatar.vis { opacity: 1; transform: scale(1) translateY(0); }
 .hero-avatar.spin {
-  animation: avatarBounce 0.7s cubic-bezier(.22,1,.36,1);
+  animation: avatarShake 0.65s cubic-bezier(.22,1,.36,1);
 }
-@keyframes avatarBounce {
-  0%   { transform: scale(1) translateY(0); }
-  25%  { transform: scale(0.88) translateY(8px); }
-  50%  { transform: scale(1.15) translateY(-12px); }
-  75%  { transform: scale(0.95) translateY(4px); }
-  100% { transform: scale(1) translateY(0); }
+@keyframes avatarShake {
+  0%   { transform: rotate(0deg) scale(1); }
+  15%  { transform: rotate(-14deg) scale(1.05); }
+  30%  { transform: rotate(12deg) scale(1.05); }
+  45%  { transform: rotate(-8deg) scale(1.03); }
+  60%  { transform: rotate(5deg) scale(1.02); }
+  75%  { transform: rotate(-2deg) scale(1.01); }
+  100% { transform: rotate(0deg) scale(1); }
 }
 .avatar-particle {
   position: absolute;
-  border-radius: 2px;
+  border-radius: 50%;
   pointer-events: none;
   z-index: 3;
-  animation: particleFly 1s cubic-bezier(.22,1,.36,1) forwards;
+  animation: particlePop 0.9s cubic-bezier(.22,1,.36,1) forwards;
 }
-@keyframes particleFly {
+@keyframes particlePop {
   0%   { opacity: 1; transform: translate(-50%, -50%) scale(0); }
-  15%  { opacity: 1; transform: translate(-50%, -50%) scale(1); }
-  100% { opacity: 0; transform: translate(-50%, -180%) scale(0.4); }
+  20%  { opacity: 1; transform: translate(-50%, -50%) scale(1.3); }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(0.3); }
 }
 
 .hero-kicker {

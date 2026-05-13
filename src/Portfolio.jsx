@@ -288,7 +288,7 @@ export default function Portfolio() {
   const [particles, setParticles] = useState([]);
 
   const spawnParticles = useCallback(() => {
-    const items = ["❤️", "💖", "💗", "⭐", "✨", "💫", "🌟"];
+    const items = ["⭐", "✨", "💫", "🌟", "🧬", "⚡", "🔬", "🚀"];
     const newParticles = Array.from({ length: 18 }, (_, i) => {
       const angle = (Math.PI * 2 * i) / 18 + (Math.random() - 0.5) * 0.6;
       const dist = 30 + Math.random() * 90;

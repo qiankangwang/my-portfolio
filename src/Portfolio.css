@@ -179,6 +179,7 @@ body::before {
   display: flex; align-items: center;
   cursor: pointer;
   transition: transform .3s;
+  background: none; border: none; padding: 0;
 }
 .nav-logo-img {
   width: 36px; height: 36px;
@@ -331,11 +332,6 @@ body::before {
 .hero-avatar.vis {
   opacity: 1;
   transform: scale(1) translateY(0);
-}
-.hero-avatar-wrap {
-  position: relative;
-  display: inline-block;
-  margin-bottom: 1.8rem;
 }
 
 .hero-kicker {
@@ -951,8 +947,6 @@ body::before {
   from { opacity: 0; transform: translateY(20px); }
   to { opacity: 1; transform: translateY(0); }
 }
-
-.type-cursor { color: var(--accent); font-weight: 300; margin-left: 1px; }
 
 @media (max-width: 900px) {
   .projects-grid { grid-template-columns: repeat(2, 1fr); }

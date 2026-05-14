@@ -268,11 +268,34 @@ export default function Portfolio() {
   }, [menuOpen]);
 
   useEffect(() => {
-    fetch("https://api.github.com/users/xiaole5211314/repos?sort=updated&per_page=6")
+    const CACHE_KEY = "gh-repos-v1";
+    const cached = sessionStorage.getItem(CACHE_KEY);
+    if (cached) {
+      try {
+        setRepos(JSON.parse(cached));
+        setRepoLoading(false);
+        return;
+      } catch { /* corrupt cache — fall through and refetch */ }
+    }
+    fetch("https://api.github.com/users/xiaole5211314/repos?sort=updated&per_page=18")
       .then((r) => r.json())
       .then((data) => {
-        setRepos(Array.isArray(data) ? data : []);
+        const list = Array.isArray(data)
+          ? data
+              .filter((r) => !r.fork && r.name !== "my-portfolio")
+              .slice(0, 6)
+              .map((r) => ({
+                id: r.id,
+                name: r.name,
+                description: r.description,
+                language: r.language,
+                stargazers_count: r.stargazers_count,
+                html_url: r.html_url,
+              }))
+          : [];
+        setRepos(list);
         setRepoLoading(false);
+        if (list.length) sessionStorage.setItem(CACHE_KEY, JSON.stringify(list));
       })
       .catch(() => setRepoLoading(false));
   }, []);
@@ -284,7 +307,6 @@ export default function Portfolio() {
 
   const [expRef, expVis] = useInView();
   const [skillRef, skillVis] = useInView();
-  const [patCount, setPatCount] = useState(0);
   const patTimer = useRef(null);
   const patCountRef = useRef(0);
   const avatarRef = useRef(null);
@@ -292,11 +314,9 @@ export default function Portfolio() {
   const onAvatarClick = useCallback(() => {
     const nextCount = Math.min(patCountRef.current + 1, 8);
     patCountRef.current = nextCount;
-    setPatCount(nextCount);
     if (patTimer.current) clearTimeout(patTimer.current);
     patTimer.current = setTimeout(() => {
       patCountRef.current = 0;
-      setPatCount(0);
     }, 1500);
 
     const el = avatarRef.current;
@@ -320,9 +340,13 @@ export default function Portfolio() {
 
       {/* ── Nav ── */}
       <nav className={`nav${scrolled ? " scrolled" : ""}`}>
-        <span className="nav-logo" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}>
-          <img src={`${process.env.PUBLIC_URL}/photo.png`} alt="K" className="nav-logo-img" />
-        </span>
+        <button
+          className="nav-logo"
+          onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+          aria-label="Scroll to top"
+        >
+          <img src={`${process.env.PUBLIC_URL}/photo.png`} alt="" className="nav-logo-img" />
+        </button>
         <div className="nav-right">
           <div className={`nav-links${menuOpen ? " open" : ""}`}>
             {NAV.map((n) => (
@@ -330,6 +354,7 @@ export default function Portfolio() {
                 key={n}
                 href={`#${n.toLowerCase()}`}
                 className={active === n ? "active" : ""}
+                aria-current={active === n ? "page" : undefined}
                 onClick={(e) => { e.preventDefault(); scrollTo(n.toLowerCase()); }}
               >
                 {n}

@@ -220,6 +220,7 @@ const NAV = ["About", "Research", "Publication", "Projects", "Skills"];
 export default function Portfolio() {
   const [theme, toggleTheme] = useTheme();
   const [scrolled, setScrolled] = useState(false);
+  const [progress, setProgress] = useState(0);
   const [active, setActive] = useState("");
   const [menuOpen, setMenuOpen] = useState(false);
   const [heroVis, setHeroVis] = useState(false);
@@ -238,6 +239,8 @@ export default function Portfolio() {
       ticking = true;
       requestAnimationFrame(() => {
         setScrolled(window.scrollY > 40);
+        const docH = document.documentElement.scrollHeight - window.innerHeight;
+        setProgress(docH > 0 ? Math.min(window.scrollY / docH, 1) : 0);
         const sects = NAV.map((n) => document.getElementById(n.toLowerCase()));
         for (let i = sects.length - 1; i >= 0; i--) {
           if (sects[i] && sects[i].getBoundingClientRect().top < 200) {
@@ -337,6 +340,14 @@ export default function Portfolio() {
     <>
       <AmbientBg />
       <a className="skip" href="#about">Skip to content</a>
+
+      {/* ── Scroll progress ── */}
+      <div className="scroll-progress" aria-hidden="true">
+        <div
+          className="scroll-progress-bar"
+          style={{ transform: `scaleX(${progress})` }}
+        />
+      </div>
 
       {/* ── Nav ── */}
       <nav className={`nav${scrolled ? " scrolled" : ""}`}>

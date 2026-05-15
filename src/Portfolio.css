@@ -241,8 +241,21 @@ body::before {
   flex-direction: column;
   justify-content: space-between;
   padding-block: clamp(3rem, 8vh, 6rem);
+  padding-inline: 1.5rem;
+  margin-inline: -1.5rem;
   gap: 2rem;
   z-index: 50;
+  /* Glassmorphism so text stays readable over the dark 3D scene without
+     hiding it entirely. The semi-transparent background + backdrop-filter
+     blur lets the network/DNA peek through softly. */
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--bg) 78%, transparent),
+    color-mix(in srgb, var(--bg) 60%, transparent)
+  );
+  backdrop-filter: blur(14px) saturate(1.4);
+  -webkit-backdrop-filter: blur(14px) saturate(1.4);
+  border-right: 1px solid color-mix(in srgb, var(--fg) 8%, transparent);
 }
 
 .sb-top { display: flex; flex-direction: column; gap: 1rem; }
@@ -418,10 +431,20 @@ body::before {
 }
 .sect-stage {
   width: 100%;
-  /* Fly-in: a single 1s entrance just before the pin takes over. Once the
-     stage is in, it stays — the pin holds it at the anchor for the rest of
-     the section's scroll range. No scroll-coupled transform here, so the
-     viewer's focus doesn't move with the scrollbar. */
+  /* Glass card so section content is legible over the 3D scene without
+     hiding the scene completely — the network and DNA stay visible in the
+     gutters while the card holds the focus area. */
+  background: color-mix(in srgb, var(--bg) 72%, transparent);
+  backdrop-filter: blur(18px) saturate(1.4);
+  -webkit-backdrop-filter: blur(18px) saturate(1.4);
+  border: 1px solid color-mix(in srgb, var(--fg) 7%, transparent);
+  border-radius: 22px;
+  padding: clamp(2rem, 3.5vw, 3rem);
+  box-shadow:
+    0 1px 0 color-mix(in srgb, var(--fg) 4%, transparent) inset,
+    0 24px 80px -24px rgba(0, 0, 0, .55);
+
+  /* Fly-in entrance: triggered when .sect.in flips. */
   opacity: 0;
   transform: translateY(60px);
   transition:

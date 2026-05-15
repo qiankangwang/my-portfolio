@@ -96,31 +96,13 @@
 
 html {
   scroll-behavior: smooth;
-  scroll-padding-top: 64px;
+  scroll-padding-top: 4rem;
 }
 
-/* Registered scroll-progress properties. The scroll handler in Portfolio.jsx
-   clamps both to [0,1] before writing. calc() arithmetic over them is what
-   drives the scrollytelling — every visible per-frame motion you see is the
-   browser interpolating these numbers and recomposing transforms on the GPU. */
-@property --hero-p {
-  syntax: "<number>";
-  inherits: true;
-  initial-value: 0;
-}
-@property --sect-p {
-  syntax: "<number>";
-  inherits: true;
-  initial-value: 0;
-}
+/* Registered stagger index so each cascade item can read its position via
+   calc(). Kept typed for clean cross-browser interpolation. */
 @property --stag-i {
   syntax: "<integer>";
-  inherits: true;
-  initial-value: 0;
-}
-/* Whole-page scroll progress 0 → 1; drives the central anchor's scale. */
-@property --page-p {
-  syntax: "<number>";
   inherits: true;
   initial-value: 0;
 }
@@ -189,138 +171,30 @@ body::before {
 }
 
 /* ════════════════════════════════════════════════════════════════════
-   Central 3D Anchor
+   Neural-network + bio motif backdrop
 
-   Fixed at the viewport's geometric centre, behind content (z-index 1) and
-   above the ambient background. The viewer's eye locks onto this regardless
-   of scroll position — the page's content morphs around it, not past it.
-
-   - .anchor sets up the 3D scene (perspective + preserve-3d).
-   - .anchor-aura is a soft halo that pulses.
-   - .anchor-core is the glowing sphere; gradient + insets simulate light.
-   - .anchor-ring-{1,2,3} are tilted orbital rings (CSS 3D), each spinning at
-     a different rate / axis, evoking an atomic / orbital system.
-
-   Opacity is driven by --hero-p so the anchor fades in only after the hero
-   pin starts releasing — letting the neural-net canvas own the intro alone.
-   Overall scale and glow intensify with --page-p (whole-page progress, set
-   by the scroll handler), giving the anchor a sense of growing presence as
-   the viewer progresses through the introduction.
+   The NeuralNetCanvas component renders an animated network of nodes/edges
+   plus RNA / protein motifs (see NeuralNetCanvas.jsx). Promoted to a
+   full-page fixed background so the visual identity carries through every
+   section, not just the intro. Sits behind everything else (.bgnet
+   z-index: 0) with low opacity so foreground text stays legible.
    ════════════════════════════════════════════════════════════════════ */
-
-.anchor {
+.bgnet {
   position: fixed;
-  top: 50%; left: 50%;
-  width: 360px; height: 360px;
-  margin: -180px 0 0 -180px;
-  pointer-events: none;
-  z-index: 1;
-  perspective: 1200px;
-  transform-style: preserve-3d;
-  /* Anchor scales up subtly over the page so it feels like it advances with
-     the viewer. Math: 1 → 1.18 across the full scroll. */
-  scale: calc(1 + var(--page-p, 0) * 0.18);
-  /* Fades in as hero pin releases; fully present from --hero-p ≈ 0.55 on. */
-  opacity: clamp(0, calc(var(--hero-p, 0) * 1.8 - 0.1), 1);
-  transition: opacity .25s linear;
-}
-
-.anchor-aura {
-  position: absolute;
-  inset: -45%;
-  border-radius: 50%;
-  background: radial-gradient(circle, var(--accent-soft2) 0%, var(--accent-soft) 35%, transparent 70%);
-  filter: blur(28px);
-  animation: anchor-aura 6s ease-in-out infinite;
-}
-
-.anchor-core {
-  position: absolute;
-  inset: 36%;
-  border-radius: 50%;
-  background:
-    radial-gradient(circle at 30% 28%,
-      color-mix(in srgb, var(--accent) 60%, white) 0%,
-      var(--accent) 35%,
-      var(--accent2) 65%,
-      var(--accent3) 100%);
-  box-shadow:
-    0 0 32px var(--accent-soft2),
-    0 0 80px var(--accent-soft),
-    inset -10px -14px 28px rgba(0, 0, 0, .22),
-    inset 8px 8px 22px rgba(255, 255, 255, .3);
-  animation: anchor-core 4.5s ease-in-out infinite;
-}
-
-.anchor-ring {
-  position: absolute;
   inset: 0;
-  border-radius: 50%;
-  border: 1.5px solid transparent;
-  /* Linear-gradient through border-image so the ring isn't a flat outline. */
-  background:
-    conic-gradient(from 0deg,
-      transparent 0deg,
-      var(--accent-soft2) 90deg,
-      transparent 180deg,
-      var(--warm-soft) 270deg,
-      transparent 360deg) border-box;
-  -webkit-mask:
-    linear-gradient(#000 0 0) padding-box,
-    linear-gradient(#000 0 0);
-  -webkit-mask-composite: xor;
-          mask-composite: exclude;
-  mask:
-    linear-gradient(#000 0 0) padding-box,
-    linear-gradient(#000 0 0);
+  z-index: 0;
+  pointer-events: none;
+  /* Hold the network mid-canvas via the existing component; we just dim it.
+     A radial mask hides edge pixels so the network feels luminous-centred
+     rather than wallpapered. */
+  opacity: .45;
+  -webkit-mask-image: radial-gradient(ellipse 70% 60% at 50% 50%, #000 35%, transparent 90%);
+          mask-image: radial-gradient(ellipse 70% 60% at 50% 50%, #000 35%, transparent 90%);
 }
-.anchor-ring-1 {
-  animation: ring1 22s linear infinite;
-}
-.anchor-ring-2 {
-  inset: 9%;
-  animation: ring2 16s linear infinite reverse;
-}
-.anchor-ring-3 {
-  inset: 18%;
-  animation: ring3 28s linear infinite;
-}
-
-@keyframes anchor-aura {
-  0%, 100% { opacity: .55; transform: scale(1); }
-  50%      { opacity: .85; transform: scale(1.08); }
-}
-@keyframes anchor-core {
-  0%, 100% { transform: scale(1); }
-  50%      { transform: scale(1.05); }
-}
-/* Each ring spins on a tilted plane in 3D space. The from→to keyframes set
-   the same tilt, so transform interpolation stays clean (just rotateZ). */
-@keyframes ring1 {
-  from { transform: rotateX(72deg) rotateZ(0deg); }
-  to   { transform: rotateX(72deg) rotateZ(360deg); }
-}
-@keyframes ring2 {
-  from { transform: rotateY(64deg) rotateZ(0deg); }
-  to   { transform: rotateY(64deg) rotateZ(360deg); }
-}
-@keyframes ring3 {
-  from { transform: rotateX(34deg) rotateY(40deg) rotateZ(0deg); }
-  to   { transform: rotateX(34deg) rotateY(40deg) rotateZ(360deg); }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .anchor, .anchor-core, .anchor-aura, .anchor-ring { animation: none !important; }
-  .anchor { opacity: .8; scale: 1; }
-}
-
-/* On small screens the anchor would crowd content; shrink it. */
-@media (max-width: 768px) {
-  .anchor { width: 220px; height: 220px; margin: -110px 0 0 -110px; }
-}
+.bgnet canvas { display: block; width: 100%; height: 100%; }
 
 /* ════════════════════════════════════════════════════════════════════
-   Navigation
+   Top scroll progress bar
    ════════════════════════════════════════════════════════════════════ */
 
 .scroll-progress {
@@ -338,391 +212,189 @@ body::before {
   .scroll-progress-bar { transition: none; }
 }
 
-.nav {
-  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 0 clamp(1.25rem, 4vw, 3rem); height: 72px;
-  transition: all .5s cubic-bezier(.22,1,.36,1);
-}
-.nav.scrolled {
-  background: var(--glass);
-  backdrop-filter: blur(24px) saturate(1.6);
-  -webkit-backdrop-filter: blur(24px) saturate(1.6);
-  box-shadow: 0 1px 0 var(--border), 0 4px 30px rgba(0,0,0,.03);
-  height: 64px;
-}
-.nav-logo {
-  display: flex; align-items: center;
-  cursor: pointer;
-  transition: transform .3s;
-  background: none; border: none; padding: 0;
-}
-.nav-logo-img {
-  width: 36px; height: 36px;
-  border-radius: 10px;
-  object-fit: cover;
-  transition: transform .3s, box-shadow .3s;
-}
-.nav-logo:hover { transform: translateY(-1px); }
-.nav-logo:hover .nav-logo-img {
-  transform: scale(1.08);
-  box-shadow: 0 4px 16px var(--accent-soft2);
-}
-.nav-right { display: flex; align-items: center; gap: .5rem; }
-.nav-links { display: flex; gap: .35rem; }
-.nav-links a {
-  color: var(--fg3);
-  text-decoration: none;
-  font-size: .72rem; font-weight: 600;
-  letter-spacing: .08em;
-  text-transform: uppercase;
-  padding: .5rem 1rem;
-  border-radius: 10px;
-  transition: all .3s cubic-bezier(.22,1,.36,1);
-  position: relative;
-}
-.nav-links a:hover { color: var(--fg); background: var(--accent-soft); transform: translateY(-1px); }
-.nav-links a.active { color: var(--accent); background: var(--accent-soft); }
-
-/* Hamburger */
-.hamburger {
-  display: none; background: none; border: none;
-  color: var(--fg); cursor: pointer; padding: .5rem;
-  position: relative; z-index: 10; width: 40px; height: 40px;
-  flex-direction: column; align-items: center; justify-content: center; gap: 5px;
-}
-.hamburger-line {
-  display: block; width: 20px; height: 2px;
-  background: currentColor; border-radius: 2px;
-  transition: all .3s cubic-bezier(.22,1,.36,1);
-  position: relative;
-}
-.hamburger-line::before,
-.hamburger-line::after {
-  content: ''; position: absolute; left: 0;
-  width: 20px; height: 2px; background: currentColor; border-radius: 2px;
-  transition: all .3s cubic-bezier(.22,1,.36,1);
-}
-.hamburger-line::before { top: -6px; }
-.hamburger-line::after { top: 6px; }
-.hamburger-line.open { background: transparent; }
-.hamburger-line.open::before { top: 0; transform: rotate(45deg); }
-.hamburger-line.open::after { top: 0; transform: rotate(-45deg); }
-
-.theme-toggle {
-  background: none; border: none;
-  color: var(--fg3); font-size: 1.1rem; cursor: pointer;
-  padding: .4rem; border-radius: 10px;
-  transition: all .25s cubic-bezier(.22,1,.36,1);
-  line-height: 1; width: 36px; height: 36px;
-  display: grid; place-items: center;
-}
-.theme-toggle:hover { color: var(--fg); background: var(--accent-soft); transform: translateY(-1px); }
-
-@media (max-width: 720px) {
-  .nav-links {
-    position: fixed; inset: 0;
-    flex-direction: column; align-items: center; justify-content: center;
-    gap: 1.2rem;
-    background: var(--glass);
-    backdrop-filter: blur(32px);
-    -webkit-backdrop-filter: blur(32px);
-    opacity: 0; pointer-events: none;
-    transition: opacity .4s cubic-bezier(.22,1,.36,1);
-  }
-  .nav-links.open { opacity: 1; pointer-events: auto; }
-  .nav-links a { font-size: 1.3rem; padding: .9rem 2rem; }
-  .hamburger { display: flex; }
-}
-
 /* ════════════════════════════════════════════════════════════════════
-   Hero
-   ════════════════════════════════════════════════════════════════════ */
+   Two-column layout: sticky sidebar + scrolling main column
 
-/* The hero is pinned to the viewport for the duration of .hero-scroll. The
-   visible scene (.hero) stays in place while the user scrolls; --hero-p (set
-   by the scroll handler) drives an in-place camera push-in — content shrinks
-   and recedes while the canvas zooms forward. The viewer feels like they're
-   advancing through a scene, not scrolling down a page. */
-.hero-scroll {
+   Wide screens get a Brittany-Chiang-style fixed identity panel on the
+   left (avatar/name/tagline/nav/contacts) and a scrolling stage on the
+   right where each section plays out as a cinematic scene. Narrow
+   screens collapse to a single column — sidebar stacks at the top.
+   ════════════════════════════════════════════════════════════════════ */
+.layout {
+  display: grid;
+  grid-template-columns: minmax(320px, 28%) 1fr;
+  max-width: 1500px;
+  margin: 0 auto;
   position: relative;
-  height: 200svh;
-  /* No internal scrolling — the page is the scroller. */
+  z-index: 2;
+  gap: clamp(2rem, 4vw, 5rem);
+  padding-inline: clamp(1.5rem, 3vw, 3rem);
 }
-.hero {
+
+/* ── Sidebar ── */
+.sidebar {
   position: sticky;
   top: 0;
   height: 100svh;
-  display: flex; flex-direction: column;
-  align-items: center; justify-content: center;
-  text-align: center;
-  padding: 8rem 1.5rem 6rem;
-  overflow: hidden;
-  border-bottom: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding-block: clamp(3rem, 8vh, 6rem);
+  gap: 2rem;
+  z-index: 50;
 }
 
-/* Canvas reads --hero-p directly: zoom from 1 → 1.25 as the camera "pushes
-   in", and lift opacity slightly so the network feels foregrounded. */
-.hero > canvas {
-  transform: scale(calc(1 + var(--hero-p, 0) * 0.25));
-  transform-origin: 50% 50%;
-  transition: none;
-  will-change: transform;
+.sb-top { display: flex; flex-direction: column; gap: 1rem; }
+.sb-avatar-btn {
+  align-self: flex-start;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
 }
-.hero-overlay {
-  opacity: calc(1 + var(--hero-p, 0) * 0.4);
-}
-.scroll-hint {
-  opacity: calc(0.6 - var(--hero-p, 0) * 1.5) !important;
-}
-.hero-overlay {
-  position: absolute; inset: 0; z-index: 1; pointer-events: none;
-  background:
-    radial-gradient(ellipse 80% 70% at 50% 50%,
-      color-mix(in srgb, var(--bg) 55%, transparent) 0%,
-      color-mix(in srgb, var(--bg) 15%, transparent) 50%,
-      transparent 80%
-    );
-}
-.hero-content {
-  position: relative; z-index: 2;
-  max-width: 800px; padding: 0 1rem;
-  /* Scroll-driven "camera push-in": the content lifts, shrinks slightly, and
-     fades as the user scrolls through .hero-scroll. At p=0 the clamp resolves
-     to 1 (fully visible); content reaches opacity 0 only near the end of the
-     pin range, by which time the next section is already entering. */
-  transform:
-    translateY(calc(var(--hero-p, 0) * -90px))
-    scale(calc(1 - var(--hero-p, 0) * 0.18));
-  opacity: clamp(0, calc(1.35 - var(--hero-p, 0) * 1.5), 1);
-  transform-origin: 50% 40%;
-  will-change: transform, opacity;
-}
-@media (prefers-reduced-motion: reduce) {
-  .hero-content { transform: none; opacity: 1; }
-  .hero > canvas { transform: none; }
-}
-
-/* Availability badge */
-.hero-badge {
-  display: inline-flex; align-items: center; gap: .5rem;
-  margin-bottom: 1.5rem;
-  padding: .4rem 1rem;
-  background: var(--accent-soft);
-  border: 1px solid var(--accent-soft2);
-  border-radius: 9999px;
-  font-size: .7rem; font-weight: 600;
-  letter-spacing: .06em; text-transform: uppercase;
-  color: var(--accent);
-  opacity: 0; transform: translateY(10px);
-  transition: all .7s .1s cubic-bezier(.22,1,.36,1);
-}
-.hero-badge.vis { opacity: 1; transform: translateY(0); }
-.hero-badge-dot {
-  width: 6px; height: 6px; border-radius: 50%;
-  background: var(--accent);
-  animation: pulseDot 2s ease-in-out infinite;
-}
-@keyframes pulseDot {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: .5; transform: scale(1.3); }
-}
-
-.hero-avatar-wrap {
-  position: relative;
-  display: inline-block;
-  margin-bottom: 1.8rem;
-}
-.hero-avatar {
-  width: 120px; height: 120px;
+.sb-avatar {
+  width: 84px; height: 84px;
   border-radius: 50%;
   object-fit: cover;
-  border: 3px solid var(--accent);
-  box-shadow: 0 0 0 6px var(--accent-soft), 0 0 0 1px var(--accent-soft2), var(--sh2);
-  opacity: 0; transform: scale(.85) translateY(16px);
-  transition: opacity .8s .15s cubic-bezier(.22,1,.36,1),
-              transform .8s .15s cubic-bezier(.22,1,.36,1);
-  cursor: pointer;
-  position: relative;
-  z-index: 2;
+  border: 2px solid var(--accent);
+  box-shadow: 0 0 0 5px var(--accent-soft), var(--sh);
+  transition: transform .4s cubic-bezier(.22, 1, .36, 1), box-shadow .4s;
 }
-.hero-avatar.vis {
-  opacity: 1;
-  transform: scale(1) translateY(0);
+.sb-avatar-btn:hover .sb-avatar {
+  transform: scale(1.05);
+  box-shadow: 0 0 0 7px var(--accent-soft), var(--sh2);
 }
 
-.hero-kicker {
-  display: inline-flex; align-items: center; gap: .8rem;
-  margin-bottom: 1rem;
-  font-family: var(--mono);
-  font-size: .65rem; letter-spacing: .14em; text-transform: uppercase;
-  color: var(--accent); font-weight: 600;
-  opacity: 0; transform: translateY(10px);
-  transition: all .7s .3s cubic-bezier(.22,1,.36,1);
-}
-.hero-kicker::before, .hero-kicker::after {
-  content: ''; width: 32px; height: 1px; background: currentColor; opacity: .4;
-}
-.hero-kicker.vis { opacity: 1; transform: translateY(0); }
-
-.hero h1 {
+.sb-name {
   font-family: var(--serif);
-  font-size: clamp(2.8rem, 6.5vw, 5.5rem);
-  font-weight: 400;
   font-style: italic;
+  font-weight: 400;
+  font-size: clamp(2rem, 3.4vw, 3rem);
   line-height: 1.05;
-  color: var(--fg);
   letter-spacing: -.02em;
-  white-space: nowrap;
-}
-
-/* Text reveal word wrapper */
-.word-wrap {
-  display: inline-block;
-  overflow: hidden;
-  margin-right: .28em;
-  padding-right: .05em;
-  padding-bottom: .1em;
-}
-.word-inner {
-  display: inline-block;
-}
-
-.hero-rule {
-  width: 0;
-  height: 2px;
-  background: linear-gradient(90deg, transparent, var(--accent), var(--warm), transparent);
-  margin: 1.4rem auto 0;
-  border-radius: 1px;
-  transition: width 1s .9s cubic-bezier(.22,1,.36,1);
-}
-.hero-rule.vis { width: 80px; }
-
-.hero-tagline {
-  max-width: 540px; margin: 1.4rem auto 0;
-  color: var(--fg2); font-size: 1.1rem; line-height: 1.7;
-  opacity: 0; transform: translateY(14px);
-  transition: all .7s .65s cubic-bezier(.22,1,.36,1);
-  min-height: 1.7em;
-}
-.hero-tagline.vis { opacity: 1; transform: translateY(0); }
-
-.typewriter { display: inline; }
-.type-cursor {
-  color: var(--accent);
-  font-weight: 300;
-  margin-left: 2px;
-  animation: blink 1s step-end infinite;
-}
-@keyframes blink { 50% { opacity: 0; } }
-
-.hero-focuses {
-  display: flex; flex-wrap: wrap; justify-content: center; gap: .5rem;
-  margin-top: 1.6rem;
-  opacity: 0; transform: translateY(10px);
-  transition: all .7s .8s cubic-bezier(.22,1,.36,1);
-}
-.hero-focuses.vis { opacity: 1; transform: translateY(0); }
-.focus-tag {
-  font-family: var(--mono);
-  font-size: .62rem; font-weight: 500;
-  letter-spacing: .08em;
-  text-transform: uppercase;
-  color: var(--fg3);
-  border: 1px solid var(--border-strong);
-  padding: .38rem .9rem;
-  border-radius: 9999px;
-  background: var(--card);
-  box-shadow: var(--sh-sm);
-  transition: all .3s cubic-bezier(.22,1,.36,1);
-  cursor: default;
-}
-.focus-tag:hover {
-  color: var(--accent);
-  border-color: var(--accent);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 16px var(--accent-soft);
-}
-
-.hero-cta {
-  display: flex; gap: .7rem; flex-wrap: wrap; justify-content: center;
-  margin-top: 2.4rem;
-  opacity: 0; transform: translateY(14px);
-  transition: all .7s .95s cubic-bezier(.22,1,.36,1);
-}
-.hero-cta.vis { opacity: 1; transform: translateY(0); }
-.btn {
-  display: inline-flex; align-items: center; gap: .5rem;
-  padding: .8rem 1.8rem;
-  border-radius: 9999px;
-  font-size: .85rem; font-weight: 600;
-  font-family: inherit;
-  text-decoration: none;
-  border: 1px solid var(--border-strong);
-  background: var(--card);
   color: var(--fg);
-  letter-spacing: .01em;
-  box-shadow: var(--sh-sm);
-  cursor: pointer;
-  transition: all .3s cubic-bezier(.22,1,.36,1);
+  margin-top: .4rem;
 }
-.btn:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--sh2);
-  border-color: var(--accent-soft2);
+.sb-kicker {
+  font-family: var(--mono);
+  font-size: .65rem;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--accent);
+  font-weight: 600;
 }
-.btn:active { transform: translateY(0) scale(0.98); }
-.btn.primary {
-  background: linear-gradient(135deg, var(--accent), var(--accent2));
-  border-color: transparent; color: #fff;
-  box-shadow: 0 4px 20px var(--accent-soft2);
+.sb-tagline {
+  color: var(--fg2);
+  font-size: .95rem;
+  line-height: 1.6;
+  max-width: 28ch;
 }
-.btn.primary:hover {
-  background: linear-gradient(135deg, var(--accent2), var(--accent3));
-  box-shadow: 0 6px 30px var(--accent-soft2);
-  transform: translateY(-2px);
-}
-.btn svg { opacity: .8; }
 
-/* Scroll hint */
-.scroll-hint {
-  position: absolute; bottom: 2.5rem; left: 50%; transform: translateX(-50%);
-  display: flex; flex-direction: column; align-items: center; gap: .6rem;
-  color: var(--fg3); font-size: .6rem; letter-spacing: .18em;
-  text-transform: uppercase; font-weight: 600;
-  z-index: 2; opacity: 0;
-  animation: fadeIn 1s 1.6s forwards;
+/* ── Nav rail (animates from a 24px tick to a 64px line on hover/active) ── */
+.sb-nav {
+  display: flex;
+  flex-direction: column;
+  gap: .15rem;
+  margin-block: auto;
 }
-@keyframes fadeIn { to { opacity: .6; } }
-.scroll-mouse {
-  width: 24px; height: 38px;
-  border-radius: 14px;
-  border: 2px solid var(--fg3);
-  display: flex; justify-content: center; padding-top: 8px;
-  opacity: .7;
+.sb-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: .55rem 0;
+  text-decoration: none;
+  color: var(--fg3);
+  font-family: var(--mono);
+  font-size: .72rem;
+  font-weight: 600;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  transition: color .3s cubic-bezier(.22, 1, .36, 1);
 }
-.scroll-wheel {
-  width: 3px; height: 7px;
-  border-radius: 2px;
+.sb-nav-rail {
+  display: inline-block;
+  width: 24px;
+  height: 1px;
+  background: var(--fg4);
+  transition:
+    width .35s cubic-bezier(.22, 1, .36, 1),
+    background .35s cubic-bezier(.22, 1, .36, 1);
+}
+.sb-nav-i {
+  font-size: .6rem;
+  color: var(--fg4);
+  min-width: 1.4rem;
+  transition: color .3s;
+}
+.sb-nav-item:hover,
+.sb-nav-item.active {
+  color: var(--fg);
+}
+.sb-nav-item:hover .sb-nav-rail,
+.sb-nav-item.active .sb-nav-rail {
+  width: 64px;
   background: var(--accent);
-  animation: wheel 2.2s ease-in-out infinite;
 }
-@keyframes wheel {
-  0%, 100% { transform: translateY(0); opacity: .4; }
-  50%       { transform: translateY(10px); opacity: 1; }
+.sb-nav-item:hover .sb-nav-i,
+.sb-nav-item.active .sb-nav-i {
+  color: var(--accent);
+}
+
+/* ── Foot (contacts + theme toggle) ── */
+.sb-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.sb-contacts { display: flex; gap: .25rem; }
+.sb-icon {
+  display: grid;
+  place-items: center;
+  width: 38px; height: 38px;
+  border-radius: 10px;
+  color: var(--fg3);
+  transition: color .25s, background .25s, transform .25s;
+}
+.sb-icon:hover {
+  color: var(--accent);
+  background: var(--accent-soft);
+  transform: translateY(-2px);
+}
+.sb-theme {
+  background: none; border: none;
+  color: var(--fg3);
+  font-size: 1.1rem; cursor: pointer;
+  padding: .4rem; border-radius: 10px;
+  width: 38px; height: 38px;
+  display: grid; place-items: center;
+  transition: color .25s, background .25s, transform .25s;
+}
+.sb-theme:hover { color: var(--fg); background: var(--accent-soft); transform: translateY(-2px); }
+
+/* ── Mobile: sidebar collapses to a top header, then content flows ── */
+@media (max-width: 968px) {
+  .layout {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+  .sidebar {
+    position: static;
+    height: auto;
+    padding-block: 3rem;
+    padding-inline: 0;
+    gap: 1.5rem;
+  }
+  .sb-tagline { max-width: none; }
+  .sb-nav { display: none; }
+  .sb-foot { justify-content: flex-start; gap: 1rem; }
 }
 
 /* ════════════════════════════════════════════════════════════════════
-   Content Layout
+   Main column — holds the scrolling sections (scenes)
    ════════════════════════════════════════════════════════════════════ */
-
-.content {
-  max-width: 1100px;
-  margin: 0 auto;
-  padding: 0 clamp(1.5rem, 6vw, 4rem);
-  position: relative; z-index: 2;
-  /* Block flow — sticky pins inside .sect rely on a normal-flow ancestor with
-     no flex weirdness. */
+.main {
+  position: relative;
+  z-index: 2;
 }
 
 /* Each section is a tall scroll container; its inner stage pins to the
@@ -767,78 +439,41 @@ body::before {
     transition: none !important;
   }
 }
-/* ── Scrollytelling: --sect-p drives content within each pinned scene ──
-   Section header drifts subtly as scroll advances, signalling progress without
-   moving the central anchor. Stagger items cascade in based on --stag-i and
-   --sect-p — like Apple's product pages, content unfolds as you scroll
-   *through* the pin rather than appearing all at once. */
-.sect.in .section-head {
-  transform:
-    translateY(calc((0.45 - var(--sect-p, 0)) * 24px))
-    scale(calc(1.04 - var(--sect-p, 0) * 0.06));
-  transform-origin: left center;
-  transition: none;
-  will-change: transform;
+/* ── Stagger cascade ──
+   When a section's .in class flips on, items inside cascade up. Delay is
+   driven by --stag-i (set inline per item) so this scales to any number of
+   children. Restrained translate/scale — the pin is the cinematic effect,
+   the cascade is just polish. */
+.stag-item,
+.project-card {
+  opacity: 0;
+  transform: translateY(28px) scale(.98);
+  transition:
+    opacity .8s cubic-bezier(.22, 1, .36, 1),
+    transform .8s cubic-bezier(.22, 1, .36, 1);
+  transition-delay: calc(var(--stag-i, 0) * 90ms);
+  will-change: opacity, transform;
 }
-
-/* Stagger reveal: each item appears at a slightly later --sect-p. The math
-   reads as: per-item visibility = section progress × 4, offset by the item's
-   index × 0.5. Adjust the multiplier (4) to control cascade speed and the
-   offset (-1.4) for when the first item starts appearing.
-
-   - .stag-item: timeline cards, skill bento cells
-   - .project-card: GitHub project grid (carries --stag-i inline)
-   - .about-highlight / .stat: About-section internals (auto-indexed via
-     :nth-child since they don't ship with --stag-i) */
 .sect.in .stag-item,
-.sect.in .project-card {
-  --reveal: clamp(0, calc(var(--sect-p, 0) * 4.5 - var(--stag-i, 0) * 0.55 - 1.4), 1);
-  opacity: var(--reveal);
-  transform:
-    translateY(calc((1 - var(--reveal)) * 36px))
-    scale(calc(0.94 + var(--reveal) * 0.06));
-  transition: none;
-  will-change: opacity, transform;
+.sect.in .project-card,
+.stag-item.in {
+  opacity: 1;
+  transform: none;
 }
 
-.sect.in .stat,
-.sect.in .about-highlight {
-  --auto-i: 0;
-}
-.sect.in .stat:nth-child(1), .sect.in .about-highlight:nth-child(1) { --auto-i: 0; }
-.sect.in .stat:nth-child(2), .sect.in .about-highlight:nth-child(2) { --auto-i: 1; }
-.sect.in .stat:nth-child(3), .sect.in .about-highlight:nth-child(3) { --auto-i: 2; }
-.sect.in .stat:nth-child(4) { --auto-i: 3; }
-.sect.in .stat,
-.sect.in .about-highlight {
-  --reveal: clamp(0, calc(var(--sect-p, 0) * 4.5 - var(--auto-i, 0) * 0.55 - 1.4), 1);
-  opacity: var(--reveal);
-  transform: translateY(calc((1 - var(--reveal)) * 32px));
-  transition: none;
-  will-change: opacity, transform;
-}
-
-/* On narrow viewports the pin gets cramped; fall back to natural flow so
-   content isn't squeezed and scrolling stays usable. Scrollytelling also
-   degrades to a plain fly-in here — calc()s still resolve, but with the pin
-   gone, --sect-p covers section visibility instead of pin progress. */
-@media (max-width: 768px) {
+@media (max-width: 968px) {
   .sect { height: auto; }
   .sect-pin {
     position: static;
     height: auto;
     padding-block: 5rem;
   }
-  .sect.in .section-head { transform: none; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .sect.in .section-head { transform: none !important; }
-  .sect.in .stag-item,
-  .sect.in .project-card,
-  .sect.in .stat,
-  .sect.in .about-highlight {
+  .stag-item, .project-card {
     opacity: 1 !important;
     transform: none !important;
+    transition: none !important;
   }
 }
 .sect::before {

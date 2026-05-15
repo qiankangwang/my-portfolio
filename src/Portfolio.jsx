@@ -15,24 +15,79 @@ function AmbientBg() {
   );
 }
 
-/* ── Central 3D anchor ──
-   A persistent visual element pinned at the viewport's geometric centre.
-   Stays there for the whole page so the viewer's eye has a constant focus
-   point; every section's content unfolds *around* it. The core breathes,
-   three orbital rings spin at tilted axes (CSS 3D), and overall scale/glow
-   intensify with --page-p (overall scroll). It fades in as the hero pin
-   releases so the hero canvas owns the intro alone. */
-function CentralAnchor() {
+/* ── Sidebar ──
+   The page's constant identity panel. Sticky on the left across the whole
+   page (Brittany-Chiang-style), replacing both the old fixed top nav and
+   the cinematic hero — name/avatar/tagline live here permanently, so the
+   right column is free to play out as a sequence of cinematic scenes.
+
+   - sb-avatar carries the click-to-headpat easter egg (same behaviour as
+     the old hero avatar)
+   - sb-nav items show an animated rail; the active one extends + brightens
+   - sb-foot has contact icons + theme toggle
+   - On ≤968px the layout collapses; this becomes a top header in the CSS. */
+const Sidebar = memo(function Sidebar({ active, theme, toggleTheme, onAvatarClick, avatarRef, scrollTo }) {
   return (
-    <div className="anchor" aria-hidden="true">
-      <div className="anchor-aura" />
-      <div className="anchor-ring anchor-ring-1" />
-      <div className="anchor-ring anchor-ring-2" />
-      <div className="anchor-ring anchor-ring-3" />
-      <div className="anchor-core" />
-    </div>
+    <aside className="sidebar">
+      <div className="sb-top">
+        <button
+          type="button"
+          className="sb-avatar-btn"
+          onClick={onAvatarClick}
+          aria-label="Tap the avatar"
+        >
+          <img
+            ref={avatarRef}
+            className="sb-avatar"
+            src={D.avatar}
+            alt={D.name}
+            loading="eager"
+            decoding="async"
+          />
+        </button>
+        <h1 className="sb-name">{D.fullName}</h1>
+        <div className="sb-kicker">UC Berkeley · Data Science · 2027</div>
+        <p className="sb-tagline">{D.tagline}</p>
+      </div>
+
+      <nav className="sb-nav" aria-label="Section navigation">
+        {NAV.map((n, i) => {
+          const isActive = active === n;
+          return (
+            <a
+              key={n}
+              href={`#${n.toLowerCase()}`}
+              className={`sb-nav-item${isActive ? " active" : ""}`}
+              aria-current={isActive ? "page" : undefined}
+              onClick={(e) => { e.preventDefault(); scrollTo(n.toLowerCase()); }}
+            >
+              <span className="sb-nav-rail" aria-hidden="true" />
+              <span className="sb-nav-i">{String(i + 1).padStart(2, "0")}</span>
+              <span className="sb-nav-label">{n}</span>
+            </a>
+          );
+        })}
+      </nav>
+
+      <div className="sb-foot">
+        <div className="sb-contacts">
+          <a href={`mailto:${D.email}`} aria-label="Email" className="sb-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+          </a>
+          <a href={D.github} target="_blank" rel="noopener noreferrer" aria-label="GitHub" className="sb-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+          </a>
+          <a href={D.linkedin} target="_blank" rel="noopener noreferrer" aria-label="LinkedIn" className="sb-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+          </a>
+        </div>
+        <button className="sb-theme" onClick={toggleTheme} aria-label="Toggle dark mode">
+          {theme === "dark" ? "☀" : "☾"}
+        </button>
+      </div>
+    </aside>
   );
-}
+});
 
 /* ── Intersection Observer hook ── */
 function useInView(threshold = 0.12, once = true) {
@@ -101,41 +156,19 @@ const Section = memo(function Section({ id, children, className = "", ...rest })
   );
 });
 
-/* ── Stagger child ── carries an index as --stag-i; the reveal itself is
-   driven by --sect-p in CSS, so items cascade in lockstep with the section's
-   scroll progress rather than firing once on an IO trigger. */
-const StaggerItem = memo(function StaggerItem({ children, index }) {
+/* ── Stagger child ──
+   IO-triggered cascade: the parent container watches for entry, then each
+   child fades + lifts in with a delay = index × 90ms. One-shot, calm. The
+   scene's sticky pin is what makes scrolling feel cinematic; the stagger
+   itself stays restrained so the page doesn't read as a particle demo. */
+const StaggerItem = memo(function StaggerItem({ children, index, visible }) {
   return (
-    <div className="stag-item" style={{ "--stag-i": index }}>
+    <div
+      className={`stag-item${visible ? " in" : ""}`}
+      style={{ "--stag-i": index }}
+    >
       {children}
     </div>
-  );
-});
-
-/* ── Word-by-word text reveal ── */
-const TextReveal = memo(function TextReveal({ text, tag: Tag = "h1", className }) {
-  const [ref, vis] = useInView(0.3);
-  const words = text.split(" ");
-  return (
-    <Tag ref={ref} className={className} aria-label={text}>
-      {words.map((w, i) => (
-        <span
-          key={i}
-          aria-hidden="true"
-          className="word-wrap"
-        >
-          <span
-            className="word-inner"
-            style={{
-              transform: vis ? "translateY(0)" : "translateY(110%)",
-              transition: `transform 0.65s ${0.04 * i}s cubic-bezier(.22,1,.36,1)`,
-            }}
-          >
-            {w}
-          </span>
-        </span>
-      ))}
-    </Tag>
   );
 });
 
@@ -159,34 +192,6 @@ const CountUp = memo(function CountUp({ target, suffix = "", duration = 2000 }) 
   }, [visible, target, duration]);
 
   return <span ref={ref}>{val}{suffix}</span>;
-});
-
-/* ── Typewriter effect ── */
-const TypeWriter = memo(function TypeWriter({ text, speed = 40, start = false }) {
-  const [display, setDisplay] = useState("");
-  const [done, setDone] = useState(false);
-
-  useEffect(() => {
-    if (!start) return;
-    let i = 0;
-    const timer = setInterval(() => {
-      if (i < text.length) {
-        setDisplay(text.slice(0, i + 1));
-        i++;
-      } else {
-        setDone(true);
-        clearInterval(timer);
-      }
-    }, speed);
-    return () => clearInterval(timer);
-  }, [text, speed, start]);
-
-  return (
-    <span className="typewriter">
-      {display}
-      {!done && <span className="type-cursor">|</span>}
-    </span>
-  );
 });
 
 /* ── Dark mode hook ── */
@@ -270,18 +275,10 @@ export default function Portfolio() {
   const [scrolled, setScrolled] = useState(false);
   const [progress, setProgress] = useState(0);
   const [active, setActive] = useState("");
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [heroVis, setHeroVis] = useState(false);
   const [repos, setRepos] = useState([]);
   const [repoLoading, setRepoLoading] = useState(true);
 
   useEffect(() => {
-    const t = setTimeout(() => setHeroVis(true), 150);
-    return () => clearTimeout(t);
-  }, []);
-
-  useEffect(() => {
-    const root = document.documentElement;
     let ticking = false;
     const onScroll = () => {
       if (ticking) return;
@@ -290,32 +287,13 @@ export default function Portfolio() {
         const winH = window.innerHeight;
         const y = window.scrollY;
         setScrolled(y > 40);
-        const docH = root.scrollHeight - winH;
-        const pageP = docH > 0 ? Math.min(y / docH, 1) : 0;
-        setProgress(pageP);
-        root.style.setProperty("--page-p", pageP);
+        const docH = document.documentElement.scrollHeight - winH;
+        setProgress(docH > 0 ? Math.min(y / docH, 1) : 0);
 
-        // Hero parallax — written directly to a CSS var to skip React renders.
-        const heroP = Math.min(Math.max(y / winH, 0), 1);
-        root.style.setProperty("--hero-p", heroP);
-
-        // Per-section scroll progress (--sect-p). Spans the whole window where
-        // the section is even partly relevant: 0 when it's about to enter from
-        // below, 1 when it's fully exited above. CSS uses this to stagger
-        // section content reveals across the pin range. Apple/Linear-style
-        // scrollytelling without GSAP.
+        // Flip the sidebar nav highlight when a section's pin centres in the
+        // viewport. With sections sized at 150svh and pinned for 50svh, this
+        // matches the moment the section "takes the stage".
         const sects = NAV.map((n) => document.getElementById(n.toLowerCase()));
-        for (let i = 0; i < sects.length; i++) {
-          const el = sects[i];
-          if (!el) continue;
-          const rect = el.getBoundingClientRect();
-          const range = el.offsetHeight + winH;
-          const scrolled = winH - rect.top;
-          const p = Math.min(Math.max(scrolled / range, 0), 1);
-          el.style.setProperty("--sect-p", p);
-        }
-
-        // Flip the nav highlight when a section's pin is roughly centered.
         const flipAt = winH * 0.4;
         for (let i = sects.length - 1; i >= 0; i--) {
           if (sects[i] && sects[i].getBoundingClientRect().top < flipAt) {
@@ -332,18 +310,6 @@ export default function Portfolio() {
     onScroll();
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
-
-  useEffect(() => {
-    document.body.style.overflow = menuOpen ? "hidden" : "";
-    return () => { document.body.style.overflow = ""; };
-  }, [menuOpen]);
-
-  useEffect(() => {
-    if (!menuOpen) return;
-    const onKeyDown = (e) => { if (e.key === "Escape") setMenuOpen(false); };
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, [menuOpen]);
 
   useEffect(() => {
     const CACHE_KEY = "gh-repos-v2";
@@ -388,8 +354,10 @@ export default function Portfolio() {
 
   const scrollTo = useCallback((id) => {
     document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
-    setMenuOpen(false);
   }, []);
+
+  const [expRef, expVis] = useInView(0.15);
+  const [skillRef, skillVis] = useInView(0.15);
 
   const patTimer = useRef(null);
   const patCountRef = useRef(0);
@@ -420,7 +388,14 @@ export default function Portfolio() {
   return (
     <>
       <AmbientBg />
-      <CentralAnchor />
+      {/* Neural-network + bio motifs as a persistent backdrop. Lives fixed
+         behind everything (.bgnet CSS) so the visual identity carries
+         through every scene — not just the hero. */}
+      <div className="bgnet" aria-hidden="true">
+        <Suspense fallback={null}>
+          <NeuralNetCanvas />
+        </Suspense>
+      </div>
       <a className="skip" href="#about">Skip to content</a>
 
       {/* ── Scroll progress ── */}
@@ -431,101 +406,18 @@ export default function Portfolio() {
         />
       </div>
 
-      {/* ── Nav ── */}
-      <nav className={`nav${scrolled ? " scrolled" : ""}`}>
-        <button
-          className="nav-logo"
-          onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-          aria-label="Scroll to top"
-        >
-          <img src={`${process.env.PUBLIC_URL}/photo.png`} alt="" className="nav-logo-img" />
-        </button>
-        <div className="nav-right">
-          <div className={`nav-links${menuOpen ? " open" : ""}`}>
-            {NAV.map((n) => (
-              <a
-                key={n}
-                href={`#${n.toLowerCase()}`}
-                className={active === n ? "active" : ""}
-                aria-current={active === n ? "page" : undefined}
-                onClick={(e) => { e.preventDefault(); scrollTo(n.toLowerCase()); }}
-              >
-                {n}
-              </a>
-            ))}
-          </div>
-          <button className="theme-toggle" onClick={toggleTheme} aria-label="Toggle dark mode">
-            {theme === "dark" ? "☀" : "☾"}
-          </button>
-          <button className="hamburger" onClick={() => setMenuOpen(!menuOpen)} aria-label="Toggle menu">
-            <span className={`hamburger-line ${menuOpen ? "open" : ""}`} />
-          </button>
-        </div>
-      </nav>
+      {/* ── 2-column layout: sticky identity panel + scrolling scenes ── */}
+      <div className="layout">
+      <Sidebar
+        active={active}
+        theme={theme}
+        toggleTheme={toggleTheme}
+        onAvatarClick={onAvatarClick}
+        avatarRef={avatarRef}
+        scrollTo={scrollTo}
+      />
 
-      {/* ── Hero (cinematic pin) ──
-         .hero-scroll provides the scroll distance; .hero pins to the viewport
-         and morphs in place via --hero-p. Reads like a camera push-in instead
-         of a vertical scroll. */}
-      <section className="hero-scroll" aria-label="Introduction">
-      <header className="hero">
-        <Suspense fallback={<div className="canvas-placeholder" />}>
-          <NeuralNetCanvas />
-        </Suspense>
-        <div className="hero-overlay" />
-        <div className="hero-content">
-          <div className={`hero-badge${heroVis ? " vis" : ""}`}>
-            <span className="hero-badge-dot" />
-            Available for Research
-          </div>
-          <div className="hero-avatar-wrap">
-            <img
-              ref={avatarRef}
-              className={`hero-avatar${heroVis ? " vis" : ""}`}
-              src={D.avatar}
-              alt={D.name}
-              loading="eager"
-              decoding="async"
-              onClick={onAvatarClick}
-              title="Click me!"
-            />
-          </div>
-          <div className={`hero-kicker${heroVis ? " vis" : ""}`}>
-            UC Berkeley · Data Science · 2027
-          </div>
-          <TextReveal text={D.fullName} tag="h1" className="gradient-text" />
-          <div className={`hero-rule${heroVis ? " vis" : ""}`} />
-          <p className={`hero-tagline${heroVis ? " vis" : ""}`}>
-            <TypeWriter text={D.tagline} start={heroVis} speed={28} />
-          </p>
-          <div className={`hero-focuses${heroVis ? " vis" : ""}`}>
-            {D.focuses.map((f) => <span key={f} className="focus-tag">{f}</span>)}
-          </div>
-          <div className={`hero-cta${heroVis ? " vis" : ""}`}>
-            <a className="btn primary" href={`mailto:${D.email}`}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
-              Email
-            </a>
-            <a className="btn" href={D.github} target="_blank" rel="noopener noreferrer">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
-              GitHub
-            </a>
-            <a className="btn" href={D.linkedin} target="_blank" rel="noopener noreferrer">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
-              LinkedIn
-            </a>
-          </div>
-        </div>
-        <div className="scroll-hint">
-          <div className="scroll-mouse">
-            <div className="scroll-wheel" />
-          </div>
-          <span>Scroll to explore</span>
-        </div>
-      </header>
-      </section>
-
-      <main className="content">
+      <main className="main">
 
         {/* ── About ── */}
         <Section id="about" data-n="01">
@@ -581,9 +473,9 @@ export default function Portfolio() {
             <span className="sect-n">02</span>
             <h2>Research</h2>
           </div>
-          <div className="timeline">
+          <div className="timeline" ref={expRef}>
             {D.experience.map((exp, i) => (
-              <StaggerItem key={exp.org} index={i}>
+              <StaggerItem key={exp.org} index={i} visible={expVis}>
                 <TiltCard className="tl-card-wrap">
                   <div className="tl-item">
                     <div className="tl-rail">
@@ -686,9 +578,9 @@ export default function Portfolio() {
             <span className="sect-n">05</span>
             <h2>Skills</h2>
           </div>
-          <div className="skill-bento">
+          <div className="skill-bento" ref={skillRef}>
             {Object.entries(D.skills).map(([cat, items], ci) => (
-              <StaggerItem key={cat} index={ci}>
+              <StaggerItem key={cat} index={ci} visible={skillVis}>
                 <TiltCard className="skill-card-wrap">
                   <article className={`skill-card${ci < 2 ? " featured" : ""}`}>
                     <div className="skill-cat">{cat}</div>
@@ -704,20 +596,14 @@ export default function Portfolio() {
           </div>
         </Section>
 
-      </main>
-
-      {/* ── Footer ── */}
-      <footer className="foot">
-        <div className="foot-inner">
-          <div className="foot-brand">Kant W.</div>
-          <div className="foot-links">
-            <a href={`mailto:${D.email}`}>Email</a>
-            <a href={D.github} target="_blank" rel="noopener noreferrer">GitHub</a>
-            <a href={D.linkedin} target="_blank" rel="noopener noreferrer">LinkedIn</a>
+        {/* ── Footer (inside main column so it scrolls with content) ── */}
+        <footer className="foot">
+          <div className="foot-inner">
+            <div className="foot-copy">© {new Date().getFullYear()} {D.fullName} · Built with React</div>
           </div>
-          <div className="foot-copy">© {new Date().getFullYear()} {D.fullName} · Built with React</div>
-        </div>
-      </footer>
+        </footer>
+      </main>
+      </div>{/* /.layout */}
 
       <button
         className={`btt${scrolled ? " show" : ""}`}

@@ -241,15 +241,15 @@ export default function Portfolio() {
     return () => clearTimeout(t);
   }, []);
 
-  // Smooth-scroll momentum (Lenis). Skipped when the user prefers reduced motion
-  // or on touch — the OS already handles those well.
+  // Smooth-scroll momentum (Lenis). lerp-based so wheel input glides with real
+  // inertia instead of running a fixed-duration tween per delta. Skipped under
+  // prefers-reduced-motion; touch is left to the OS.
   useEffect(() => {
     if (prefersReducedMotion()) return;
     const lenis = new Lenis({
-      duration: 1.15,
-      easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+      lerp: 0.085,
       smoothWheel: true,
-      smoothTouch: false,
+      syncTouch: false,
       wheelMultiplier: 1,
       touchMultiplier: 2,
     });
@@ -349,7 +349,11 @@ export default function Portfolio() {
   const scrollTo = useCallback((target) => {
     const lenis = lenisRef.current;
     if (lenis) {
-      lenis.scrollTo(target === "top" ? 0 : `#${target}`, { offset: -64 });
+      lenis.scrollTo(target === "top" ? 0 : `#${target}`, {
+        offset: -64,
+        duration: 1.4,
+        easing: (t) => 1 - Math.pow(1 - t, 4),
+      });
     } else if (target === "top") {
       window.scrollTo({ top: 0, behavior: "smooth" });
     } else {
@@ -539,7 +543,7 @@ export default function Portfolio() {
         </Section>
 
         {/* ── Research ── */}
-        <Section id="research" delay={0.05} data-n="02">
+        <Section id="research" data-n="02">
           <div className="section-head">
             <span className="sect-n">02</span>
             <h2>Research</h2>
@@ -569,7 +573,7 @@ export default function Portfolio() {
         </Section>
 
         {/* ── Publication ── */}
-        <Section id="publication" delay={0.05} data-n="03">
+        <Section id="publication" data-n="03">
           <div className="section-head">
             <span className="sect-n">03</span>
             <h2>Publication</h2>
@@ -600,7 +604,7 @@ export default function Portfolio() {
         </Section>
 
         {/* ── Projects ── */}
-        <Section id="projects" delay={0.05} data-n="04">
+        <Section id="projects" data-n="04">
           <div className="section-head">
             <span className="sect-n">04</span>
             <h2>Projects</h2>
@@ -641,7 +645,7 @@ export default function Portfolio() {
         </Section>
 
         {/* ── Skills ── */}
-        <Section id="skills" delay={0.05} data-n="05">
+        <Section id="skills" data-n="05">
           <div className="section-head">
             <span className="sect-n">05</span>
             <h2>Skills</h2>

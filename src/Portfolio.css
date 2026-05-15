@@ -152,10 +152,13 @@ body::before {
   top: 40%; left: 60%;
   animation: floatOrb 18s ease-in-out infinite 5s;
 }
+/* Idle drift uses the `translate` + `scale` properties (not `transform`) so a
+   separate scroll-linked `transform: translateY(...)` can layer on top for
+   parallax without the two animations clobbering each other. */
 @keyframes floatOrb {
-  0%, 100% { transform: translate(0, 0) scale(1); }
-  33% { transform: translate(30px, -20px) scale(1.05); }
-  66% { transform: translate(-20px, 15px) scale(0.95); }
+  0%, 100% { translate: 0 0; scale: 1; }
+  33% { translate: 30px -20px; scale: 1.05; }
+  66% { translate: -20px 15px; scale: 0.95; }
 }
 
 /* ════════════════════════════════════════════════════════════════════
@@ -1198,19 +1201,34 @@ html.lenis, html.lenis body { height: auto; }
   animation-delay: calc(var(--stag-i, 0) * 0.08s);
 }
 
-/* ── Continuous scroll-driven reveals (Chromium 115+, Safari TP) ── */
+/* ── Continuous scroll-driven reveals (Chromium 115+, Safari TP) ──
+   Ranges are intentionally long so each element scrubs continuously across the
+   viewport instead of snapping in. Pair the section reveal with a slightly
+   later (and longer) stagger so items cascade in *behind* the heading. */
 @supports (animation-timeline: view()) {
   @keyframes sect-reveal {
-    from { opacity: 0; transform: translateY(80px); }
-    to   { opacity: 1; transform: translateY(0); }
+    from { opacity: 0; transform: translateY(70px) scale(0.985); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  @keyframes head-reveal {
+    from { opacity: 0; transform: translateX(-24px); }
+    to   { opacity: 1; transform: translateX(0); }
+  }
+  @keyframes sect-n-reveal {
+    from { opacity: 0; transform: translateX(-12px) scale(0.9); letter-spacing: .04em; }
+    to   { opacity: 1; transform: translateX(0) scale(1); letter-spacing: .12em; }
   }
   @keyframes stag-reveal {
-    from { opacity: 0; transform: translateY(40px) scale(0.96); }
-    to   { opacity: 1; transform: translateY(0) scale(1); }
+    from { opacity: 0; transform: translateY(48px) scale(0.96); filter: blur(6px); }
+    to   { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
   }
   @keyframes hero-drift {
     from { transform: translateY(0) scale(1); opacity: 1; }
-    to   { transform: translateY(-90px) scale(0.96); opacity: 0.35; }
+    to   { transform: translateY(-120px) scale(0.94); opacity: 0; }
+  }
+  @keyframes hero-avatar-parallax {
+    from { transform: translateY(0); }
+    to   { transform: translateY(-40px); }
   }
 
   .sect {
@@ -1219,7 +1237,17 @@ html.lenis, html.lenis body { height: auto; }
     transition: none;
     animation: sect-reveal linear both;
     animation-timeline: view();
-    animation-range: entry 5% cover 35%;
+    animation-range: entry 0% cover 55%;
+  }
+  .section-head {
+    animation: head-reveal linear both;
+    animation-timeline: view();
+    animation-range: entry 0% cover 35%;
+  }
+  .sect-n {
+    animation: sect-n-reveal linear both;
+    animation-timeline: view();
+    animation-range: entry 0% cover 40%;
   }
   .stag-item,
   .project-card {
@@ -1228,23 +1256,67 @@ html.lenis, html.lenis body { height: auto; }
     transition: none;
     animation: stag-reveal linear both;
     animation-timeline: view();
-    animation-range: entry 0% cover 30%;
+    animation-range: entry 0% cover 55%;
     animation-delay: 0s;
+    will-change: transform, opacity, filter;
   }
 
-  /* Hero content drifts upward and fades as the viewport leaves the hero. */
+  /* Hero content drifts upward and fades as the viewport leaves the hero. The
+     range starts a bit before the actual exit so the fade has already begun by
+     the time the user can see the first section above. */
   .hero-content {
     animation: hero-drift linear both;
     animation-timeline: view();
-    animation-range: exit 0% exit 100%;
+    animation-range: exit -15% exit 85%;
     will-change: transform, opacity;
+  }
+  .hero-avatar-wrap {
+    animation: hero-avatar-parallax linear both;
+    animation-timeline: view();
+    animation-range: exit -20% exit 80%;
+    will-change: transform;
+  }
+}
+
+/* ── Scroll-linked ambient parallax (orbs drift at different rates relative
+      to the document scroll position, separate from their idle floatOrb). ── */
+@supports (animation-timeline: scroll()) {
+  @keyframes orb-parallax-slow { to { transform: translateY(-180px); } }
+  @keyframes orb-parallax-mid  { to { transform: translateY(140px); } }
+  @keyframes orb-parallax-fast { to { transform: translateY(-260px); } }
+
+  .amb-1 {
+    animation:
+      floatOrb 20s ease-in-out infinite,
+      orb-parallax-slow linear both;
+    animation-timeline: auto, scroll(root block);
+  }
+  .amb-2 {
+    animation:
+      floatOrb 25s ease-in-out infinite reverse,
+      orb-parallax-mid linear both;
+    animation-timeline: auto, scroll(root block);
+  }
+  .amb-3 {
+    animation:
+      floatOrb 18s ease-in-out infinite 5s,
+      orb-parallax-fast linear both;
+    animation-timeline: auto, scroll(root block);
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .sect, .stag-item, .project-card, .hero-content {
+  .sect,
+  .section-head,
+  .sect-n,
+  .stag-item,
+  .project-card,
+  .hero-content,
+  .hero-avatar-wrap,
+  .amb-orb {
     opacity: 1 !important;
     transform: none !important;
+    filter: none !important;
     animation: none !important;
   }
 }

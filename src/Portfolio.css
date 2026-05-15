@@ -1152,3 +1152,99 @@ body::before {
   *, *::before, *::after { animation-duration: 0s !important; transition-duration: 0s !important; }
   .canvas-placeholder { display: block; }
 }
+
+/* ════════════════════════════════════════════════════════════════════
+   Smooth Scroll (Lenis) + Scroll-Driven Reveals
+   ════════════════════════════════════════════════════════════════════ */
+
+/* Lenis owns the scroll position; disable native smooth so they don't fight. */
+html.lenis, html.lenis body { height: auto; }
+.lenis.lenis-smooth { scroll-behavior: auto !important; }
+.lenis.lenis-smooth [data-lenis-prevent] { overscroll-behavior: contain; }
+.lenis.lenis-stopped { overflow: hidden; }
+.lenis.lenis-smooth iframe { pointer-events: none; }
+
+/* Reveal fallback (IntersectionObserver toggles .in). The @supports block
+   below replaces this with a continuous, scroll-linked animation. */
+.sect {
+  opacity: 0;
+  transform: translateY(60px);
+  transition:
+    opacity 0.9s cubic-bezier(.22, 1, .36, 1),
+    transform 0.9s cubic-bezier(.22, 1, .36, 1);
+  will-change: opacity, transform;
+}
+.sect.in {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.stag-item {
+  opacity: 0;
+  transform: translateY(24px) scale(0.98);
+  transition:
+    opacity 0.7s cubic-bezier(.22, 1, .36, 1),
+    transform 0.7s cubic-bezier(.22, 1, .36, 1);
+  transition-delay: calc(var(--stag-i, 0) * 0.1s);
+}
+.stag-item.in {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+.project-card {
+  opacity: 0;
+  animation: fadeUp 0.6s cubic-bezier(.22, 1, .36, 1) forwards;
+  animation-delay: calc(var(--stag-i, 0) * 0.08s);
+}
+
+/* ── Continuous scroll-driven reveals (Chromium 115+, Safari TP) ── */
+@supports (animation-timeline: view()) {
+  @keyframes sect-reveal {
+    from { opacity: 0; transform: translateY(80px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes stag-reveal {
+    from { opacity: 0; transform: translateY(40px) scale(0.96); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  @keyframes hero-drift {
+    from { transform: translateY(0) scale(1); opacity: 1; }
+    to   { transform: translateY(-90px) scale(0.96); opacity: 0.35; }
+  }
+
+  .sect {
+    opacity: 1;
+    transform: none;
+    transition: none;
+    animation: sect-reveal linear both;
+    animation-timeline: view();
+    animation-range: entry 5% cover 35%;
+  }
+  .stag-item,
+  .project-card {
+    opacity: 1;
+    transform: none;
+    transition: none;
+    animation: stag-reveal linear both;
+    animation-timeline: view();
+    animation-range: entry 0% cover 30%;
+    animation-delay: 0s;
+  }
+
+  /* Hero content drifts upward and fades as the viewport leaves the hero. */
+  .hero-content {
+    animation: hero-drift linear both;
+    animation-timeline: view();
+    animation-range: exit 0% exit 100%;
+    will-change: transform, opacity;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sect, .stag-item, .project-card, .hero-content {
+    opacity: 1 !important;
+    transform: none !important;
+    animation: none !important;
+  }
+}

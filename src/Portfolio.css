@@ -93,7 +93,16 @@
    ════════════════════════════════════════════════════════════════════ */
 
 *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
-html { scroll-behavior: smooth; scroll-padding-top: 80px; }
+
+/* Page-turn scroll: each .hero / .sect is a "slide", soft-snapping to the top
+   of the viewport when the user stops near a boundary. `proximity` (not
+   `mandatory`) keeps free-scroll natural and only nudges when you're close,
+   matching Apple's deliberate-but-not-trapping feel. */
+html {
+  scroll-snap-type: y proximity;
+  scroll-behavior: smooth;
+  scroll-padding-top: 64px;
+}
 body {
   background: var(--bg);
   color: var(--fg);
@@ -152,13 +161,10 @@ body::before {
   top: 40%; left: 60%;
   animation: floatOrb 18s ease-in-out infinite 5s;
 }
-/* Idle drift uses the `translate` + `scale` properties (not `transform`) so a
-   separate scroll-linked `transform: translateY(...)` can layer on top for
-   parallax without the two animations clobbering each other. */
 @keyframes floatOrb {
-  0%, 100% { translate: 0 0; scale: 1; }
-  33% { translate: 30px -20px; scale: 1.05; }
-  66% { translate: -20px 15px; scale: 0.95; }
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(30px, -20px) scale(1.05); }
+  66% { transform: translate(-20px, 15px) scale(0.95); }
 }
 
 /* ════════════════════════════════════════════════════════════════════
@@ -289,6 +295,8 @@ body::before {
   padding: 8rem 1.5rem 6rem;
   position: relative; overflow: hidden;
   border-bottom: 1px solid var(--border);
+  scroll-snap-align: start;
+  scroll-snap-stop: normal;
 }
 .hero-overlay {
   position: absolute; inset: 0; z-index: 1; pointer-events: none;
@@ -520,21 +528,45 @@ body::before {
 .content {
   max-width: 1100px;
   margin: 0 auto;
-  padding: 10rem clamp(1.5rem, 6vw, 4rem) 10rem;
+  padding: 0 clamp(1.5rem, 6vw, 4rem);
   display: flex; flex-direction: column;
-  gap: 10rem;
   position: relative; z-index: 2;
 }
 
-/* Side ornament numbers */
+/* Each section is its own "page" — full viewport height, content centered,
+   snap-aligned to the top edge so scrolling lands cleanly between slides. */
 .sect {
   position: relative;
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding-block: 6rem;
+  scroll-snap-align: start;
+  scroll-snap-stop: normal;
+
+  /* Page-turn entrance — runs once when the section enters view. Duration is
+     fixed (1.1s) so the reveal isn't tied to scroll position. */
+  opacity: 0;
+  transform: translateY(72px) scale(.97);
+  transition:
+    opacity 1.1s var(--sect-delay, 0s) cubic-bezier(.22, 1, .36, 1),
+    transform 1.1s var(--sect-delay, 0s) cubic-bezier(.22, 1, .36, 1);
+  will-change: opacity, transform;
+}
+.sect.in {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+@media (prefers-reduced-motion: reduce) {
+  .sect { opacity: 1; transform: none; transition: none; }
 }
 .sect::before {
   content: attr(data-n);
   position: absolute;
   left: -3.5rem;
-  top: -1.2rem;
+  top: 50%;
+  transform: translateY(calc(-50% - 5rem));
   font-family: var(--serif);
   font-size: 5.5rem; font-style: italic;
   color: var(--accent);
@@ -1132,12 +1164,14 @@ body::before {
 
 @media (max-width: 900px) {
   .section-head { margin-bottom: 2.5rem; }
-  .content { gap: 7rem; padding: 6rem 1.5rem 7rem; }
+  .content { padding: 0 1.5rem; }
+  .sect { padding-block: 5rem; }
 }
 
 @media (max-width: 640px) {
   body::before { opacity: .3; }
-  .content { gap: 5rem; padding: 4rem 1.25rem 5rem; }
+  .content { padding: 0 1.25rem; }
+  .sect { padding-block: 4rem; }
   .hero { padding: 6rem 1rem 4rem; min-height: 96svh; }
   .hero-avatar { width: 100px; height: 100px; margin-bottom: 1.2rem; }
   .hero h1 { font-size: clamp(2.6rem, 10vw, 4rem); }
@@ -1154,169 +1188,4 @@ body::before {
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0s !important; transition-duration: 0s !important; }
   .canvas-placeholder { display: block; }
-}
-
-/* ════════════════════════════════════════════════════════════════════
-   Smooth Scroll (Lenis) + Scroll-Driven Reveals
-   ════════════════════════════════════════════════════════════════════ */
-
-/* Lenis owns the scroll position; disable native smooth so they don't fight. */
-html.lenis, html.lenis body { height: auto; }
-.lenis.lenis-smooth { scroll-behavior: auto !important; }
-.lenis.lenis-smooth [data-lenis-prevent] { overscroll-behavior: contain; }
-.lenis.lenis-stopped { overflow: hidden; }
-.lenis.lenis-smooth iframe { pointer-events: none; }
-
-/* Reveal fallback (IntersectionObserver toggles .in). The @supports block
-   below replaces this with a continuous, scroll-linked animation. */
-.sect {
-  opacity: 0;
-  transform: translateY(60px);
-  transition:
-    opacity 0.9s cubic-bezier(.22, 1, .36, 1),
-    transform 0.9s cubic-bezier(.22, 1, .36, 1);
-  will-change: opacity, transform;
-}
-.sect.in {
-  opacity: 1;
-  transform: translateY(0);
-}
-
-.stag-item {
-  opacity: 0;
-  transform: translateY(24px) scale(0.98);
-  transition:
-    opacity 0.7s cubic-bezier(.22, 1, .36, 1),
-    transform 0.7s cubic-bezier(.22, 1, .36, 1);
-  transition-delay: calc(var(--stag-i, 0) * 0.1s);
-}
-.stag-item.in {
-  opacity: 1;
-  transform: translateY(0) scale(1);
-}
-
-.project-card {
-  opacity: 0;
-  animation: fadeUp 0.6s cubic-bezier(.22, 1, .36, 1) forwards;
-  animation-delay: calc(var(--stag-i, 0) * 0.08s);
-}
-
-/* ── Continuous scroll-driven reveals (Chromium 115+, Safari TP) ──
-   Ranges are intentionally long so each element scrubs continuously across the
-   viewport instead of snapping in. Pair the section reveal with a slightly
-   later (and longer) stagger so items cascade in *behind* the heading. */
-@supports (animation-timeline: view()) {
-  @keyframes sect-reveal {
-    from { opacity: 0; transform: translateY(70px) scale(0.985); }
-    to   { opacity: 1; transform: translateY(0) scale(1); }
-  }
-  @keyframes head-reveal {
-    from { opacity: 0; transform: translateX(-24px); }
-    to   { opacity: 1; transform: translateX(0); }
-  }
-  @keyframes sect-n-reveal {
-    from { opacity: 0; transform: translateX(-12px) scale(0.9); letter-spacing: .04em; }
-    to   { opacity: 1; transform: translateX(0) scale(1); letter-spacing: .12em; }
-  }
-  @keyframes stag-reveal {
-    from { opacity: 0; transform: translateY(48px) scale(0.96); filter: blur(6px); }
-    to   { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
-  }
-  @keyframes hero-drift {
-    from { transform: translateY(0) scale(1); opacity: 1; }
-    to   { transform: translateY(-120px) scale(0.94); opacity: 0; }
-  }
-  @keyframes hero-avatar-parallax {
-    from { transform: translateY(0); }
-    to   { transform: translateY(-40px); }
-  }
-
-  .sect {
-    opacity: 1;
-    transform: none;
-    transition: none;
-    animation: sect-reveal linear both;
-    animation-timeline: view();
-    animation-range: entry 0% cover 55%;
-  }
-  .section-head {
-    animation: head-reveal linear both;
-    animation-timeline: view();
-    animation-range: entry 0% cover 35%;
-  }
-  .sect-n {
-    animation: sect-n-reveal linear both;
-    animation-timeline: view();
-    animation-range: entry 0% cover 40%;
-  }
-  .stag-item,
-  .project-card {
-    opacity: 1;
-    transform: none;
-    transition: none;
-    animation: stag-reveal linear both;
-    animation-timeline: view();
-    animation-range: entry 0% cover 55%;
-    animation-delay: 0s;
-    will-change: transform, opacity, filter;
-  }
-
-  /* Hero content drifts upward and fades as the viewport leaves the hero. The
-     range starts a bit before the actual exit so the fade has already begun by
-     the time the user can see the first section above. */
-  .hero-content {
-    animation: hero-drift linear both;
-    animation-timeline: view();
-    animation-range: exit -15% exit 85%;
-    will-change: transform, opacity;
-  }
-  .hero-avatar-wrap {
-    animation: hero-avatar-parallax linear both;
-    animation-timeline: view();
-    animation-range: exit -20% exit 80%;
-    will-change: transform;
-  }
-}
-
-/* ── Scroll-linked ambient parallax (orbs drift at different rates relative
-      to the document scroll position, separate from their idle floatOrb). ── */
-@supports (animation-timeline: scroll()) {
-  @keyframes orb-parallax-slow { to { transform: translateY(-180px); } }
-  @keyframes orb-parallax-mid  { to { transform: translateY(140px); } }
-  @keyframes orb-parallax-fast { to { transform: translateY(-260px); } }
-
-  .amb-1 {
-    animation:
-      floatOrb 20s ease-in-out infinite,
-      orb-parallax-slow linear both;
-    animation-timeline: auto, scroll(root block);
-  }
-  .amb-2 {
-    animation:
-      floatOrb 25s ease-in-out infinite reverse,
-      orb-parallax-mid linear both;
-    animation-timeline: auto, scroll(root block);
-  }
-  .amb-3 {
-    animation:
-      floatOrb 18s ease-in-out infinite 5s,
-      orb-parallax-fast linear both;
-    animation-timeline: auto, scroll(root block);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .sect,
-  .section-head,
-  .sect-n,
-  .stag-item,
-  .project-card,
-  .hero-content,
-  .hero-avatar-wrap,
-  .amb-orb {
-    opacity: 1 !important;
-    transform: none !important;
-    filter: none !important;
-    animation: none !important;
-  }
 }

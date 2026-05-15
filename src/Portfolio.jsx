@@ -1,13 +1,8 @@
 import { useState, useEffect, useRef, useCallback, lazy, Suspense, memo } from "react";
-import Lenis from "lenis";
 import D from "./data";
 import "./Portfolio.css";
 
 const NeuralNetCanvas = lazy(() => import("./NeuralNetCanvas"));
-
-const prefersReducedMotion = () =>
-  typeof window !== "undefined" &&
-  window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
 
 /* ── Ambient background orbs ── */
 function AmbientBg() {
@@ -42,18 +37,17 @@ function useInView(threshold = 0.12, once = true) {
   return [ref, visible];
 }
 
-/* ── Scroll reveal wrapper ──
-   On browsers with `animation-timeline: view()` support the CSS rule drives a
-   continuous, scroll-linked reveal. Older browsers fall back to the binary
-   `.in` class toggled by IntersectionObserver. */
-const Section = memo(function Section({ id, children, className = "", ...rest }) {
-  const [ref, vis] = useInView(0.08);
+/* ── Page-turn section reveal ── A definite, IO-triggered entrance: each section
+   slides up + scales in once, with no further scroll coupling. The animation
+   has a fixed start/end so the experience doesn't move with the scrollbar. */
+const Section = memo(function Section({ id, children, delay = 0, className = "" }) {
+  const [ref, vis] = useInView(0.18);
   return (
     <section
       ref={ref}
       id={id}
-      className={`sect ${className}${vis ? " in" : ""}`}
-      {...rest}
+      className={`sect${vis ? " in" : ""} ${className}`}
+      style={{ "--sect-delay": `${delay}s` }}
     >
       {children}
     </section>
@@ -64,8 +58,11 @@ const Section = memo(function Section({ id, children, className = "", ...rest })
 const StaggerItem = memo(function StaggerItem({ children, index, visible }) {
   return (
     <div
-      className={`stag-item${visible ? " in" : ""}`}
-      style={{ "--stag-i": index }}
+      style={{
+        opacity: visible ? 1 : 0,
+        transform: visible ? "translateY(0) scale(1)" : "translateY(24px) scale(0.98)",
+        transition: `all 0.7s ${0.1 * index}s cubic-bezier(.22,1,.36,1)`,
+      }}
     >
       {children}
     </div>
@@ -234,37 +231,10 @@ export default function Portfolio() {
   const [heroVis, setHeroVis] = useState(false);
   const [repos, setRepos] = useState([]);
   const [repoLoading, setRepoLoading] = useState(true);
-  const lenisRef = useRef(null);
 
   useEffect(() => {
     const t = setTimeout(() => setHeroVis(true), 150);
     return () => clearTimeout(t);
-  }, []);
-
-  // Smooth-scroll momentum (Lenis). lerp-based so wheel input glides with real
-  // inertia instead of running a fixed-duration tween per delta. Skipped under
-  // prefers-reduced-motion; touch is left to the OS.
-  useEffect(() => {
-    if (prefersReducedMotion()) return;
-    const lenis = new Lenis({
-      lerp: 0.085,
-      smoothWheel: true,
-      syncTouch: false,
-      wheelMultiplier: 1,
-      touchMultiplier: 2,
-    });
-    lenisRef.current = lenis;
-    let rafId = 0;
-    const raf = (time) => {
-      lenis.raf(time);
-      rafId = requestAnimationFrame(raf);
-    };
-    rafId = requestAnimationFrame(raf);
-    return () => {
-      cancelAnimationFrame(rafId);
-      lenis.destroy();
-      lenisRef.current = null;
-    };
   }, []);
 
   useEffect(() => {
@@ -346,19 +316,8 @@ export default function Portfolio() {
       .catch(() => setRepoLoading(false));
   }, []);
 
-  const scrollTo = useCallback((target) => {
-    const lenis = lenisRef.current;
-    if (lenis) {
-      lenis.scrollTo(target === "top" ? 0 : `#${target}`, {
-        offset: -64,
-        duration: 1.4,
-        easing: (t) => 1 - Math.pow(1 - t, 4),
-      });
-    } else if (target === "top") {
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    } else {
-      document.getElementById(target)?.scrollIntoView({ behavior: "smooth", block: "start" });
-    }
+  const scrollTo = useCallback((id) => {
+    document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
     setMenuOpen(false);
   }, []);
 
@@ -407,7 +366,7 @@ export default function Portfolio() {
       <nav className={`nav${scrolled ? " scrolled" : ""}`}>
         <button
           className="nav-logo"
-          onClick={() => scrollTo("top")}
+          onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
           aria-label="Scroll to top"
         >
           <img src={`${process.env.PUBLIC_URL}/photo.png`} alt="" className="nav-logo-img" />
@@ -543,7 +502,7 @@ export default function Portfolio() {
         </Section>
 
         {/* ── Research ── */}
-        <Section id="research" data-n="02">
+        <Section id="research" delay={0.05} data-n="02">
           <div className="section-head">
             <span className="sect-n">02</span>
             <h2>Research</h2>
@@ -573,7 +532,7 @@ export default function Portfolio() {
         </Section>
 
         {/* ── Publication ── */}
-        <Section id="publication" data-n="03">
+        <Section id="publication" delay={0.05} data-n="03">
           <div className="section-head">
             <span className="sect-n">03</span>
             <h2>Publication</h2>
@@ -604,7 +563,7 @@ export default function Portfolio() {
         </Section>
 
         {/* ── Projects ── */}
-        <Section id="projects" data-n="04">
+        <Section id="projects" delay={0.05} data-n="04">
           <div className="section-head">
             <span className="sect-n">04</span>
             <h2>Projects</h2>
@@ -623,7 +582,10 @@ export default function Portfolio() {
                   target="_blank"
                   rel="noopener noreferrer"
                   className="project-card"
-                  style={{ "--stag-i": i }}
+                  style={{
+                    opacity: 1,
+                    animation: `fadeUp 0.6s ${0.08 * i}s cubic-bezier(.22,1,.36,1) forwards`,
+                  }}
                 >
                   <div className="project-card-top">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="project-icon"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
@@ -645,7 +607,7 @@ export default function Portfolio() {
         </Section>
 
         {/* ── Skills ── */}
-        <Section id="skills" data-n="05">
+        <Section id="skills" delay={0.05} data-n="05">
           <div className="section-head">
             <span className="sect-n">05</span>
             <h2>Skills</h2>
@@ -685,7 +647,7 @@ export default function Portfolio() {
 
       <button
         className={`btt${scrolled ? " show" : ""}`}
-        onClick={() => scrollTo("top")}
+        onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
         aria-label="Back to top"
       >
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>

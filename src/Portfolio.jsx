@@ -169,43 +169,50 @@ function useTheme() {
   return [theme, toggle];
 }
 
-/* ── 3D Tilt card hook ── */
+/* ── 3D Tilt card hook (rAF + direct DOM writes; no re-renders on mousemove) ── */
 function useTilt(intensity = 8) {
   const ref = useRef(null);
-  const [style, setStyle] = useState({});
+  const raf = useRef(0);
+  const target = useRef({ rx: 0, ry: 0 });
 
   const onMove = useCallback((e) => {
     const el = ref.current;
     if (!el) return;
     const rect = el.getBoundingClientRect();
-    const x = (e.clientX - rect.left) / rect.width;
-    const y = (e.clientY - rect.top) / rect.height;
-    const rotateX = (y - 0.5) * -intensity;
-    const rotateY = (x - 0.5) * intensity;
-    setStyle({
-      transform: `perspective(800px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale3d(1.01, 1.01, 1.01)`,
-      transition: "transform 0.15s ease-out",
+    target.current.ry = ((e.clientX - rect.left) / rect.width - 0.5) * intensity;
+    target.current.rx = ((e.clientY - rect.top) / rect.height - 0.5) * -intensity;
+    if (raf.current) return;
+    raf.current = requestAnimationFrame(() => {
+      raf.current = 0;
+      const el2 = ref.current;
+      if (!el2) return;
+      const { rx, ry } = target.current;
+      el2.style.transition = "transform 0.15s ease-out";
+      el2.style.transform = `perspective(800px) rotateX(${rx}deg) rotateY(${ry}deg) scale3d(1.01,1.01,1.01)`;
     });
   }, [intensity]);
 
   const onLeave = useCallback(() => {
-    setStyle({
-      transform: "perspective(800px) rotateX(0) rotateY(0) scale3d(1, 1, 1)",
-      transition: "transform 0.4s cubic-bezier(.22,1,.36,1)",
-    });
+    if (raf.current) {
+      cancelAnimationFrame(raf.current);
+      raf.current = 0;
+    }
+    const el = ref.current;
+    if (!el) return;
+    el.style.transition = "transform 0.4s cubic-bezier(.22,1,.36,1)";
+    el.style.transform = "perspective(800px) rotateX(0) rotateY(0) scale3d(1,1,1)";
   }, []);
 
-  return [ref, style, onMove, onLeave];
+  return [ref, onMove, onLeave];
 }
 
 /* ── Tilt card wrapper ── */
 const TiltCard = memo(function TiltCard({ children, className = "" }) {
-  const [ref, style, onMove, onLeave] = useTilt(6);
+  const [ref, onMove, onLeave] = useTilt(6);
   return (
     <div
       ref={ref}
       className={className}
-      style={style}
       onMouseMove={onMove}
       onMouseLeave={onLeave}
     >
@@ -271,15 +278,19 @@ export default function Portfolio() {
   }, [menuOpen]);
 
   useEffect(() => {
-    const CACHE_KEY = "gh-repos-v1";
-    const cached = sessionStorage.getItem(CACHE_KEY);
-    if (cached) {
-      try {
-        setRepos(JSON.parse(cached));
-        setRepoLoading(false);
-        return;
-      } catch { /* corrupt cache — fall through and refetch */ }
-    }
+    const CACHE_KEY = "gh-repos-v2";
+    const TTL_MS = 60 * 60 * 1000;
+    try {
+      const cached = localStorage.getItem(CACHE_KEY);
+      if (cached) {
+        const { ts, data } = JSON.parse(cached);
+        if (Array.isArray(data) && data.length && Date.now() - ts < TTL_MS) {
+          setRepos(data);
+          setRepoLoading(false);
+          return;
+        }
+      }
+    } catch { /* corrupt cache — fall through and refetch */ }
     fetch("https://api.github.com/users/xiaole5211314/repos?sort=updated&per_page=18")
       .then((r) => r.json())
       .then((data) => {
@@ -298,7 +309,11 @@ export default function Portfolio() {
           : [];
         setRepos(list);
         setRepoLoading(false);
-        if (list.length) sessionStorage.setItem(CACHE_KEY, JSON.stringify(list));
+        if (list.length) {
+          try {
+            localStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), data: list }));
+          } catch { /* quota — ignore */ }
+        }
       })
       .catch(() => setRepoLoading(false));
   }, []);
@@ -399,6 +414,7 @@ export default function Portfolio() {
               src={D.avatar}
               alt={D.name}
               loading="eager"
+              decoding="async"
               onClick={onAvatarClick}
               title="Click me!"
             />

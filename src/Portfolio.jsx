@@ -15,6 +15,25 @@ function AmbientBg() {
   );
 }
 
+/* ── Central 3D anchor ──
+   A persistent visual element pinned at the viewport's geometric centre.
+   Stays there for the whole page so the viewer's eye has a constant focus
+   point; every section's content unfolds *around* it. The core breathes,
+   three orbital rings spin at tilted axes (CSS 3D), and overall scale/glow
+   intensify with --page-p (overall scroll). It fades in as the hero pin
+   releases so the hero canvas owns the intro alone. */
+function CentralAnchor() {
+  return (
+    <div className="anchor" aria-hidden="true">
+      <div className="anchor-aura" />
+      <div className="anchor-ring anchor-ring-1" />
+      <div className="anchor-ring anchor-ring-2" />
+      <div className="anchor-ring anchor-ring-3" />
+      <div className="anchor-core" />
+    </div>
+  );
+}
+
 /* ── Intersection Observer hook ── */
 function useInView(threshold = 0.12, once = true) {
   const ref = useRef(null);
@@ -82,16 +101,12 @@ const Section = memo(function Section({ id, children, className = "", ...rest })
   );
 });
 
-/* ── Stagger children wrapper ── */
-const StaggerItem = memo(function StaggerItem({ children, index, visible }) {
+/* ── Stagger child ── carries an index as --stag-i; the reveal itself is
+   driven by --sect-p in CSS, so items cascade in lockstep with the section's
+   scroll progress rather than firing once on an IO trigger. */
+const StaggerItem = memo(function StaggerItem({ children, index }) {
   return (
-    <div
-      style={{
-        opacity: visible ? 1 : 0,
-        transform: visible ? "translateY(0) scale(1)" : "translateY(24px) scale(0.98)",
-        transition: `all 0.7s ${0.1 * index}s cubic-bezier(.22,1,.36,1)`,
-      }}
-    >
+    <div className="stag-item" style={{ "--stag-i": index }}>
       {children}
     </div>
   );
@@ -272,21 +287,36 @@ export default function Portfolio() {
       if (ticking) return;
       ticking = true;
       requestAnimationFrame(() => {
+        const winH = window.innerHeight;
         const y = window.scrollY;
         setScrolled(y > 40);
-        const docH = root.scrollHeight - window.innerHeight;
-        setProgress(docH > 0 ? Math.min(y / docH, 1) : 0);
+        const docH = root.scrollHeight - winH;
+        const pageP = docH > 0 ? Math.min(y / docH, 1) : 0;
+        setProgress(pageP);
+        root.style.setProperty("--page-p", pageP);
 
-        // Hero parallax — write directly to CSS var to avoid React re-renders
-        // on every scroll frame. Clamped to [0,1]; CSS calc() consumes it.
-        const heroP = Math.min(Math.max(y / window.innerHeight, 0), 1);
+        // Hero parallax — written directly to a CSS var to skip React renders.
+        const heroP = Math.min(Math.max(y / winH, 0), 1);
         root.style.setProperty("--hero-p", heroP);
 
-        // Flip the nav highlight when a section's pin is roughly centered in
-        // the viewport — i.e., when its top has reached the upper half. With
-        // 150svh sections, this aligns with the moment the pin engages.
+        // Per-section scroll progress (--sect-p). Spans the whole window where
+        // the section is even partly relevant: 0 when it's about to enter from
+        // below, 1 when it's fully exited above. CSS uses this to stagger
+        // section content reveals across the pin range. Apple/Linear-style
+        // scrollytelling without GSAP.
         const sects = NAV.map((n) => document.getElementById(n.toLowerCase()));
-        const flipAt = window.innerHeight * 0.4;
+        for (let i = 0; i < sects.length; i++) {
+          const el = sects[i];
+          if (!el) continue;
+          const rect = el.getBoundingClientRect();
+          const range = el.offsetHeight + winH;
+          const scrolled = winH - rect.top;
+          const p = Math.min(Math.max(scrolled / range, 0), 1);
+          el.style.setProperty("--sect-p", p);
+        }
+
+        // Flip the nav highlight when a section's pin is roughly centered.
+        const flipAt = winH * 0.4;
         for (let i = sects.length - 1; i >= 0; i--) {
           if (sects[i] && sects[i].getBoundingClientRect().top < flipAt) {
             setActive(NAV[i]);
@@ -361,8 +391,6 @@ export default function Portfolio() {
     setMenuOpen(false);
   }, []);
 
-  const [expRef, expVis] = useInView();
-  const [skillRef, skillVis] = useInView();
   const patTimer = useRef(null);
   const patCountRef = useRef(0);
   const avatarRef = useRef(null);
@@ -392,6 +420,7 @@ export default function Portfolio() {
   return (
     <>
       <AmbientBg />
+      <CentralAnchor />
       <a className="skip" href="#about">Skip to content</a>
 
       {/* ── Scroll progress ── */}
@@ -552,9 +581,9 @@ export default function Portfolio() {
             <span className="sect-n">02</span>
             <h2>Research</h2>
           </div>
-          <div className="timeline" ref={expRef}>
+          <div className="timeline">
             {D.experience.map((exp, i) => (
-              <StaggerItem key={exp.org} index={i} visible={expVis}>
+              <StaggerItem key={exp.org} index={i}>
                 <TiltCard className="tl-card-wrap">
                   <div className="tl-item">
                     <div className="tl-rail">
@@ -657,9 +686,9 @@ export default function Portfolio() {
             <span className="sect-n">05</span>
             <h2>Skills</h2>
           </div>
-          <div className="skill-bento" ref={skillRef}>
+          <div className="skill-bento">
             {Object.entries(D.skills).map(([cat, items], ci) => (
-              <StaggerItem key={cat} index={ci} visible={skillVis}>
+              <StaggerItem key={cat} index={ci}>
                 <TiltCard className="skill-card-wrap">
                   <article className={`skill-card${ci < 2 ? " featured" : ""}`}>
                     <div className="skill-cat">{cat}</div>

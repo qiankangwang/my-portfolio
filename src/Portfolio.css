@@ -99,10 +99,27 @@ html {
   scroll-padding-top: 64px;
 }
 
-/* Register --hero-p so it can be animated as a number via calc(). Updated by
-   the scroll handler in Portfolio.jsx; clamped to [0,1] there. Drives the
-   subtle hero parallax — small enough that the hero never disappears. */
+/* Registered scroll-progress properties. The scroll handler in Portfolio.jsx
+   clamps both to [0,1] before writing. calc() arithmetic over them is what
+   drives the scrollytelling — every visible per-frame motion you see is the
+   browser interpolating these numbers and recomposing transforms on the GPU. */
 @property --hero-p {
+  syntax: "<number>";
+  inherits: true;
+  initial-value: 0;
+}
+@property --sect-p {
+  syntax: "<number>";
+  inherits: true;
+  initial-value: 0;
+}
+@property --stag-i {
+  syntax: "<integer>";
+  inherits: true;
+  initial-value: 0;
+}
+/* Whole-page scroll progress 0 → 1; drives the central anchor's scale. */
+@property --page-p {
   syntax: "<number>";
   inherits: true;
   initial-value: 0;
@@ -169,6 +186,137 @@ body::before {
   0%, 100% { transform: translate(0, 0) scale(1); }
   33% { transform: translate(30px, -20px) scale(1.05); }
   66% { transform: translate(-20px, 15px) scale(0.95); }
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   Central 3D Anchor
+
+   Fixed at the viewport's geometric centre, behind content (z-index 1) and
+   above the ambient background. The viewer's eye locks onto this regardless
+   of scroll position — the page's content morphs around it, not past it.
+
+   - .anchor sets up the 3D scene (perspective + preserve-3d).
+   - .anchor-aura is a soft halo that pulses.
+   - .anchor-core is the glowing sphere; gradient + insets simulate light.
+   - .anchor-ring-{1,2,3} are tilted orbital rings (CSS 3D), each spinning at
+     a different rate / axis, evoking an atomic / orbital system.
+
+   Opacity is driven by --hero-p so the anchor fades in only after the hero
+   pin starts releasing — letting the neural-net canvas own the intro alone.
+   Overall scale and glow intensify with --page-p (whole-page progress, set
+   by the scroll handler), giving the anchor a sense of growing presence as
+   the viewer progresses through the introduction.
+   ════════════════════════════════════════════════════════════════════ */
+
+.anchor {
+  position: fixed;
+  top: 50%; left: 50%;
+  width: 360px; height: 360px;
+  margin: -180px 0 0 -180px;
+  pointer-events: none;
+  z-index: 1;
+  perspective: 1200px;
+  transform-style: preserve-3d;
+  /* Anchor scales up subtly over the page so it feels like it advances with
+     the viewer. Math: 1 → 1.18 across the full scroll. */
+  scale: calc(1 + var(--page-p, 0) * 0.18);
+  /* Fades in as hero pin releases; fully present from --hero-p ≈ 0.55 on. */
+  opacity: clamp(0, calc(var(--hero-p, 0) * 1.8 - 0.1), 1);
+  transition: opacity .25s linear;
+}
+
+.anchor-aura {
+  position: absolute;
+  inset: -45%;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--accent-soft2) 0%, var(--accent-soft) 35%, transparent 70%);
+  filter: blur(28px);
+  animation: anchor-aura 6s ease-in-out infinite;
+}
+
+.anchor-core {
+  position: absolute;
+  inset: 36%;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 30% 28%,
+      color-mix(in srgb, var(--accent) 60%, white) 0%,
+      var(--accent) 35%,
+      var(--accent2) 65%,
+      var(--accent3) 100%);
+  box-shadow:
+    0 0 32px var(--accent-soft2),
+    0 0 80px var(--accent-soft),
+    inset -10px -14px 28px rgba(0, 0, 0, .22),
+    inset 8px 8px 22px rgba(255, 255, 255, .3);
+  animation: anchor-core 4.5s ease-in-out infinite;
+}
+
+.anchor-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 1.5px solid transparent;
+  /* Linear-gradient through border-image so the ring isn't a flat outline. */
+  background:
+    conic-gradient(from 0deg,
+      transparent 0deg,
+      var(--accent-soft2) 90deg,
+      transparent 180deg,
+      var(--warm-soft) 270deg,
+      transparent 360deg) border-box;
+  -webkit-mask:
+    linear-gradient(#000 0 0) padding-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+          mask-composite: exclude;
+  mask:
+    linear-gradient(#000 0 0) padding-box,
+    linear-gradient(#000 0 0);
+}
+.anchor-ring-1 {
+  animation: ring1 22s linear infinite;
+}
+.anchor-ring-2 {
+  inset: 9%;
+  animation: ring2 16s linear infinite reverse;
+}
+.anchor-ring-3 {
+  inset: 18%;
+  animation: ring3 28s linear infinite;
+}
+
+@keyframes anchor-aura {
+  0%, 100% { opacity: .55; transform: scale(1); }
+  50%      { opacity: .85; transform: scale(1.08); }
+}
+@keyframes anchor-core {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.05); }
+}
+/* Each ring spins on a tilted plane in 3D space. The from→to keyframes set
+   the same tilt, so transform interpolation stays clean (just rotateZ). */
+@keyframes ring1 {
+  from { transform: rotateX(72deg) rotateZ(0deg); }
+  to   { transform: rotateX(72deg) rotateZ(360deg); }
+}
+@keyframes ring2 {
+  from { transform: rotateY(64deg) rotateZ(0deg); }
+  to   { transform: rotateY(64deg) rotateZ(360deg); }
+}
+@keyframes ring3 {
+  from { transform: rotateX(34deg) rotateY(40deg) rotateZ(0deg); }
+  to   { transform: rotateX(34deg) rotateY(40deg) rotateZ(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .anchor, .anchor-core, .anchor-aura, .anchor-ring { animation: none !important; }
+  .anchor { opacity: .8; scale: 1; }
+}
+
+/* On small screens the anchor would crowd content; shrink it. */
+@media (max-width: 768px) {
+  .anchor { width: 220px; height: 220px; margin: -110px 0 0 -110px; }
 }
 
 /* ════════════════════════════════════════════════════════════════════
@@ -619,14 +767,78 @@ body::before {
     transition: none !important;
   }
 }
+/* ── Scrollytelling: --sect-p drives content within each pinned scene ──
+   Section header drifts subtly as scroll advances, signalling progress without
+   moving the central anchor. Stagger items cascade in based on --stag-i and
+   --sect-p — like Apple's product pages, content unfolds as you scroll
+   *through* the pin rather than appearing all at once. */
+.sect.in .section-head {
+  transform:
+    translateY(calc((0.45 - var(--sect-p, 0)) * 24px))
+    scale(calc(1.04 - var(--sect-p, 0) * 0.06));
+  transform-origin: left center;
+  transition: none;
+  will-change: transform;
+}
+
+/* Stagger reveal: each item appears at a slightly later --sect-p. The math
+   reads as: per-item visibility = section progress × 4, offset by the item's
+   index × 0.5. Adjust the multiplier (4) to control cascade speed and the
+   offset (-1.4) for when the first item starts appearing.
+
+   - .stag-item: timeline cards, skill bento cells
+   - .project-card: GitHub project grid (carries --stag-i inline)
+   - .about-highlight / .stat: About-section internals (auto-indexed via
+     :nth-child since they don't ship with --stag-i) */
+.sect.in .stag-item,
+.sect.in .project-card {
+  --reveal: clamp(0, calc(var(--sect-p, 0) * 4.5 - var(--stag-i, 0) * 0.55 - 1.4), 1);
+  opacity: var(--reveal);
+  transform:
+    translateY(calc((1 - var(--reveal)) * 36px))
+    scale(calc(0.94 + var(--reveal) * 0.06));
+  transition: none;
+  will-change: opacity, transform;
+}
+
+.sect.in .stat,
+.sect.in .about-highlight {
+  --auto-i: 0;
+}
+.sect.in .stat:nth-child(1), .sect.in .about-highlight:nth-child(1) { --auto-i: 0; }
+.sect.in .stat:nth-child(2), .sect.in .about-highlight:nth-child(2) { --auto-i: 1; }
+.sect.in .stat:nth-child(3), .sect.in .about-highlight:nth-child(3) { --auto-i: 2; }
+.sect.in .stat:nth-child(4) { --auto-i: 3; }
+.sect.in .stat,
+.sect.in .about-highlight {
+  --reveal: clamp(0, calc(var(--sect-p, 0) * 4.5 - var(--auto-i, 0) * 0.55 - 1.4), 1);
+  opacity: var(--reveal);
+  transform: translateY(calc((1 - var(--reveal)) * 32px));
+  transition: none;
+  will-change: opacity, transform;
+}
+
 /* On narrow viewports the pin gets cramped; fall back to natural flow so
-   content isn't squeezed and scrolling stays usable. */
+   content isn't squeezed and scrolling stays usable. Scrollytelling also
+   degrades to a plain fly-in here — calc()s still resolve, but with the pin
+   gone, --sect-p covers section visibility instead of pin progress. */
 @media (max-width: 768px) {
   .sect { height: auto; }
   .sect-pin {
     position: static;
     height: auto;
     padding-block: 5rem;
+  }
+  .sect.in .section-head { transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sect.in .section-head { transform: none !important; }
+  .sect.in .stag-item,
+  .sect.in .project-card,
+  .sect.in .stat,
+  .sect.in .about-highlight {
+    opacity: 1 !important;
+    transform: none !important;
   }
 }
 .sect::before {

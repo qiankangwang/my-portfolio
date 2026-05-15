@@ -171,27 +171,28 @@ body::before {
 }
 
 /* ════════════════════════════════════════════════════════════════════
-   Neural-network + bio motif backdrop
+   3D backdrop (BgScene3D)
 
-   The NeuralNetCanvas component renders an animated network of nodes/edges
-   plus RNA / protein motifs (see NeuralNetCanvas.jsx). Promoted to a
-   full-page fixed background so the visual identity carries through every
-   section, not just the intro. Sits behind everything else (.bgnet
-   z-index: 0) with low opacity so foreground text stays legible.
+   Renders a Three.js / r3f scene fixed full-bleed behind the layout:
+   neural-net nodes, a rotating DNA double helix, protein helices,
+   particle field, all under a director-style camera move driven by
+   scroll progress. The scene has its own atmosphere (fog + vignette +
+   bloom + grain) so no CSS dimming is needed — it already grounds
+   itself into the page mood.
+
+   pointer-events: none lets the page's normal scroll/click pass through.
    ════════════════════════════════════════════════════════════════════ */
 .bgnet {
   position: fixed;
   inset: 0;
   z-index: 0;
   pointer-events: none;
-  /* Hold the network mid-canvas via the existing component; we just dim it.
-     A radial mask hides edge pixels so the network feels luminous-centred
-     rather than wallpapered. */
-  opacity: .45;
-  -webkit-mask-image: radial-gradient(ellipse 70% 60% at 50% 50%, #000 35%, transparent 90%);
-          mask-image: radial-gradient(ellipse 70% 60% at 50% 50%, #000 35%, transparent 90%);
 }
-.bgnet canvas { display: block; width: 100%; height: 100%; }
+.bgnet > div,
+.bgnet canvas {
+  width: 100% !important;
+  height: 100% !important;
+}
 
 /* ════════════════════════════════════════════════════════════════════
    Top scroll progress bar

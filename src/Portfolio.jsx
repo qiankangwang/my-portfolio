@@ -2,7 +2,9 @@ import { useState, useEffect, useRef, useCallback, lazy, Suspense, memo } from "
 import D from "./data";
 import "./Portfolio.css";
 
-const NeuralNetCanvas = lazy(() => import("./NeuralNetCanvas"));
+// 3D scene is heavy (three + r3f + postprocessing) — lazy so it doesn't
+// gate first paint.
+const BgScene3D = lazy(() => import("./BgScene3D"));
 
 /* ── Ambient background orbs ── */
 function AmbientBg() {
@@ -278,6 +280,11 @@ export default function Portfolio() {
   const [repos, setRepos] = useState([]);
   const [repoLoading, setRepoLoading] = useState(true);
 
+  // Whole-page scroll progress (0..1) — handed to BgScene3D via ref so the
+  // 3D camera can interpolate waypoints inside its own useFrame loop with
+  // zero React renders per scroll frame.
+  const phaseRef = useRef(0);
+
   useEffect(() => {
     let ticking = false;
     const onScroll = () => {
@@ -288,7 +295,9 @@ export default function Portfolio() {
         const y = window.scrollY;
         setScrolled(y > 40);
         const docH = document.documentElement.scrollHeight - winH;
-        setProgress(docH > 0 ? Math.min(y / docH, 1) : 0);
+        const p = docH > 0 ? Math.min(y / docH, 1) : 0;
+        setProgress(p);
+        phaseRef.current = p;
 
         // Flip the sidebar nav highlight when a section's pin centres in the
         // viewport. With sections sized at 150svh and pinned for 50svh, this
@@ -388,12 +397,13 @@ export default function Portfolio() {
   return (
     <>
       <AmbientBg />
-      {/* Neural-network + bio motifs as a persistent backdrop. Lives fixed
-         behind everything (.bgnet CSS) so the visual identity carries
-         through every scene — not just the hero. */}
+      {/* Cinematic 3D backdrop — neural network + DNA helix + protein motifs
+         in real 3D space, with a scroll-driven director-style camera move.
+         Lives fixed behind everything so every section plays out on the
+         same continuous stage. */}
       <div className="bgnet" aria-hidden="true">
         <Suspense fallback={null}>
-          <NeuralNetCanvas />
+          <BgScene3D phaseRef={phaseRef} />
         </Suspense>
       </div>
       <a className="skip" href="#about">Skip to content</a>

@@ -94,14 +94,18 @@
 
 *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
-/* Page-turn scroll: each .hero / .sect is a "slide", soft-snapping to the top
-   of the viewport when the user stops near a boundary. `proximity` (not
-   `mandatory`) keeps free-scroll natural and only nudges when you're close,
-   matching Apple's deliberate-but-not-trapping feel. */
 html {
-  scroll-snap-type: y proximity;
   scroll-behavior: smooth;
   scroll-padding-top: 64px;
+}
+
+/* Register --hero-p so it can be animated as a number via calc(). Updated by
+   the scroll handler in Portfolio.jsx; clamped to [0,1] there. Drives the
+   subtle hero parallax — small enough that the hero never disappears. */
+@property --hero-p {
+  syntax: "<number>";
+  inherits: true;
+  initial-value: 0;
 }
 body {
   background: var(--bg);
@@ -295,8 +299,6 @@ body::before {
   padding: 8rem 1.5rem 6rem;
   position: relative; overflow: hidden;
   border-bottom: 1px solid var(--border);
-  scroll-snap-align: start;
-  scroll-snap-stop: normal;
 }
 .hero-overlay {
   position: absolute; inset: 0; z-index: 1; pointer-events: none;
@@ -310,6 +312,15 @@ body::before {
 .hero-content {
   position: relative; z-index: 2;
   max-width: 800px; padding: 0 1rem;
+  /* Light scroll-coupled drift. --hero-p comes from the scroll handler and is
+     already clamped to [0,1], so the floor on opacity is 0.7 — content never
+     disappears, just gently recedes as the next section enters. */
+  transform: translateY(calc(var(--hero-p, 0) * -56px));
+  opacity: calc(1 - var(--hero-p, 0) * 0.3);
+  will-change: transform, opacity;
+}
+@media (prefers-reduced-motion: reduce) {
+  .hero-content { transform: none; opacity: 1; }
 }
 
 /* Availability badge */
@@ -533,30 +544,25 @@ body::before {
   position: relative; z-index: 2;
 }
 
-/* Each section is its own "page" — full viewport height, content centered,
-   snap-aligned to the top edge so scrolling lands cleanly between slides. */
+/* Sections flow continuously. No min-height, no snap — just generous padding
+   so each section has breathing room without feeling like a forced slide. */
 .sect {
   position: relative;
-  min-height: 100svh;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  padding-block: 6rem;
-  scroll-snap-align: start;
-  scroll-snap-stop: normal;
+  padding-block: 9rem;
 
-  /* Page-turn entrance — runs once when the section enters view. Duration is
-     fixed (1.1s) so the reveal isn't tied to scroll position. */
+  /* IO-triggered entrance — runs once, fixed duration. Independent of scroll
+     position, so the experience advances on arrival rather than scrubbing
+     with the scrollbar. */
   opacity: 0;
-  transform: translateY(72px) scale(.97);
+  transform: translateY(48px);
   transition:
-    opacity 1.1s var(--sect-delay, 0s) cubic-bezier(.22, 1, .36, 1),
-    transform 1.1s var(--sect-delay, 0s) cubic-bezier(.22, 1, .36, 1);
+    opacity 1s cubic-bezier(.22, 1, .36, 1),
+    transform 1s cubic-bezier(.22, 1, .36, 1);
   will-change: opacity, transform;
 }
 .sect.in {
   opacity: 1;
-  transform: translateY(0) scale(1);
+  transform: none;
 }
 @media (prefers-reduced-motion: reduce) {
   .sect { opacity: 1; transform: none; transition: none; }
@@ -565,8 +571,7 @@ body::before {
   content: attr(data-n);
   position: absolute;
   left: -3.5rem;
-  top: 50%;
-  transform: translateY(calc(-50% - 5rem));
+  top: 7.5rem;
   font-family: var(--serif);
   font-size: 5.5rem; font-style: italic;
   color: var(--accent);
@@ -1165,13 +1170,13 @@ body::before {
 @media (max-width: 900px) {
   .section-head { margin-bottom: 2.5rem; }
   .content { padding: 0 1.5rem; }
-  .sect { padding-block: 5rem; }
+  .sect { padding-block: 6rem; }
 }
 
 @media (max-width: 640px) {
   body::before { opacity: .3; }
   .content { padding: 0 1.25rem; }
-  .sect { padding-block: 4rem; }
+  .sect { padding-block: 4.5rem; }
   .hero { padding: 6rem 1rem 4rem; min-height: 96svh; }
   .hero-avatar { width: 100px; height: 100px; margin-bottom: 1.2rem; }
   .hero h1 { font-size: clamp(2.6rem, 10vw, 4rem); }

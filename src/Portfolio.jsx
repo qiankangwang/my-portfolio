@@ -37,17 +37,19 @@ function useInView(threshold = 0.12, once = true) {
   return [ref, visible];
 }
 
-/* ── Page-turn section reveal ── A definite, IO-triggered entrance: each section
-   slides up + scales in once, with no further scroll coupling. The animation
-   has a fixed start/end so the experience doesn't move with the scrollbar. */
-const Section = memo(function Section({ id, children, delay = 0, className = "" }) {
-  const [ref, vis] = useInView(0.18);
+/* ── Section reveal ──
+   IO-triggered entrance, runs once with a fixed 1s duration so the animation
+   has a definite start/end and isn't tied to scroll position. Threshold is
+   low (0.12) so reveals start as soon as the section edges into view — keeps
+   the scroll feeling continuous rather than waiting for a snap point. */
+const Section = memo(function Section({ id, children, className = "", ...rest }) {
+  const [ref, vis] = useInView(0.12);
   return (
     <section
       ref={ref}
       id={id}
       className={`sect${vis ? " in" : ""} ${className}`}
-      style={{ "--sect-delay": `${delay}s` }}
+      {...rest}
     >
       {children}
     </section>
@@ -238,14 +240,22 @@ export default function Portfolio() {
   }, []);
 
   useEffect(() => {
+    const root = document.documentElement;
     let ticking = false;
     const onScroll = () => {
       if (ticking) return;
       ticking = true;
       requestAnimationFrame(() => {
-        setScrolled(window.scrollY > 40);
-        const docH = document.documentElement.scrollHeight - window.innerHeight;
-        setProgress(docH > 0 ? Math.min(window.scrollY / docH, 1) : 0);
+        const y = window.scrollY;
+        setScrolled(y > 40);
+        const docH = root.scrollHeight - window.innerHeight;
+        setProgress(docH > 0 ? Math.min(y / docH, 1) : 0);
+
+        // Hero parallax — write directly to CSS var to avoid React re-renders
+        // on every scroll frame. Clamped to [0,1]; CSS calc() consumes it.
+        const heroP = Math.min(Math.max(y / window.innerHeight, 0), 1);
+        root.style.setProperty("--hero-p", heroP);
+
         const sects = NAV.map((n) => document.getElementById(n.toLowerCase()));
         for (let i = sects.length - 1; i >= 0; i--) {
           if (sects[i] && sects[i].getBoundingClientRect().top < 200) {

@@ -404,7 +404,11 @@ export default function Portfolio() {
         </div>
       </nav>
 
-      {/* ── Hero ── */}
+      {/* ── Hero (cinematic pin) ──
+         .hero-scroll provides the scroll distance; .hero pins to the viewport
+         and morphs in place via --hero-p. Reads like a camera push-in instead
+         of a vertical scroll. */}
+      <section className="hero-scroll" aria-label="Introduction">
       <header className="hero">
         <Suspense fallback={<div className="canvas-placeholder" />}>
           <NeuralNetCanvas />
@@ -460,6 +464,7 @@ export default function Portfolio() {
           <span>Scroll to explore</span>
         </div>
       </header>
+      </section>
 
       <main className="content">
 

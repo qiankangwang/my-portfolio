@@ -291,14 +291,41 @@ body::before {
    Hero
    ════════════════════════════════════════════════════════════════════ */
 
+/* The hero is pinned to the viewport for the duration of .hero-scroll. The
+   visible scene (.hero) stays in place while the user scrolls; --hero-p (set
+   by the scroll handler) drives an in-place camera push-in — content shrinks
+   and recedes while the canvas zooms forward. The viewer feels like they're
+   advancing through a scene, not scrolling down a page. */
+.hero-scroll {
+  position: relative;
+  height: 200svh;
+  /* No internal scrolling — the page is the scroller. */
+}
 .hero {
-  min-height: 100svh;
+  position: sticky;
+  top: 0;
+  height: 100svh;
   display: flex; flex-direction: column;
   align-items: center; justify-content: center;
   text-align: center;
   padding: 8rem 1.5rem 6rem;
-  position: relative; overflow: hidden;
+  overflow: hidden;
   border-bottom: 1px solid var(--border);
+}
+
+/* Canvas reads --hero-p directly: zoom from 1 → 1.25 as the camera "pushes
+   in", and lift opacity slightly so the network feels foregrounded. */
+.hero > canvas {
+  transform: scale(calc(1 + var(--hero-p, 0) * 0.25));
+  transform-origin: 50% 50%;
+  transition: none;
+  will-change: transform;
+}
+.hero-overlay {
+  opacity: calc(1 + var(--hero-p, 0) * 0.4);
+}
+.scroll-hint {
+  opacity: calc(0.6 - var(--hero-p, 0) * 1.5) !important;
 }
 .hero-overlay {
   position: absolute; inset: 0; z-index: 1; pointer-events: none;
@@ -312,15 +339,20 @@ body::before {
 .hero-content {
   position: relative; z-index: 2;
   max-width: 800px; padding: 0 1rem;
-  /* Light scroll-coupled drift. --hero-p comes from the scroll handler and is
-     already clamped to [0,1], so the floor on opacity is 0.7 — content never
-     disappears, just gently recedes as the next section enters. */
-  transform: translateY(calc(var(--hero-p, 0) * -56px));
-  opacity: calc(1 - var(--hero-p, 0) * 0.3);
+  /* Scroll-driven "camera push-in": the content lifts, shrinks slightly, and
+     fades as the user scrolls through .hero-scroll. At p=0 the clamp resolves
+     to 1 (fully visible); content reaches opacity 0 only near the end of the
+     pin range, by which time the next section is already entering. */
+  transform:
+    translateY(calc(var(--hero-p, 0) * -90px))
+    scale(calc(1 - var(--hero-p, 0) * 0.18));
+  opacity: clamp(0, calc(1.35 - var(--hero-p, 0) * 1.5), 1);
+  transform-origin: 50% 40%;
   will-change: transform, opacity;
 }
 @media (prefers-reduced-motion: reduce) {
   .hero-content { transform: none; opacity: 1; }
+  .hero > canvas { transform: none; }
 }
 
 /* Availability badge */

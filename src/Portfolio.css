@@ -572,32 +572,62 @@ body::before {
   max-width: 1100px;
   margin: 0 auto;
   padding: 0 clamp(1.5rem, 6vw, 4rem);
-  display: flex; flex-direction: column;
   position: relative; z-index: 2;
+  /* Block flow — sticky pins inside .sect rely on a normal-flow ancestor with
+     no flex weirdness. */
 }
 
-/* Sections flow continuously. No min-height, no snap — just generous padding
-   so each section has breathing room without feeling like a forced slide. */
+/* Each section is a tall scroll container; its inner stage pins to the
+   viewport so the visible content stays at the central anchor while the user
+   scrolls. The pin engages until the parent's bottom catches up with it,
+   giving each section a held "scene" before the next one slides in. */
 .sect {
   position: relative;
-  padding-block: 9rem;
-
-  /* IO-triggered entrance — runs once, fixed duration. Independent of scroll
-     position, so the experience advances on arrival rather than scrubbing
-     with the scrollbar. */
+  height: 150svh;
+}
+.sect-pin {
+  position: sticky;
+  top: 0;
+  height: 100svh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  /* Pin spans the section's content column; ambient background bleeds in
+     from outside .content. */
+}
+.sect-stage {
+  width: 100%;
+  /* Fly-in: a single 1s entrance just before the pin takes over. Once the
+     stage is in, it stays — the pin holds it at the anchor for the rest of
+     the section's scroll range. No scroll-coupled transform here, so the
+     viewer's focus doesn't move with the scrollbar. */
   opacity: 0;
-  transform: translateY(48px);
+  transform: translateY(60px);
   transition:
     opacity 1s cubic-bezier(.22, 1, .36, 1),
     transform 1s cubic-bezier(.22, 1, .36, 1);
   will-change: opacity, transform;
 }
-.sect.in {
+.sect.in .sect-stage {
   opacity: 1;
-  transform: none;
+  transform: translateY(0);
 }
 @media (prefers-reduced-motion: reduce) {
-  .sect { opacity: 1; transform: none; transition: none; }
+  .sect-stage {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+  }
+}
+/* On narrow viewports the pin gets cramped; fall back to natural flow so
+   content isn't squeezed and scrolling stays usable. */
+@media (max-width: 768px) {
+  .sect { height: auto; }
+  .sect-pin {
+    position: static;
+    height: auto;
+    padding-block: 5rem;
+  }
 }
 .sect::before {
   content: attr(data-n);

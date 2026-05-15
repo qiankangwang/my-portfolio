@@ -37,13 +37,35 @@ function useInView(threshold = 0.12, once = true) {
   return [ref, visible];
 }
 
-/* ── Section reveal ──
-   IO-triggered entrance, runs once with a fixed 1s duration so the animation
-   has a definite start/end and isn't tied to scroll position. Threshold is
-   low (0.12) so reveals start as soon as the section edges into view — keeps
-   the scroll feeling continuous rather than waiting for a snap point. */
+/* ── Section ──
+   Each section is a tall scroll container (.sect, 150svh) whose inner stage
+   (.sect-pin) is sticky-pinned to the viewport. While the user scrolls
+   through the section's range, the visible content stays locked at the
+   viewport's vertical center — that pinned midpoint is the "central anchor"
+   the viewer's eye rests on. Internal content (headings, cards) reveals
+   inside the anchor; the scroll only advances progress, it doesn't move
+   focus. .in toggles a one-shot fly-in just before the pin engages so the
+   stage lands cleanly. */
 const Section = memo(function Section({ id, children, className = "", ...rest }) {
-  const [ref, vis] = useInView(0.12);
+  const ref = useRef(null);
+  const [vis, setVis] = useState(false);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    // rootMargin shrinks the trigger zone to the upper half of the viewport,
+    // so .in fires when the section is just about to take the pinned position.
+    const obs = new IntersectionObserver(
+      ([e]) => {
+        if (e.isIntersecting) {
+          setVis(true);
+          obs.disconnect();
+        }
+      },
+      { threshold: 0, rootMargin: "0px 0px -45% 0px" }
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, []);
   return (
     <section
       ref={ref}
@@ -51,7 +73,11 @@ const Section = memo(function Section({ id, children, className = "", ...rest })
       className={`sect${vis ? " in" : ""} ${className}`}
       {...rest}
     >
-      {children}
+      <div className="sect-pin">
+        <div className="sect-stage">
+          {children}
+        </div>
+      </div>
     </section>
   );
 });
@@ -256,9 +282,13 @@ export default function Portfolio() {
         const heroP = Math.min(Math.max(y / window.innerHeight, 0), 1);
         root.style.setProperty("--hero-p", heroP);
 
+        // Flip the nav highlight when a section's pin is roughly centered in
+        // the viewport — i.e., when its top has reached the upper half. With
+        // 150svh sections, this aligns with the moment the pin engages.
         const sects = NAV.map((n) => document.getElementById(n.toLowerCase()));
+        const flipAt = window.innerHeight * 0.4;
         for (let i = sects.length - 1; i >= 0; i--) {
-          if (sects[i] && sects[i].getBoundingClientRect().top < 200) {
+          if (sects[i] && sects[i].getBoundingClientRect().top < flipAt) {
             setActive(NAV[i]);
             ticking = false;
             return;

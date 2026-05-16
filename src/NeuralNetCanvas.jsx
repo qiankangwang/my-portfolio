@@ -1,21 +1,37 @@
 import { useEffect, useRef } from "react";
 
-/* Layered feedforward neural network on a 2D canvas — the visualisation
-   people actually recognise as a "neural network" (input → hidden → output).
-   Lives fixed full-bleed behind the page. Pulses travel along edges,
-   bursts arriving at output nodes light them up. Bio motifs (RNA strands +
-   protein helices) drift in the gaps so the AI + Bio research identity
-   shows in one image.
+/* Layered feedforward neural network on a 2D canvas with a virtual
+   camera that pans + zooms across the scene driven by scroll. Each
+   section anchors to a specific element in the world:
 
-   Notes on why this is 2D not r3f:
-   - The previous r3f version was a Fibonacci sphere of nodes, which doesn't
-     read as "neural network" — it reads as "node cloud". A layered shape is
-     the literal canonical NN diagram.
-   - A 2D canvas with rAF rendering is buttery-smooth on every machine. No
-     postprocessing, no shaders, no per-frame instance buffer reuploads.
-   - pointer-events: none on .bgnet means scroll passes through, so we don't
-     try to be mouse-interactive here; the animation runs autonomously. */
-export default function NeuralNetCanvas() {
+     About       → input layer            (leftmost dots, close-up)
+     Research    → middle hidden layer    (mid-shot)
+     Publication → output layer           (rightmost, close-up)
+     Projects    → a protein α-helix      (bio motif)
+     Skills      → an RNA strand          (bio motif)
+
+   As the user scrolls, the camera glides between these anchors —
+   it's the same "cinematic camera move" that the 3D r3f version had,
+   but on a 2D canvas (smooth on every machine, no shader cost).
+
+   Implementation notes
+   - World coords: the network and bio motifs are positioned in a fixed
+     virtual world (no viewport-dependent geometry). The draw loop
+     applies translate + scale so a chosen world point appears at the
+     screen anchor (offset to the left so the cards on the right of
+     the viewport don't cover the focused element).
+   - Two-stage low-pass: scroll progress is smoothed first (~0.12s),
+     then the camera position follows the smoothed target (~0.30s).
+     Same trick the 3D camera used — discrete wheel ticks become a
+     glide, not a jolt.
+   - pointer-events: none on .bgnet means scroll passes through, so
+     this is non-interactive — animation runs autonomously. */
+
+const WORLD_W = 1400; // network total width in world coords
+const WORLD_H = 720;  // network total height
+const WORLD_LAYERS = [5, 7, 9, 7, 5, 3];
+
+export default function NeuralNetCanvas({ sceneRef }) {
   const canvasRef = useRef(null);
   const raf = useRef(null);
 
@@ -26,9 +42,7 @@ export default function NeuralNetCanvas() {
     let h = 0;
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    // Classic feedforward shape — input narrow, hidden layers wide, output
-    // narrows back down. Reads as "neural net" at a glance.
-    const layers = [5, 7, 9, 7, 5, 3];
+    const layers = WORLD_LAYERS;
     let nodes = [];
     let edges = [];
     let pulses = [];
@@ -36,8 +50,7 @@ export default function NeuralNetCanvas() {
     let edgeCursor = 0;
     let frame = 0;
 
-    // Theme detection: read data-theme attribute on <html> (matches the
-    // rest of the portfolio's theme system), fall back to system pref.
+    // Theme detection — data-theme attr on <html>, fall back to system pref.
     const readDark = () => {
       const attr = document.documentElement.getAttribute("data-theme");
       if (attr === "dark") return true;
@@ -52,33 +65,31 @@ export default function NeuralNetCanvas() {
     darkMq.addEventListener("change", onDarkMq);
     const rgba = (rgb, a) => `rgba(${rgb[0]},${rgb[1]},${rgb[2]},${a})`;
 
+    // Build the network + bio motifs in WORLD coordinates (centred at the
+    // world origin). The camera transform in draw() places these onto
+    // screen at the right place / scale for the current scroll position.
     const buildNetwork = () => {
       nodes = [];
       edges = [];
       pulses = [];
       bioMotifs = [];
-      const cx = w * 0.5;
-      const cy = h * 0.5;
-      const netW = Math.min(w * 0.92, 1400);
-      const netH = Math.min(h * 0.82, 760);
-      const startX = cx - netW / 2;
+      const netW = WORLD_W;
+      const netH = WORLD_H;
       const layerGap = netW / (layers.length - 1);
+      const startX = -netW / 2;
 
       layers.forEach((count, layer) => {
         const x = startX + layerGap * layer;
-        // Slight per-layer height variation so the shape isn't a hard rectangle.
         const usableH = netH * (0.76 + layer * 0.018);
-        const startY = cy - usableH / 2;
+        const layerStartY = -usableH / 2;
         for (let i = 0; i < count; i++) {
           const ratio = count === 1 ? 0.5 : i / (count - 1);
-          // Sine-curve nudges nodes off the strict vertical line — feels
-          // organic, not graph-paper.
           const curve = Math.sin((ratio - 0.5) * Math.PI) * 14;
           nodes.push({
             x,
-            y: startY + ratio * usableH + curve,
+            y: layerStartY + ratio * usableH + curve,
             baseX: x,
-            baseY: startY + ratio * usableH + curve,
+            baseY: layerStartY + ratio * usableH + curve,
             layer,
             r: 3.2 + (layer === 0 || layer === layers.length - 1 ? 0.4 : 0.9),
             phase: Math.random() * Math.PI * 2,
@@ -87,10 +98,6 @@ export default function NeuralNetCanvas() {
         }
       });
 
-      // Edges between consecutive layers — sparser than fully-connected so
-      // the diagram doesn't read as a mess. Bias toward "vertically similar"
-      // pairs (a clean nearest-neighbour-ish look) plus a periodic stride
-      // for variety.
       const layerStarts = layers.reduce((acc, count, i) => {
         acc.push(i === 0 ? 0 : acc[i - 1] + layers[i - 1]);
         return acc;
@@ -115,28 +122,57 @@ export default function NeuralNetCanvas() {
         }
       }
 
-      if (w >= 480) {
-        const left = startX;
-        const top = cy - netH * 0.34;
-        const bottom = cy + netH * 0.34;
-        // A small bio touch: a few RNA strands + protein helices in the
-        // gutters — signals AI + Bio research without competing with
-        // the network's silhouette.
-        bioMotifs = [
-          { type: "rna",     x: left + netW * 0.10, y: top + netH * 0.12,    len: 13, angle: 0.15,  phase: 0.2, bend: 10 },
-          { type: "rna",     x: left + netW * 0.22, y: top + netH * 0.34,    len: 11, angle: -0.22, phase: 1.1, bend: -8 },
-          { type: "rna",     x: left + netW * 0.50, y: top + netH * 0.74,    len: 10, angle: -0.20, phase: 3.1, bend: -7 },
-          { type: "rna",     x: left + netW * 0.08, y: top + netH * 0.58,    len: 9,  angle: 0.32,  phase: 6.0, bend: 6 },
-          { type: "rna",     x: left + netW * 0.82, y: top + netH * 0.34,    len: 9,  angle: -0.30, phase: 8.4, bend: -6 },
-          { type: "protein", x: left + netW * 0.76, y: top + netH * 0.18,    len: 10, scale: 1.05, phase: 0.5 },
-          { type: "protein", x: left + netW * 0.18, y: bottom - netH * 0.16, len: 8,  scale: 0.92, phase: 2.4 },
-          { type: "protein", x: left + netW * 0.42, y: top + netH * 0.06,    len: 7,  scale: 0.70, phase: 5.4 },
-          { type: "protein", x: left + netW * 0.58, y: bottom - netH * 0.10, len: 9,  scale: 0.85, phase: 3.7 },
-          { type: "protein", x: left + netW * 0.88, y: bottom - netH * 0.28, len: 6,  scale: 0.65, phase: 6.8 },
-          { type: "protein", x: left + netW * 0.30, y: top + netH * 0.48,    len: 7,  scale: 0.78, phase: 1.3 },
-        ];
-      }
+      // Bio motifs scattered around the network (also world coords).
+      const left = -netW / 2;
+      const top = -netH * 0.34;
+      const bottom = netH * 0.34;
+      bioMotifs = [
+        { type: "rna",     x: left + netW * 0.10, y: top + netH * 0.12,    len: 13, angle: 0.15,  phase: 0.2, bend: 10 },
+        { type: "rna",     x: left + netW * 0.22, y: top + netH * 0.34,    len: 11, angle: -0.22, phase: 1.1, bend: -8 },
+        { type: "rna",     x: left + netW * 0.50, y: top + netH * 0.74,    len: 10, angle: -0.20, phase: 3.1, bend: -7 },
+        { type: "rna",     x: left + netW * 0.08, y: top + netH * 0.58,    len: 9,  angle: 0.32,  phase: 6.0, bend: 6 },
+        { type: "rna",     x: left + netW * 0.82, y: top + netH * 0.34,    len: 9,  angle: -0.30, phase: 8.4, bend: -6 },
+        { type: "protein", x: left + netW * 0.76, y: top + netH * 0.18,    len: 10, scale: 1.05, phase: 0.5 },
+        { type: "protein", x: left + netW * 0.18, y: bottom - netH * 0.16, len: 8,  scale: 0.92, phase: 2.4 },
+        { type: "protein", x: left + netW * 0.42, y: top + netH * 0.06,    len: 7,  scale: 0.70, phase: 5.4 },
+        { type: "protein", x: left + netW * 0.58, y: bottom - netH * 0.10, len: 9,  scale: 0.85, phase: 3.7 },
+        { type: "protein", x: left + netW * 0.88, y: bottom - netH * 0.28, len: 6,  scale: 0.65, phase: 6.8 },
+        { type: "protein", x: left + netW * 0.30, y: top + netH * 0.48,    len: 7,  scale: 0.78, phase: 1.3 },
+      ];
     };
+
+    // Five camera waypoints — one per portfolio section. Each is a target
+    // (worldX, worldY, zoom) in world coords; the draw loop interpolates
+    // smoothly between them as scroll progress goes 0 → 1.
+    const computeWaypoints = () => {
+      const layerGap = WORLD_W / (layers.length - 1);
+      const left = -WORLD_W / 2;
+      const top = -WORLD_H * 0.34;
+      // Bio anchors — pick two of the existing motifs as scene targets.
+      const proteinAnchor = { x: left + WORLD_W * 0.76, y: top + WORLD_H * 0.18 };
+      const rnaAnchor     = { x: left + WORLD_W * 0.82, y: top + WORLD_H * 0.34 };
+
+      return [
+        // 0 — About: close-up on the input layer
+        { x: left + layerGap * 0.5, y: 0, zoom: 2.6 },
+        // 1 — Research: mid-shot on the second hidden layer
+        { x: left + layerGap * 2,   y: 0, zoom: 1.7 },
+        // 2 — Publication: close-up on the output layer
+        { x: left + layerGap * 5,   y: 0, zoom: 2.3 },
+        // 3 — Projects: zoom on a protein α-helix
+        { x: proteinAnchor.x, y: proteinAnchor.y, zoom: 2.8 },
+        // 4 — Skills: zoom on an RNA strand
+        { x: rnaAnchor.x,     y: rnaAnchor.y,     zoom: 2.6 },
+      ];
+    };
+
+    const waypoints = computeWaypoints();
+
+    // Camera state — initialised to the first waypoint so the page opens
+    // already framed on the input layer (no jarring initial fly-in).
+    const cam = { x: waypoints[0].x, y: waypoints[0].y, zoom: waypoints[0].zoom };
+    let smoothedScene = 0;
+    let lastTime = performance.now();
 
     const resize = () => {
       w = canvas.clientWidth || window.innerWidth;
@@ -165,18 +201,48 @@ export default function NeuralNetCanvas() {
 
     const draw = () => {
       if (!running) return;
+      const now = performance.now();
+      const dt = Math.min(0.05, (now - lastTime) / 1000);
+      lastTime = now;
       frame++;
       ctx.clearRect(0, 0, w, h);
-      // Palette tuned to actually READ against the cool-gray backdrop.
-      // Light-mode dim was previously near-bg gray so edges vanished —
-      // pushed to a darker slate so they show as visible structure.
+
+      // Two-stage low-pass smoothing on the scene index → camera path,
+      // so wheel-tick scroll doesn't transmit as a visible camera kick.
+      const segCount = waypoints.length - 1;
+      const targetScene = Math.max(0, Math.min(segCount, sceneRef?.current ?? 0));
+      const kS = 1 - Math.exp(-dt / 0.12);
+      smoothedScene += (targetScene - smoothedScene) * kS;
+
+      // Interpolate the target waypoint from the smoothed scene index —
+      // sceneRef already places the camera at the actual section in view
+      // (not at an even chunk of total scroll), so the transition fires
+      // when the user crosses the section boundary.
+      const lo = Math.floor(smoothedScene);
+      const hi = Math.min(lo + 1, segCount);
+      const u = smoothedScene - lo;
+      const eased = u * u * (3 - 2 * u); // smoothstep
+      const a = waypoints[lo];
+      const b = waypoints[hi];
+      const targetX = a.x + (b.x - a.x) * eased;
+      const targetY = a.y + (b.y - a.y) * eased;
+      const targetZoom = a.zoom + (b.zoom - a.zoom) * eased;
+
+      // Camera follow — slow critical-damped lerp so the move feels
+      // cinematic (glide-in) rather than tracking the cursor exactly.
+      const kC = 1 - Math.exp(-dt / 0.30);
+      cam.x += (targetX - cam.x) * kC;
+      cam.y += (targetY - cam.y) * kC;
+      cam.zoom += (targetZoom - cam.zoom) * kC;
+
+      // Palette tuned to read against the cool-gray .bgnet backdrop.
       const accent = dark ? [120, 165, 235] : [40, 95, 215];
       const cool   = dark ? [80, 105, 140]  : [70, 95, 130];
-      const dim    = dark ? [48, 55, 66]    : [115, 130, 150];
+      const dim    = dark ? [48, 60, 80]    : [115, 130, 150];
       const warm   = dark ? [220, 158, 115] : [200, 105, 55];
       const t = frame * (reducedMotion ? 0.012 : 0.025);
 
-      // Very soft radial wash — adds depth without competing with the net.
+      // Soft radial wash drawn in SCREEN coords (no transform yet).
       const grad = ctx.createRadialGradient(
         w * 0.5, h * 0.45, 0,
         w * 0.5, h * 0.45, Math.max(w, h) * 0.55
@@ -186,10 +252,19 @@ export default function NeuralNetCanvas() {
       ctx.fillStyle = grad;
       ctx.fillRect(0, 0, w, h);
 
-      /* ── Bio motifs (drawn under the network so the net sits on top) ─── */
+      // ── Camera transform ────────────────────────────────────────────
+      // World point (cam.x, cam.y) maps to screen anchor (w * 0.4, h * 0.5).
+      // 0.4x is left-of-centre so the focused element sits in the free
+      // space between the sidebar (≤26vw) and the floating content card
+      // on the right.
+      ctx.save();
+      ctx.translate(w * 0.40, h * 0.50);
+      ctx.scale(cam.zoom, cam.zoom);
+      ctx.translate(-cam.x, -cam.y);
+
+      // ── Bio motifs (drawn first so the network sits on top) ────────
       bioMotifs.forEach((m, mi) => {
         const drift = Math.sin(frame * 0.008 + m.phase) * 8;
-
         if (m.type === "rna") {
           const step = 14;
           const dx = Math.cos(m.angle) * step;
@@ -201,17 +276,17 @@ export default function NeuralNetCanvas() {
             const y    = m.y + dy * i + drift + Math.cos(m.angle + Math.PI / 2) * (wave * 5 + arc);
             const hot  = (i / Math.max(1, m.len - 1) + frame * 0.0045 + mi * 0.17) % 1;
             const active = hot > 0.42 && hot < 0.58;
-            const alpha  = active ? (dark ? 0.78 : 0.62) : (dark ? 0.36 : 0.28);
+            const alpha  = active ? (dark ? 0.82 : 0.66) : (dark ? 0.4 : 0.32);
             if (i > 0) {
               ctx.beginPath();
               ctx.moveTo(x - dx * 0.72, y - dy * 0.72);
               ctx.lineTo(x - dx * 0.25, y - dy * 0.25);
-              ctx.strokeStyle = rgba(dim, dark ? 0.28 : 0.20);
+              ctx.strokeStyle = rgba(dim, dark ? 0.3 : 0.22);
               ctx.lineWidth = active ? 1 : 0.7;
               ctx.stroke();
             }
             ctx.beginPath();
-            ctx.arc(x, y, active ? 2.2 : 1.5, 0, Math.PI * 2);
+            ctx.arc(x, y, active ? 2.3 : 1.55, 0, Math.PI * 2);
             ctx.fillStyle = rgba(i % 2 ? warm : accent, alpha);
             ctx.fill();
           }
@@ -219,32 +294,32 @@ export default function NeuralNetCanvas() {
           const pts = [];
           for (let i = 0; i < m.len; i++) {
             pts.push({
-              x: m.x + Math.cos(i * 0.88 + frame * 0.010 + m.phase) * (12 + i * 2.4) * m.scale,
-              y: m.y + drift + i * 10 * m.scale + Math.sin(i * 1.2 + frame * 0.008 + m.phase) * 9 * m.scale,
+              x: m.x + Math.cos(i * 0.88 + frame * 0.012 + m.phase) * (12 + i * 2.4) * m.scale,
+              y: m.y + drift + i * 10 * m.scale + Math.sin(i * 1.2 + frame * 0.01 + m.phase) * 9 * m.scale,
             });
           }
           ctx.beginPath();
           pts.forEach((pt, i) => { if (i === 0) ctx.moveTo(pt.x, pt.y); else ctx.lineTo(pt.x, pt.y); });
-          ctx.strokeStyle = rgba(warm, dark ? 0.30 : 0.22);
+          ctx.strokeStyle = rgba(warm, dark ? 0.34 : 0.26);
           ctx.lineWidth = 0.85;
           ctx.stroke();
           pts.forEach((pt, i) => {
             ctx.beginPath();
-            ctx.arc(pt.x, pt.y, i % 3 === 0 ? 1.9 : 1.4, 0, Math.PI * 2);
-            ctx.fillStyle = rgba(i % 2 ? warm : accent, dark ? 0.40 : 0.30);
+            ctx.arc(pt.x, pt.y, i % 3 === 0 ? 2 : 1.45, 0, Math.PI * 2);
+            ctx.fillStyle = rgba(i % 2 ? warm : accent, dark ? 0.44 : 0.32);
             ctx.fill();
           });
         }
       });
 
-      /* ── Node positions: gentle Lissajous-style drift around base point ── */
+      // ── Node positions: Lissajous drift around base point ─────────
       nodes.forEach((n) => {
         n.x = n.baseX + Math.sin(t + n.phase) * 2.2;
         n.y = n.baseY + Math.cos(t * 0.7 + n.phase * 1.3) * 2.2;
         n.activation *= 0.93;
       });
 
-      /* ── Edges ──────────────────────────────────────── */
+      // ── Edges ──────────────────────────────────────────────────────
       edges.forEach((e) => {
         const a = nodes[e.from];
         const b = nodes[e.to];
@@ -259,7 +334,7 @@ export default function NeuralNetCanvas() {
         ctx.stroke();
       });
 
-      /* ── Pulses: signals travelling along edges ────── */
+      // ── Pulses travelling along edges ─────────────────────────────
       if (frame % (reducedMotion ? 42 : 14) === 0) spawnPulse();
 
       for (let i = pulses.length - 1; i >= 0; i--) {
@@ -281,17 +356,17 @@ export default function NeuralNetCanvas() {
         ctx.fill();
         ctx.beginPath();
         ctx.arc(px, py, 9 + glow * 5, 0, Math.PI * 2);
-        ctx.fillStyle = rgba(accent, 0.05 * glow);
+        ctx.fillStyle = rgba(accent, 0.055 * glow);
         ctx.fill();
       }
 
-      /* ── Nodes ─────────────────────────────────────── */
+      // ── Nodes ──────────────────────────────────────────────────────
       nodes.forEach((n) => {
         const mix = Math.min(1, n.activation);
         if (mix > 0.08) {
           ctx.beginPath();
-          ctx.arc(n.x, n.y, n.r + 9 * mix, 0, Math.PI * 2);
-          ctx.fillStyle = rgba(accent, mix * 0.12);
+          ctx.arc(n.x, n.y, n.r + 8 * mix, 0, Math.PI * 2);
+          ctx.fillStyle = rgba(accent, mix * 0.08);
           ctx.fill();
         }
         ctx.beginPath();
@@ -306,14 +381,15 @@ export default function NeuralNetCanvas() {
         ctx.stroke();
       });
 
+      ctx.restore();
       raf.current = requestAnimationFrame(draw);
     };
     draw();
 
-    /* Pause when tab hidden so we don't burn CPU off-screen */
     const onVisibility = () => {
       running = !document.hidden;
       if (running) {
+        lastTime = performance.now();
         raf.current = requestAnimationFrame(draw);
       } else if (raf.current) {
         cancelAnimationFrame(raf.current);
@@ -329,7 +405,7 @@ export default function NeuralNetCanvas() {
       themeObs.disconnect();
       document.removeEventListener("visibilitychange", onVisibility);
     };
-  }, []);
+  }, [sceneRef]);
 
   return (
     <canvas

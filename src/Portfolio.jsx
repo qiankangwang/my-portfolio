@@ -304,6 +304,14 @@ export default function Portfolio() {
   const [repos, setRepos] = useState([]);
   const [repoLoading, setRepoLoading] = useState(true);
 
+  // Continuous "scene index" handed to the canvas — a value in [0, 4]
+  // that tracks which section the user is currently reading, with
+  // smooth fractions between sections. The canvas uses this to pick
+  // its camera waypoint (idx 0 = About anchor, idx 4 = Skills anchor)
+  // so the camera lines up with the section actually in view, not with
+  // an even chunk of total scroll.
+  const sceneRef = useRef(0);
+
   useEffect(() => {
     let ticking = false;
     const onScroll = () => {
@@ -317,10 +325,36 @@ export default function Portfolio() {
         const p = docH > 0 ? Math.min(y / docH, 1) : 0;
         setProgress(p);
 
-        // Flip the sidebar nav highlight when a section's pin centres in the
-        // viewport. With sections sized at 150svh and pinned for 50svh, this
-        // matches the moment the section "takes the stage".
         const sects = NAV.map((n) => document.getElementById(n.toLowerCase()));
+        const viewCentre = y + winH * 0.5;
+        // Compute each section's absolute centre in document coords. Use
+        // getBoundingClientRect + scrollY rather than offsetTop because
+        // offsetTop is relative to the offset parent (.main / .layout),
+        // which gave wrong section centres and an out-of-sync camera.
+        const centres = sects.map((s) => {
+          if (!s) return null;
+          const rect = s.getBoundingClientRect();
+          return rect.top + y + rect.height * 0.5;
+        });
+        let scene = 0;
+        if (centres[0] != null && viewCentre <= centres[0]) {
+          scene = 0;
+        } else if (centres[centres.length - 1] != null && viewCentre >= centres[centres.length - 1]) {
+          scene = centres.length - 1;
+        } else {
+          for (let i = 0; i < centres.length - 1; i++) {
+            const a = centres[i];
+            const b = centres[i + 1];
+            if (a != null && b != null && viewCentre >= a && viewCentre < b) {
+              scene = i + (viewCentre - a) / (b - a);
+              break;
+            }
+          }
+        }
+        sceneRef.current = scene;
+
+        // Sidebar nav highlight — flip when a section's top crosses
+        // the upper threshold of the viewport.
         const flipAt = winH * 0.4;
         for (let i = sects.length - 1; i >= 0; i--) {
           if (sects[i] && sects[i].getBoundingClientRect().top < flipAt) {
@@ -421,7 +455,7 @@ export default function Portfolio() {
          and reads as the literal "neural network" shape (input → hidden →
          output) — not a node cloud. */}
       <div className="bgnet" aria-hidden="true">
-        <NeuralNetCanvas />
+        <NeuralNetCanvas sceneRef={sceneRef} />
       </div>
       <a className="skip" href="#about">Skip to content</a>
 

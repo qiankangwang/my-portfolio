@@ -443,27 +443,14 @@ body::before {
 .main {
   position: relative;
   z-index: 2;
-  /* One unified content panel — all sections live inside this single
-     container instead of 5 separate floating cards. Section breaks are
-     communicated through typography spacing + subtle dividers, not
-     through individual card boundaries.
-
-     Background opacity tuned so the neural-net animation is still
-     visibly diffused through the panel: 55% var(--bg) + 4px blur reads
-     as soft glass rather than a solid slab, while keeping body text
-     legible. */
-  background: color-mix(in srgb, var(--bg) 55%, transparent);
-  backdrop-filter: blur(4px) saturate(1.12);
-  -webkit-backdrop-filter: blur(4px) saturate(1.12);
-  border: 1px solid color-mix(in srgb, var(--fg) 8%, transparent);
-  border-radius: 26px;
-  margin-block: clamp(2rem, 4vh, 3rem);
-  margin-right: clamp(1rem, 2vw, 2rem);
-  padding: clamp(1.5rem, 2.5vw, 2.5rem) clamp(2rem, 3.5vw, 3.5rem);
-  box-shadow:
-    0 1px 0 color-mix(in srgb, #ffffff 30%, transparent) inset,
-    0 2px 10px -2px color-mix(in srgb, var(--fg) 8%, transparent),
-    0 24px 70px -28px color-mix(in srgb, var(--fg) 25%, transparent);
+  /* No unified-panel chrome on .main — each section now floats as its
+     own scene plate (see .sect-stage below). Cards are constrained in
+     width and pushed to the RIGHT of the grid cell so the camera's
+     focused element in the canvas (at ~40% of viewport from the left)
+     sits in the free space between the sidebar and the cards. */
+  max-width: clamp(440px, 46vw, 620px);
+  margin-left: auto;
+  padding-right: clamp(1rem, 3vw, 3rem);
 }
 
 /* Each section is a tall scroll container; its inner stage pins to the
@@ -476,16 +463,11 @@ body::before {
    content seem to "disappear" mid-scroll. */
 .sect {
   position: relative;
-  /* Sections sit inside the unified .main panel. padding-block provides
-     comfortable spacing between them; the subtle border-bottom (below)
-     gives a quiet divider so they read as separate chapters of one
-     document. */
-  padding-block: clamp(2.75rem, 5.5vh, 4.5rem);
-}
-.sect:first-of-type { padding-top: clamp(1rem, 2.5vh, 2rem); }
-.sect:last-of-type  { padding-bottom: clamp(1rem, 2.5vh, 2rem); }
-.sect:not(:last-of-type) {
-  border-bottom: 1px solid color-mix(in srgb, var(--fg) 7%, transparent);
+  /* Each section is its own cinematic scene now. Generous padding-block
+     so each card has its moment as the user scrolls between camera
+     waypoints — feels less like a tight document, more like a sequence
+     of visual beats. */
+  padding-block: clamp(4rem, 9vh, 7rem);
 }
 
 .sect-pin {
@@ -495,9 +477,21 @@ body::before {
 .sect-stage {
   position: relative;
   width: 100%;
-  /* No card chrome — the unified .main panel above provides the single
-     background / border / shadow. .sect-stage is now just a content
-     wrapper that carries the entrance animation. */
+  /* Translucent glass plate. The card is small (constrained by .main's
+     max-width above), pushed to the right of the viewport so the
+     neural-net camera focus on the left side stays unobscured. */
+  background: color-mix(in srgb, var(--bg) 75%, transparent);
+  backdrop-filter: blur(8px) saturate(1.15);
+  -webkit-backdrop-filter: blur(8px) saturate(1.15);
+  border: 1px solid color-mix(in srgb, var(--fg) 9%, transparent);
+  border-radius: 22px;
+  padding: clamp(1.75rem, 3vw, 2.5rem);
+  box-shadow:
+    0 1px 0 color-mix(in srgb, #ffffff 35%, transparent) inset,
+    0 2px 10px -2px color-mix(in srgb, var(--fg) 10%, transparent),
+    0 20px 56px -26px color-mix(in srgb, var(--fg) 28%, transparent);
+
+  /* Fly-in entrance: self-triggering on mount, independent of any IO. */
   animation: stage-enter 1s cubic-bezier(.22, 1, .36, 1) both;
   will-change: opacity, transform;
 }
@@ -542,26 +536,24 @@ body::before {
     transform: none !important;
   }
 }
-/* Timeline spine was removed — the user wanted card unity, not a
-   left-rail navigator. Each section now lives inside the single .main
-   panel above and is divided from the next by the subtle border-bottom
-   on .sect. The small ``01`` mono pill inside .section-head provides
-   the section number reference.
-
-   Mobile: collapse .main back to flush-with-viewport (the panel chrome
-   feels cramped at narrow widths), shrink padding. */
+/* Mobile teardown of the cinematic layout:
+   - The canvas camera anchor (40% from left of viewport) only makes
+     sense beside a narrow-but-real sidebar. On phones the sidebar
+     stacks at the top, so .main has the full width again — drop the
+     max-width / margin-left:auto positioning.
+   - Cards (.sect-stage) keep their glass treatment but get less
+     padding so they don't feel cramped. */
 @media (max-width: 968px) {
   .main {
+    max-width: none;
     margin: 0;
-    border-radius: 0;
-    border: none;
-    box-shadow: none;
     padding: 0 clamp(1rem, 4vw, 1.75rem);
-    background: none;
-    backdrop-filter: none;
-    -webkit-backdrop-filter: none;
   }
-  .sect:not(:last-of-type) { border-bottom-color: var(--border); }
+  .sect { padding-block: 3rem; }
+  .sect-stage {
+    padding: clamp(1.5rem, 4vw, 2rem);
+    border-radius: 16px;
+  }
 }
 
 /* ════════════════════════════════════════════════════════════════════

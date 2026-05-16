@@ -99,6 +99,25 @@ html {
   scroll-padding-top: 4rem;
 }
 
+/* Custom scrollbar — thin, accent-tinted, matches the page palette.
+   Firefox uses scrollbar-color; WebKit needs ::-webkit-scrollbar. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--accent) 50%, transparent) transparent;
+}
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--accent) 35%, transparent);
+  border-radius: 8px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in srgb, var(--accent) 60%, transparent);
+  background-clip: padding-box;
+}
+
 /* Registered stagger index so each cascade item can read its position via
    calc(). Kept typed for clean cross-browser interpolation. */
 @property --stag-i {
@@ -511,6 +530,15 @@ body::before {
   backdrop-filter: blur(18px) saturate(1.15);
   -webkit-backdrop-filter: blur(18px) saturate(1.15);
   border: 1px solid color-mix(in srgb, var(--fg) 6%, transparent);
+  /* Inner highlight + soft shadow give the glass real depth:
+     - inset top edge: subtle white sheen ("lit from above")
+     - inset bottom edge: faint dark line catches the curve
+     - outer drop: very soft cast so the card "hovers" over the network */
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, white 25%, transparent),
+    inset 0 -1px 0 color-mix(in srgb, var(--fg) 4%, transparent),
+    0 6px 28px color-mix(in srgb, var(--fg) 6%, transparent),
+    0 1px 3px color-mix(in srgb, var(--fg) 4%, transparent);
   /* IO-driven slide-in: starts faintly offset, lands when the section
      scrolls into view — synced with the camera move on the bg canvas. */
   opacity: 0;
@@ -519,6 +547,21 @@ body::before {
     opacity 1s cubic-bezier(.22, 1, .36, 1),
     transform 1s cubic-bezier(.22, 1, .36, 1);
   will-change: opacity, transform;
+}
+/* Top-edge sheen — a 1px gradient strip that catches "light" on the
+   card's top edge. Sits inside the border-radius. */
+.sect-stage::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 1px;
+  border-radius: 24px 24px 0 0;
+  background: linear-gradient(90deg,
+    transparent 0%,
+    color-mix(in srgb, white 60%, transparent) 50%,
+    transparent 100%);
+  pointer-events: none;
+  opacity: .6;
 }
 .sect.in .sect-stage {
   opacity: 1;
@@ -634,7 +677,30 @@ body::before {
   /* second line subtle nudge so it doesn't sit flush left — feels
      more designed and less template. */
   padding-left: 0.5em;
-  color: var(--accent);
+  background: linear-gradient(
+    100deg,
+    var(--accent) 0%,
+    var(--accent2) 40%,
+    var(--accent) 60%,
+    var(--accent3) 100%
+  );
+  background-size: 200% 100%;
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  animation:
+    hero-rise .9s cubic-bezier(.22,1,.36,1) both .24s,
+    accent-breathe 6s ease-in-out infinite 1.6s;
+}
+/* Slow horizontal gradient drift — mirrors the network's "alive"
+   quality without being attention-grabbing. */
+@keyframes accent-breathe {
+  0%, 100% { background-position: 0% 50%; }
+  50%      { background-position: 100% 50%; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hero-name-line-2 { animation: hero-rise .9s cubic-bezier(.22,1,.36,1) both .24s; }
 }
 .hero-tagline {
   font-family: var(--serif);
@@ -731,6 +797,7 @@ body::before {
   background: color-mix(in srgb, var(--accent) 25%, transparent);
 }
 .sect-title {
+  position: relative;
   font-family: var(--serif);
   font-style: italic;
   font-weight: 400;
@@ -739,6 +806,24 @@ body::before {
   letter-spacing: -.035em;
   color: var(--fg);
   margin-bottom: clamp(2rem, 5vh, 3.5rem);
+  padding-bottom: clamp(1rem, 2.5vh, 1.75rem);
+}
+/* Hairline accent rule below the title — wipes in once the section is
+   visible, like a printer-stripe drawing under a chapter heading. */
+.sect-title::after {
+  content: '';
+  position: absolute;
+  left: 0; bottom: 0;
+  width: 0;
+  height: 1px;
+  background: linear-gradient(90deg,
+    var(--accent) 0%,
+    color-mix(in srgb, var(--accent) 30%, transparent) 70%,
+    transparent 100%);
+  transition: width 1.4s cubic-bezier(.22, 1, .36, 1) .25s;
+}
+.sect.in .sect-title::after {
+  width: 100%;
 }
 
 /* ════════════════════════════════════════════════════════════════════
@@ -925,6 +1010,7 @@ body::before {
   text-transform: uppercase;
 }
 .pub-cta {
+  position: relative;
   display: inline-flex;
   align-items: center;
   gap: .65rem;
@@ -934,14 +1020,34 @@ body::before {
   letter-spacing: .18em;
   text-transform: uppercase;
   color: var(--fg);
-  padding-bottom: .35rem;
-  border-bottom: 1px solid var(--fg);
-  transition: gap .3s cubic-bezier(.22,1,.36,1), color .3s, border-color .3s;
+  padding-bottom: .4rem;
+  transition: gap .35s cubic-bezier(.22,1,.36,1), color .35s;
+}
+/* Two-line underline: dim base line + accent line that slides in from
+   the left on hover, like a draftsman's ruler being laid down. */
+.pub-cta::before,
+.pub-cta::after {
+  content: '';
+  position: absolute;
+  left: 0; right: 0;
+  bottom: 0;
+  height: 1px;
+}
+.pub-cta::before {
+  background: color-mix(in srgb, var(--fg) 35%, transparent);
+}
+.pub-cta::after {
+  background: var(--accent);
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform .55s cubic-bezier(.22,1,.36,1);
 }
 .pub-link:hover .pub-cta {
   color: var(--accent);
-  border-color: var(--accent);
-  gap: 1rem;
+  gap: 1.1rem;
+}
+.pub-link:hover .pub-cta::after {
+  transform: scaleX(1);
 }
 .pub-cta svg {
   transition: transform .35s cubic-bezier(.22,1,.36,1);

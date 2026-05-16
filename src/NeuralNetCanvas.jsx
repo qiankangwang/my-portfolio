@@ -352,13 +352,31 @@ export default function NeuralNetCanvas({ sceneRef }) {
         const px = a.x + (b.x - a.x) * p.t;
         const py = a.y + (b.y - a.y) * p.t;
         const glow = Math.sin(p.t * Math.PI);
+        // Soft trailing tail — line from the source node to the current
+        // pulse position, fading out behind it. Gives motion direction.
+        const tailLen = 0.22;
+        const tailStartT = Math.max(0, p.t - tailLen);
+        const tailX = a.x + (b.x - a.x) * tailStartT;
+        const tailY = a.y + (b.y - a.y) * tailStartT;
+        const tailGrad = ctx.createLinearGradient(tailX, tailY, px, py);
+        tailGrad.addColorStop(0, rgba(accent, 0));
+        tailGrad.addColorStop(1, rgba(accent, p.alpha * 0.6));
         ctx.beginPath();
-        ctx.arc(px, py, 2.1 + glow * 1.2, 0, Math.PI * 2);
-        ctx.fillStyle = rgba(accent, p.alpha);
+        ctx.moveTo(tailX, tailY);
+        ctx.lineTo(px, py);
+        ctx.strokeStyle = tailGrad;
+        ctx.lineWidth = 1.4 + glow * 0.8;
+        ctx.lineCap = "round";
+        ctx.stroke();
+        // Inner bright dot
+        ctx.beginPath();
+        ctx.arc(px, py, 2.4 + glow * 1.3, 0, Math.PI * 2);
+        ctx.fillStyle = rgba(accent, Math.min(1, p.alpha + 0.18));
         ctx.fill();
+        // Outer halo — slightly bigger and warmer
         ctx.beginPath();
-        ctx.arc(px, py, 9 + glow * 5, 0, Math.PI * 2);
-        ctx.fillStyle = rgba(accent, 0.055 * glow);
+        ctx.arc(px, py, 11 + glow * 6, 0, Math.PI * 2);
+        ctx.fillStyle = rgba(accent, 0.075 * glow);
         ctx.fill();
       }
 

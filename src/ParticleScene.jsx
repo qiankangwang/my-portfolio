@@ -234,30 +234,28 @@ export default function ParticleScene({ sceneRef }) {
     geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
     geometry.setAttribute("color", new THREE.BufferAttribute(colors, 3));
 
-    // ── Particle sprite — soft "ink dot" rather than glowing spark.
-    //     Gentle radial falloff, no hot white core. Reads as a printed
-    //     mark on paper, matches the page's editorial typography. ───
+    // ── Particle sprite — solid centre with a soft halo. Bolder than
+    //     the previous ink dot so colours read against the editorial
+    //     background. ────────────────────────────────────────────────
     const haloCanvas = document.createElement("canvas");
     haloCanvas.width = 64;
     haloCanvas.height = 64;
     const hctx = haloCanvas.getContext("2d");
     const grad = hctx.createRadialGradient(32, 32, 0, 32, 32, 32);
-    grad.addColorStop(0.00, "rgba(255,255,255,0.85)");
-    grad.addColorStop(0.30, "rgba(255,255,255,0.55)");
-    grad.addColorStop(0.70, "rgba(255,255,255,0.16)");
+    grad.addColorStop(0.00, "rgba(255,255,255,1.00)");
+    grad.addColorStop(0.22, "rgba(255,255,255,0.92)");
+    grad.addColorStop(0.55, "rgba(255,255,255,0.45)");
     grad.addColorStop(1.00, "rgba(255,255,255,0)");
     hctx.fillStyle = grad;
     hctx.fillRect(0, 0, 64, 64);
     const haloTex = new THREE.CanvasTexture(haloCanvas);
 
     const material = new THREE.PointsMaterial({
-      size: 4.6,
+      size: 5.5,
       map: haloTex,
       vertexColors: true,
       transparent: true,
-      opacity: 0.78,
-      // Normal blending (not additive) so particles don't pile into a
-      // glowing hot-spot where they cluster — keeps a printed-mark feel.
+      opacity: 0.95,
       blending: THREE.NormalBlending,
       depthWrite: false,
       sizeAttenuation: true,
@@ -266,13 +264,13 @@ export default function ParticleScene({ sceneRef }) {
     const points = new THREE.Points(geometry, material);
     scene.add(points);
 
-    // ── Sequential connecting lines. Each pair is (i, i+1) so the
-    //     line traces the formation's natural ordering: along DNA
-    //     strands, around rings, across grid rows, etc. Far fewer
-    //     and far more meaningful than the previous arbitrary-pair
-    //     mesh. Single uniform colour (the active scene palette's
-    //     accent, updated per frame) — no muddy multi-tint mess. ──
-    const LINE_STRIDE = 3;        // pick every 3rd particle as line origin
+    // ── Sparse sequential connecting lines. Far fewer than before
+    //     (~150 instead of ~400) so the field doesn't read as a
+    //     chaotic mesh. Each line is a single (i, i+1) pair, which
+    //     traces the formation's natural ordering — DNA strands, ring
+    //     orbits, grid rows. Single saturated colour pulled from the
+    //     active scene palette per frame. ──────────────────────────
+    const LINE_STRIDE = 8;
     const linePairs = [];
     for (let i = 0; i + 1 < PARTICLE_COUNT; i += LINE_STRIDE) {
       linePairs.push([i, i + 1]);
@@ -280,13 +278,10 @@ export default function ParticleScene({ sceneRef }) {
     const linePositions = new Float32Array(linePairs.length * 2 * 3);
     const lineGeometry = new THREE.BufferGeometry();
     lineGeometry.setAttribute("position", new THREE.BufferAttribute(linePositions, 3));
-    // Solid line colour comes from a uniform-like `material.color`; updated
-    // per frame to match the active scene palette. No vertex colours so the
-    // line renders as a clean single hue.
     const lineMaterial = new THREE.LineBasicMaterial({
       color: 0x3b82f6,
       transparent: true,
-      opacity: 0.55,
+      opacity: 0.85,
       blending: THREE.NormalBlending,
       depthWrite: false,
     });
@@ -301,23 +296,24 @@ export default function ParticleScene({ sceneRef }) {
     // RIGHT of the viewport — leaving the left side empty for content.
     // Hero is the exception: lookX 0 so the field stays centred behind
     // the giant hero text.
-    // Alternating composition: odd-indexed sections (About, Pub, Skills)
-    // place text on the LEFT, so the camera looks LEFT of origin
-    // (lookX < 0) → formation appears on the RIGHT of the viewport.
-    // Even-indexed scrollable sections (Research, Projects) flip it.
+    // Each scene's camera sits INSIDE its formation, so particles render
+    // around / behind / in front of the centred text. Hero is the only
+    // outside-view scene (arrival shot). Transitions add a z-pullback
+    // pulse so the camera "exits" the current formation, travels
+    // through open space, then "dives into" the next.
     const SCENE_CAMS = [
-      // 0 Hero — wide, centred, slight tilt up
-      { x:  0, y:  20, z: 195, lookX:   0, lookY:  -5 },
-      // 1 About — text LEFT, formation RIGHT
-      { x: 35, y:  40, z: 175, lookX: -55, lookY:   0 },
-      // 2 Research — text RIGHT, formation LEFT
-      { x:-15, y:  10, z: 150, lookX:  55, lookY:   0 },
-      // 3 Publication — text LEFT, formation RIGHT
-      { x:-30, y:  50, z: 170, lookX: -55, lookY: -10 },
-      // 4 Projects — text RIGHT, formation LEFT (low angle)
-      { x: 15, y: -45, z: 165, lookX:  55, lookY:  20 },
-      // 5 Skills — text LEFT, formation RIGHT (high orbit)
-      { x: 25, y:  60, z: 180, lookX: -55, lookY: -15 },
+      // 0 Hero — wide outside view (atmospheric arrival)
+      { x:  0, y:  20, z: 200, lookX:   0, lookY:  -5 },
+      // 1 About — inside the DNA helix tube (radius 75)
+      { x:  0, y:   0, z:  50, lookX:   0, lookY:   0 },
+      // 2 Research — inside the layered network
+      { x:  0, y:   0, z:  60, lookX:   0, lookY:   0 },
+      // 3 Publication — inside the sphere (radius 140)
+      { x:  0, y:  10, z:  55, lookX:   0, lookY:  -5 },
+      // 4 Projects — inside the grid surface, low angle up
+      { x:  0, y: -25, z:  45, lookX:   0, lookY:  15 },
+      // 5 Skills — inside the rings system (min radius 70)
+      { x:  0, y:   5, z:  40, lookX:   0, lookY:   0 },
     ];
 
     // ── Mouse parallax ─────────────────────────────────────────────
@@ -427,16 +423,15 @@ export default function ParticleScene({ sceneRef }) {
       const wb = palA[5] + (palB[5] - palA[5]) * eased;
       const cAttr = geometry.attributes.color.array;
       for (let i = 0; i < PARTICLE_COUNT; i++) {
-        const ti = i / PARTICLE_COUNT;
-        const warm = (i % 9 === 0);
+        const warm = (i % 7 === 0);
         const ci = i * 3;
         if (warm) {
           cAttr[ci]     = wr;
           cAttr[ci + 1] = wg;
           cAttr[ci + 2] = wb;
         } else {
-          cAttr[ci]     = ar * (0.85 + 0.30 * ti);
-          cAttr[ci + 1] = ag * (0.92 + 0.16 * (1 - ti));
+          cAttr[ci]     = ar;
+          cAttr[ci + 1] = ag;
           cAttr[ci + 2] = ab;
         }
       }
@@ -477,14 +472,17 @@ export default function ParticleScene({ sceneRef }) {
       lines.quaternion.copy(tmpQuat);
 
       // Per-scene camera vantage — lerp toward the scene's base camera
-      // position so each formation is viewed from a deliberate angle.
-      // Smoothstep on the segment fraction so it eases into place.
+      // position so each formation is viewed from inside. Add a strong
+      // z-pullback at the mid-transition so the camera "flies out" of
+      // the current formation, travels through open space, then dives
+      // into the next one.
       const camA = SCENE_CAMS[lo];
       const camB = SCENE_CAMS[hi];
       const tCam = eased;
       const camTargetX = camA.x + (camB.x - camA.x) * tCam;
       const camTargetY = camA.y + (camB.y - camA.y) * tCam;
-      const camTargetZ = camA.z + (camB.z - camA.z) * tCam;
+      const pullback = Math.sin(u * Math.PI) * 130;
+      const camTargetZ = camA.z + (camB.z - camA.z) * tCam + pullback;
       const camTargetLX = camA.lookX + (camB.lookX - camA.lookX) * tCam;
       const camTargetLY = camA.lookY + (camB.lookY - camA.lookY) * tCam;
       const camK = 1 - Math.exp(-dt / 0.45);

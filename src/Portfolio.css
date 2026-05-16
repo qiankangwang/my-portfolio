@@ -541,40 +541,22 @@ body::before {
 
 .sect-stage {
   position: relative;
-  /* No card chrome. Sections alternate which side of the viewport they
-     sit on; the centred particle formation appears in the open gutter
-     on the OTHER side. Animation through the middle = one unified whole.
-     Defaults to left-aligned; #research and #projects override below.
-     Left margin is generous so text fully clears the fixed nav rail. */
-  max-width: 440px;
-  margin-left: clamp(13rem, 22vw, 20rem);
-  margin-right: auto;
-  padding-right: clamp(1rem, 2vw, 1.5rem);
-  /* IO-driven slide-in: starts offset, slides in toward its side. */
+  /* Text is centred — the camera DIVES INTO each formation, so the
+     particles render around / behind / through the text. Reads as the
+     camera flying into each scene and the copy emerging from inside it. */
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 0 clamp(1rem, 3vw, 2rem);
   opacity: 0;
-  transform: translateX(-32px);
+  transform: translateY(40px);
   transition:
     opacity 1s cubic-bezier(.22, 1, .36, 1),
     transform 1s cubic-bezier(.22, 1, .36, 1);
   will-change: opacity, transform;
-  /* Faint text-shadow halo gives body copy legibility against the
-     live particles behind. Headings get their own override below. */
+  text-align: left;
   text-shadow:
-    0 0 12px color-mix(in srgb, var(--bg) 70%, transparent),
-    0 1px 0 color-mix(in srgb, var(--bg) 50%, transparent);
-}
-/* Right-aligned sections — Research (scene 2) and Projects (scene 4).
-   Camera lookX flips for these scenes so the formation slides over to
-   the LEFT half of the viewport, opening the right gutter for text.
-   Right margin clears the back-to-top button + corner controls pill. */
-#research .sect-stage,
-#projects .sect-stage {
-  margin-left: auto;
-  margin-right: clamp(5rem, 8vw, 7rem);
-  padding-right: 0;
-  padding-left: clamp(1rem, 2vw, 1.5rem);
-  transform: translateX(32px);
-  text-align: right;
+    0 0 14px color-mix(in srgb, var(--bg) 80%, transparent),
+    0 1px 0 color-mix(in srgb, var(--bg) 60%, transparent);
 }
 /* Bigger / heavier elements don't need the halo and can look fuzzy
    with one applied — opt them out. */

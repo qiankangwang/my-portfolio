@@ -50,26 +50,12 @@ const Atmosphere = memo(function Atmosphere({ sceneRef }) {
   );
 });
 
-/* Small identity badge anchored to the top-left corner of the viewport.
-   Avatar still carries the click-to-headpat easter egg. */
-const IdentityBadge = memo(function IdentityBadge({ onAvatarClick, avatarRef }) {
+/* Small text-only identity strip anchored to the top-left corner of
+   the viewport. The interactive avatar (with headpat easter egg) now
+   lives in the hero scene; this strip is a discreet always-on label. */
+const IdentityBadge = memo(function IdentityBadge() {
   return (
     <div className="id-badge">
-      <button
-        type="button"
-        className="sb-avatar-btn"
-        onClick={onAvatarClick}
-        aria-label="Tap the avatar"
-      >
-        <img
-          ref={avatarRef}
-          className="sb-avatar"
-          src={D.avatar}
-          alt={D.name}
-          loading="eager"
-          decoding="async"
-        />
-      </button>
       <div className="id-badge-meta">
         <span className="id-badge-name">Qiankang Wang</span>
         <span className="id-badge-sub">UC Berkeley · DS '27</span>
@@ -262,10 +248,28 @@ function useTheme() {
 
    id="hero" so the scroll-handler's SCENE_IDS picks up its centre as
    the first camera waypoint (the wide-overview shot). */
-const HeroScene = memo(function HeroScene() {
+const HeroScene = memo(function HeroScene({ onAvatarClick, avatarRef }) {
   const tagline = useTypewriter(D.tagline);
   return (
     <section id="hero" className="hero-scene">
+      {/* Hero avatar — bigger, anchored above the name. Click to
+         trigger the headpat easter egg (same ref used by the corner
+         badge so either click target works). */}
+      <button
+        type="button"
+        className="hero-avatar-btn sb-avatar-btn"
+        onClick={onAvatarClick}
+        aria-label="Tap the avatar"
+      >
+        <img
+          ref={avatarRef}
+          className="hero-avatar sb-avatar"
+          src={D.avatar}
+          alt={D.name}
+          loading="eager"
+          decoding="async"
+        />
+      </button>
       <span className="hero-kicker">Qiankang (Kant) Wang · 2026 portfolio</span>
       <h1 className="hero-name">
         <span className="hero-name-line">Qiankang</span>
@@ -466,14 +470,14 @@ export default function Portfolio() {
          controls float in the viewport corners. Content scrolls in a
          single centred column on top — no split panes anywhere. */}
       <Atmosphere sceneRef={sceneRef} />
-      <IdentityBadge onAvatarClick={onAvatarClick} avatarRef={avatarRef} />
+      <IdentityBadge />
       <SideRail active={active} scrollTo={scrollTo} visible={scrolled} />
       <CornerControls theme={theme} toggleTheme={toggleTheme} />
 
       <main className="main">
 
-        {/* ── Hero — first viewport, giant name floating over the network ── */}
-        <HeroScene />
+        {/* ── Hero — first viewport, giant name + avatar floating over the network ── */}
+        <HeroScene onAvatarClick={onAvatarClick} avatarRef={avatarRef} />
 
         {/* ── About — editorial pull-quote intro, stats row, focus list ── */}
         <Section id="about">

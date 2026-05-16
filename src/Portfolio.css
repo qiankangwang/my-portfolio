@@ -283,7 +283,7 @@ body::before {
    the page reads as ONE living scene, not as panes side-by-side.
    ════════════════════════════════════════════════════════════════════ */
 
-/* Identity badge — top-left of the viewport */
+/* Identity badge — text-only label, top-left of the viewport */
 .id-badge {
   position: fixed;
   top: clamp(1rem, 2.5vh, 1.75rem);
@@ -291,8 +291,7 @@ body::before {
   z-index: 60;
   display: flex;
   align-items: center;
-  gap: .65rem;
-  padding: .35rem .85rem .35rem .35rem;
+  padding: .45rem .85rem;
   border-radius: 9999px;
   background: color-mix(in srgb, var(--bg) 55%, transparent);
   backdrop-filter: blur(14px) saturate(1.2);
@@ -661,6 +660,34 @@ body::before {
   padding-block: clamp(4rem, 10vh, 7rem);
   position: relative;
 }
+/* Hero avatar — bigger, prominent, grouped with the name + tagline.
+   Same headpat easter egg as the old hero. */
+.hero-avatar-btn {
+  align-self: flex-start;
+  margin-bottom: clamp(1.5rem, 3vh, 2.25rem);
+  border-radius: 50%;
+  animation: hero-rise .8s cubic-bezier(.22, 1, .36, 1) both;
+}
+.hero-avatar {
+  width: clamp(72px, 6vw, 92px);
+  height: clamp(72px, 6vw, 92px);
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--accent);
+  box-shadow:
+    0 0 0 5px var(--accent-soft),
+    0 6px 24px color-mix(in srgb, var(--accent) 18%, transparent);
+  transition:
+    transform .4s cubic-bezier(.22, 1, .36, 1),
+    box-shadow .4s cubic-bezier(.22, 1, .36, 1);
+}
+.hero-avatar-btn:hover .hero-avatar {
+  transform: scale(1.05);
+  box-shadow:
+    0 0 0 7px var(--accent-soft),
+    0 10px 32px color-mix(in srgb, var(--accent) 28%, transparent);
+}
+
 .hero-kicker {
   font-family: var(--mono);
   font-size: .7rem;
@@ -670,6 +697,7 @@ body::before {
   color: var(--accent);
   margin-bottom: clamp(1.5rem, 3vh, 2rem);
   animation: hero-rise .8s cubic-bezier(.22,1,.36,1) both;
+  animation-delay: .08s;
 }
 .hero-name {
   font-family: var(--serif);

@@ -55,70 +55,80 @@ function buildFormations(count) {
     }
 
     // ── 1  About — DNA double helix ──
-    // Two intertwined strands. Particles alternate between strand A
-    // and strand B by parity. 6 turns over the column height.
+    // Wider radius so the card sits inside the helix tube rather than
+    // hiding the strands. 6 turns over the column height.
     {
       const strand = i % 2;
       const tt = (i / count) * Math.PI * 12;
-      const radius = 32;
-      const yPos = (t01 - 0.5) * 220;
+      const radius = 75;
+      const yPos = (t01 - 0.5) * 260;
       out[1][ix]     = Math.cos(tt + (strand ? Math.PI : 0)) * radius;
       out[1][ix + 1] = yPos;
       out[1][ix + 2] = Math.sin(tt + (strand ? Math.PI : 0)) * radius;
     }
 
     // ── 2  Research — feedforward neural network ──
-    // 6 vertical layers, each particle assigned to one layer's column.
-    // Within a layer, particles are spread vertically along a slight
-    // S-curve to echo the procedural network we had earlier.
+    // Wider column spread + taller layers so the outer layers fall
+    // outside the card's footprint at viewport centre.
     {
       const LAYERS = 6;
       const layer = i % LAYERS;
       const idxInLayer = Math.floor(i / LAYERS);
       const perLayer = Math.ceil(count / LAYERS);
       const ratio = (idxInLayer + 0.5) / perLayer;
-      const curve = Math.sin((ratio - 0.5) * Math.PI) * 14;
-      out[2][ix]     = (layer - (LAYERS - 1) / 2) * 28;
-      out[2][ix + 1] = (ratio - 0.5) * 140 + curve;
+      const curve = Math.sin((ratio - 0.5) * Math.PI) * 18;
+      out[2][ix]     = (layer - (LAYERS - 1) / 2) * 50;
+      out[2][ix + 1] = (ratio - 0.5) * 180 + curve;
       out[2][ix + 2] = (rand() - 0.5) * 22;
     }
 
-    // ── 3  Publication — Fibonacci sphere ──
-    // Particles evenly distributed on a sphere surface for the
-    // "structured object" look (a paper as a self-contained whole).
+    // ── 3  Publication — Fibonacci sphere (enlarged) ──
+    // Radius 140 so the sphere is BIGGER than the centred card — the
+    // card sits inside the sphere, particles wrap around the edges.
     {
       const y = 1 - (i / (count - 1)) * 2;
       const r = Math.sqrt(Math.max(0, 1 - y * y));
       const theta = ((i * Math.PI) * (3 - Math.sqrt(5))) % (Math.PI * 2);
-      out[3][ix]     = Math.cos(theta) * r * 95;
-      out[3][ix + 1] = y * 95;
-      out[3][ix + 2] = Math.sin(theta) * r * 95;
+      out[3][ix]     = Math.cos(theta) * r * 140;
+      out[3][ix + 1] = y * 140;
+      out[3][ix + 2] = Math.sin(theta) * r * 140;
     }
 
-    // ── 4  Projects — 3D grid ──
-    // A 12 × 10 grid in the xy plane (depth at small z offset). Reads
-    // as a contribution-graph / build-grid surface.
+    // ── 4  Projects — 3D grid (with hollow centre) ──
+    // 12 × 10 grid; particles in the centre rows/columns are pushed
+    // OUTWARD radially so the middle of the grid (where the card sits)
+    // is hollow and the grid frames the card.
     {
       const cols = 12, rows = 10;
       const ix2 = i % cols;
       const iy2 = Math.floor(i / cols) % rows;
       const iz2 = Math.floor(i / (cols * rows));
-      out[4][ix]     = (ix2 - (cols - 1) / 2) * 18;
-      out[4][ix + 1] = (iy2 - (rows - 1) / 2) * 18;
+      let gx = (ix2 - (cols - 1) / 2) * 22;
+      let gy = (iy2 - (rows - 1) / 2) * 22;
+      // Radial repulsion from origin if too close (carves the hollow).
+      const gr = Math.hypot(gx, gy);
+      const minR = 65;
+      if (gr < minR && gr > 0.001) {
+        const s = minR / gr;
+        gx *= s;
+        gy *= s;
+      }
+      out[4][ix]     = gx;
+      out[4][ix + 1] = gy;
       out[4][ix + 2] = (iz2 - 4) * 14 + (rand() - 0.5) * 4;
     }
 
-    // ── 5  Skills — concentric rings ──
-    // 7 rings of varying radius and y-offset, each holding count/7
-    // particles. Reads as an orbital system / planetarium of tools.
+    // ── 5  Skills — concentric rings (hollow centre) ──
+    // Min radius bumped up so even the innermost ring is outside the
+    // card. Rings now span 70..160 instead of 24..108.
     {
       const RINGS = 7;
       const ring = i % RINGS;
       const indexOnRing = Math.floor(i / RINGS);
       const onRingCount = Math.ceil(count / RINGS);
       const angle = (indexOnRing / onRingCount) * Math.PI * 2 + ring * 0.4;
-      const radius = 24 + ring * 14;
-      const yOff = (ring - (RINGS - 1) / 2) * 9;
+      const radius = 70 + ring * 14;
+      const yOff = (ring - (RINGS - 1) / 2) * 11;
       out[5][ix]     = Math.cos(angle) * radius;
       out[5][ix + 1] = yOff;
       out[5][ix + 2] = Math.sin(angle) * radius;
@@ -224,28 +234,31 @@ export default function ParticleScene({ sceneRef }) {
     geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
     geometry.setAttribute("color", new THREE.BufferAttribute(colors, 3));
 
-    // ── Halo sprite texture — bright core + soft falloff. Stronger
-    //     centre so particles read as solid dots, halo for glow. ───
+    // ── Particle sprite — soft "ink dot" rather than glowing spark.
+    //     Gentle radial falloff, no hot white core. Reads as a printed
+    //     mark on paper, matches the page's editorial typography. ───
     const haloCanvas = document.createElement("canvas");
-    haloCanvas.width = 128;
-    haloCanvas.height = 128;
+    haloCanvas.width = 64;
+    haloCanvas.height = 64;
     const hctx = haloCanvas.getContext("2d");
-    const grad = hctx.createRadialGradient(64, 64, 0, 64, 64, 64);
-    grad.addColorStop(0.00, "rgba(255,255,255,1)");
-    grad.addColorStop(0.18, "rgba(255,255,255,0.95)");
-    grad.addColorStop(0.45, "rgba(255,255,255,0.45)");
+    const grad = hctx.createRadialGradient(32, 32, 0, 32, 32, 32);
+    grad.addColorStop(0.00, "rgba(255,255,255,0.85)");
+    grad.addColorStop(0.30, "rgba(255,255,255,0.55)");
+    grad.addColorStop(0.70, "rgba(255,255,255,0.16)");
     grad.addColorStop(1.00, "rgba(255,255,255,0)");
     hctx.fillStyle = grad;
-    hctx.fillRect(0, 0, 128, 128);
+    hctx.fillRect(0, 0, 64, 64);
     const haloTex = new THREE.CanvasTexture(haloCanvas);
 
     const material = new THREE.PointsMaterial({
-      size: 7.5,
+      size: 4.6,
       map: haloTex,
       vertexColors: true,
       transparent: true,
-      opacity: 1.0,
-      blending: THREE.AdditiveBlending,
+      opacity: 0.78,
+      // Normal blending (not additive) so particles don't pile into a
+      // glowing hot-spot where they cluster — keeps a printed-mark feel.
+      blending: THREE.NormalBlending,
       depthWrite: false,
       sizeAttenuation: true,
     });

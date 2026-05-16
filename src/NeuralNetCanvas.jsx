@@ -47,6 +47,17 @@ export default function NeuralNetCanvas({ sceneRef }) {
     let edges = [];
     let pulses = [];
     let bioMotifs = [];
+    // Scene motifs — distinct visual elements per scroll scene:
+    //   "dna"       : DNA double helix      (About waypoint)
+    //   "equations" : math glyph cluster    (Publication waypoint)
+    //   "grid"      : contribution grid     (Projects waypoint)
+    //   "labels"    : floating skill labels (Skills waypoint)
+    // Each is its own camera anchor — the scene that focuses on it sees it
+    // big and centred while the rest of the world falls into background.
+    let sceneMotifs = [];
+    // Ambient particle field — small dots drifting across the whole world,
+    // very faint, just for atmospheric depth behind everything else.
+    let ambient = [];
     let edgeCursor = 0;
     let frame = 0;
 
@@ -122,23 +133,86 @@ export default function NeuralNetCanvas({ sceneRef }) {
         }
       }
 
-      // Bio motifs scattered around the network (also world coords).
+      // Atmospheric bio motifs (RNA + protein helices) scattered around
+      // the network. These are the "always-on" texture that gives the
+      // world its biology flavour.
       const left = -netW / 2;
       const top = -netH * 0.34;
       const bottom = netH * 0.34;
       bioMotifs = [
         { type: "rna",     x: left + netW * 0.10, y: top + netH * 0.12,    len: 13, angle: 0.15,  phase: 0.2, bend: 10 },
-        { type: "rna",     x: left + netW * 0.22, y: top + netH * 0.34,    len: 11, angle: -0.22, phase: 1.1, bend: -8 },
         { type: "rna",     x: left + netW * 0.50, y: top + netH * 0.74,    len: 10, angle: -0.20, phase: 3.1, bend: -7 },
         { type: "rna",     x: left + netW * 0.08, y: top + netH * 0.58,    len: 9,  angle: 0.32,  phase: 6.0, bend: 6 },
-        { type: "rna",     x: left + netW * 0.82, y: top + netH * 0.34,    len: 9,  angle: -0.30, phase: 8.4, bend: -6 },
-        { type: "protein", x: left + netW * 0.76, y: top + netH * 0.18,    len: 10, scale: 1.05, phase: 0.5 },
         { type: "protein", x: left + netW * 0.18, y: bottom - netH * 0.16, len: 8,  scale: 0.92, phase: 2.4 },
         { type: "protein", x: left + netW * 0.42, y: top + netH * 0.06,    len: 7,  scale: 0.70, phase: 5.4 },
-        { type: "protein", x: left + netW * 0.58, y: bottom - netH * 0.10, len: 9,  scale: 0.85, phase: 3.7 },
         { type: "protein", x: left + netW * 0.88, y: bottom - netH * 0.28, len: 6,  scale: 0.65, phase: 6.8 },
         { type: "protein", x: left + netW * 0.30, y: top + netH * 0.48,    len: 7,  scale: 0.78, phase: 1.3 },
       ];
+
+      // Scene motifs — each becomes one section's camera anchor.
+      // Spaced into the four world corners so each is fully isolated
+      // when the camera frames it at zoom ~2.4-2.7:
+      //   upper-left  : DNA (About)
+      //   upper-right : Equations (Publication)
+      //   lower-left  : Contribution grid (Projects)
+      //   lower-right : Skill labels orbit (Skills)
+      // The network's hidden layer at (0, 0) serves as Research anchor.
+      sceneMotifs = [
+        // DNA double helix — vertical, About anchor (upper-left).
+        { type: "dna", x: -480, y: -160, len: 16, amp: 38, phase: 0 },
+
+        // Equation glyph cluster — Publication anchor (upper-right).
+        {
+          type: "equations",
+          x: 480,
+          y: -160,
+          glyphs: [
+            { ch: "∇",   ox: -70, oy: -32, size: 38, phase: 0.0 },
+            { ch: "∂",   ox:  10, oy: -50, size: 32, phase: 1.2 },
+            { ch: "Σ",   ox:  80, oy: -10, size: 44, phase: 2.4 },
+            { ch: "∫",   ox: -40, oy:  30, size: 42, phase: 3.1 },
+            { ch: "π",   ox:  60, oy:  46, size: 28, phase: 4.0 },
+            { ch: "ψ",   ox: -90, oy:  10, size: 30, phase: 5.2 },
+            { ch: "⟨ψ⟩", ox:   0, oy:  -2, size: 24, phase: 0.7 },
+            { ch: "∞",   ox:  35, oy: -36, size: 26, phase: 6.0 },
+          ],
+        },
+
+        // GitHub-style contribution grid — Projects anchor (lower-left).
+        { type: "grid", x: -480, y: 230, cols: 14, rows: 7, cell: 14, gap: 6 },
+
+        // Floating skill labels orbiting a central anchor — Skills anchor.
+        {
+          type: "labels",
+          x: 480,
+          y: 230,
+          items: [
+            { text: "PyTorch", r: 100, speed: 0.18, phase: 0.0 },
+            { text: "CUDA",    r: 75,  speed: -0.22, phase: 1.2 },
+            { text: "C++",     r: 125, speed: 0.14, phase: 2.5 },
+            { text: "Slurm",   r: 60,  speed: 0.28, phase: 3.8 },
+            { text: "GPU",     r: 110, speed: -0.16, phase: 5.0 },
+            { text: "Linux",   r: 85,  speed: 0.20, phase: 0.4 },
+            { text: "PBSA",    r: 120, speed: -0.18, phase: 4.4 },
+            { text: "SSL",     r: 55,  speed: 0.30, phase: 2.0 },
+          ],
+        },
+      ];
+
+      // Ambient particle field — slow drifting dots across the whole
+      // world. Faint, just adds depth so the bg never feels empty.
+      ambient = [];
+      const ambientCount = reducedMotion ? 0 : 70;
+      for (let i = 0; i < ambientCount; i++) {
+        ambient.push({
+          x: -netW * 0.6 + Math.random() * netW * 1.2,
+          y: -netH * 0.6 + Math.random() * netH * 1.2,
+          r: 0.6 + Math.random() * 1.3,
+          alpha: 0.18 + Math.random() * 0.32,
+          drift: 0.08 + Math.random() * 0.14,
+          phase: Math.random() * Math.PI * 2,
+        });
+      }
     };
 
     // Six camera waypoints — one per portfolio scene (incl. hero). Each is
@@ -151,25 +225,25 @@ export default function NeuralNetCanvas({ sceneRef }) {
     //   roll : per-scene camera bank angle in degrees. Mostly small; the
     //          banks between scenes are what create the 3D feel.
     const computeWaypoints = () => {
-      const layerGap = WORLD_W / (layers.length - 1);
-      const left = -WORLD_W / 2;
-      const top = -WORLD_H * 0.34;
-      const proteinAnchor = { x: left + WORLD_W * 0.76, y: top + WORLD_H * 0.18 };
-      const rnaAnchor     = { x: left + WORLD_W * 0.82, y: top + WORLD_H * 0.34 };
-
+      // The page's centred content card sits over the viewport's middle.
+      // To keep each scene's motif visible, the camera anchors slightly
+      // OFFSET from the motif so the motif lands in the gutter beside
+      // the card rather than directly behind it. Computed so the motif's
+      // screen position falls ~280px from a viewport edge at ~1440px wide
+      // (with the per-waypoint zoom).
       return [
-        // 0 — Hero: wide overview, level horizon
-        { x: 0, y: 0, zoom: 1.05, roll: 0 },
-        // 1 — About: input layer, tilt left (camera lookin' in)
-        { x: left + layerGap * 0.5, y: 0, zoom: 2.6, roll: -3.5 },
-        // 2 — Research: hidden layer, tilt right
-        { x: left + layerGap * 2,   y: -20, zoom: 1.75, roll: 2.5 },
-        // 3 — Publication: output layer, tilt left, deeper push-in
-        { x: left + layerGap * 5,   y: 10, zoom: 2.4, roll: -2.8 },
-        // 4 — Projects: protein helix, banked aggressively as if circling
-        { x: proteinAnchor.x, y: proteinAnchor.y, zoom: 2.8, roll: 4.5 },
-        // 5 — Skills: RNA strand, opposite bank for variation
-        { x: rnaAnchor.x,     y: rnaAnchor.y,     zoom: 2.6, roll: -2.5 },
+        // 0 — Hero: wide overview — sees all four corners + the network
+        { x: 0, y: 0, zoom: 1.0, roll: 0 },
+        // 1 — About: DNA helix sits in the LEFT gutter beside the card
+        { x: -290, y: -160, zoom: 2.3, roll: -3 },
+        // 2 — Research: network hidden layer centred behind the card
+        { x: 0, y: 0, zoom: 1.75, roll: 2.5 },
+        // 3 — Publication: equation cluster in the RIGHT gutter
+        { x: 295, y: -160, zoom: 2.4, roll: -3 },
+        // 4 — Projects: contribution grid in the LEFT gutter
+        { x: -310, y: 230, zoom: 2.6, roll: 4 },
+        // 5 — Skills: skill-label orbit in the RIGHT gutter
+        { x: 290, y: 230, zoom: 2.3, roll: -2.5 },
       ];
     };
 
@@ -308,7 +382,18 @@ export default function NeuralNetCanvas({ sceneRef }) {
       ctx.scale(cam.zoom, cam.zoom);
       ctx.translate(-cam.x, -cam.y);
 
-      // ── Bio motifs (drawn first so the network sits on top) ────────
+      // ── Ambient particle field — slow drifting dust behind everything,
+      // gives the world ambient depth so corners never feel empty. ─────
+      ambient.forEach((p) => {
+        const px = p.x + Math.sin(frame * 0.005 + p.phase) * (12 * p.drift);
+        const py = p.y + Math.cos(frame * 0.004 + p.phase * 1.3) * (10 * p.drift);
+        ctx.beginPath();
+        ctx.arc(px, py, p.r, 0, Math.PI * 2);
+        ctx.fillStyle = rgba(dim, p.alpha * 0.5);
+        ctx.fill();
+      });
+
+      // ── Bio motifs (drawn after ambient, before network) ────────────
       bioMotifs.forEach((m, mi) => {
         const drift = Math.sin(frame * 0.008 + m.phase) * 8;
         if (m.type === "rna") {
@@ -355,6 +440,155 @@ export default function NeuralNetCanvas({ sceneRef }) {
             ctx.fillStyle = rgba(i % 2 ? warm : accent, dark ? 0.44 : 0.32);
             ctx.fill();
           });
+        }
+      });
+
+      // ── Scene motifs (DNA / equations / grid / labels) ──────────────
+      // Drawn after bio motifs but before the network nodes, so the
+      // network's bright nodes/pulses still pop over everything.
+      sceneMotifs.forEach((m) => {
+        if (m.type === "dna") {
+          // Two intertwined sine strands with horizontal rungs every step.
+          // Phase advances slowly so the helix appears to spin around its
+          // vertical axis (in 2D — the crossings shift but the strands
+          // don't move sideways much).
+          const step = 18;
+          const cx = m.x;
+          for (let i = 0; i < m.len; i++) {
+            const py = m.y - (m.len * step) / 2 + i * step;
+            const theta = (i / m.len) * Math.PI * 4 + frame * 0.025 + m.phase;
+            const xA = cx + Math.cos(theta) * m.amp;
+            const xB = cx + Math.cos(theta + Math.PI) * m.amp;
+            // Rung between the two strands (depth-cue: dim when strands
+            // are close together / behind each other)
+            const sep = Math.abs(xA - xB) / (m.amp * 2);
+            ctx.beginPath();
+            ctx.moveTo(xA, py);
+            ctx.lineTo(xB, py);
+            ctx.strokeStyle = rgba(warm, (dark ? 0.32 : 0.24) * (0.3 + sep * 0.7));
+            ctx.lineWidth = 1.1;
+            ctx.stroke();
+            // Strand dots
+            ctx.beginPath();
+            ctx.arc(xA, py, 2.4, 0, Math.PI * 2);
+            ctx.fillStyle = rgba(accent, (dark ? 0.85 : 0.7) * (0.4 + sep * 0.6));
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(xB, py, 2.4, 0, Math.PI * 2);
+            ctx.fillStyle = rgba(warm, (dark ? 0.75 : 0.6) * (0.4 + sep * 0.6));
+            ctx.fill();
+            // Connecting backbone lines down the strand
+            if (i > 0) {
+              const prevTheta = ((i - 1) / m.len) * Math.PI * 4 + frame * 0.025 + m.phase;
+              const prevXA = cx + Math.cos(prevTheta) * m.amp;
+              const prevXB = cx + Math.cos(prevTheta + Math.PI) * m.amp;
+              ctx.beginPath();
+              ctx.moveTo(prevXA, py - step);
+              ctx.lineTo(xA, py);
+              ctx.strokeStyle = rgba(accent, dark ? 0.55 : 0.42);
+              ctx.lineWidth = 1.4;
+              ctx.stroke();
+              ctx.beginPath();
+              ctx.moveTo(prevXB, py - step);
+              ctx.lineTo(xB, py);
+              ctx.strokeStyle = rgba(warm, dark ? 0.5 : 0.38);
+              ctx.lineWidth = 1.4;
+              ctx.stroke();
+            }
+          }
+        } else if (m.type === "equations") {
+          // Math glyphs floating in a loose cluster. Each glyph has its own
+          // drift + a slow scale pulse so the cluster feels alive.
+          m.glyphs.forEach((g) => {
+            const dx = Math.sin(frame * 0.008 + g.phase) * 6;
+            const dy = Math.cos(frame * 0.006 + g.phase * 1.3) * 5;
+            const pulse = 1 + Math.sin(frame * 0.018 + g.phase) * 0.07;
+            const px = m.x + g.ox + dx;
+            const py = m.y + g.oy + dy;
+            ctx.save();
+            ctx.translate(px, py);
+            ctx.scale(pulse, pulse);
+            ctx.fillStyle = rgba(accent, dark ? 0.75 : 0.62);
+            ctx.font = `italic ${g.size}px Georgia, 'Times New Roman', serif`;
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillText(g.ch, 0, 0);
+            ctx.restore();
+          });
+          // Subtle linking lines between adjacent glyphs to suggest a
+          // single derivation / system
+          for (let i = 0; i < m.glyphs.length - 1; i++) {
+            const a = m.glyphs[i];
+            const b = m.glyphs[i + 1];
+            const ax = m.x + a.ox + Math.sin(frame * 0.008 + a.phase) * 6;
+            const ay = m.y + a.oy + Math.cos(frame * 0.006 + a.phase * 1.3) * 5;
+            const bx = m.x + b.ox + Math.sin(frame * 0.008 + b.phase) * 6;
+            const by = m.y + b.oy + Math.cos(frame * 0.006 + b.phase * 1.3) * 5;
+            ctx.beginPath();
+            ctx.moveTo(ax, ay);
+            ctx.lineTo(bx, by);
+            ctx.strokeStyle = rgba(accent, dark ? 0.16 : 0.12);
+            ctx.lineWidth = 0.6;
+            ctx.stroke();
+          }
+        } else if (m.type === "grid") {
+          // GitHub-style contribution grid. Each cell has a base intensity
+          // from a seeded function + an extra "wave" that sweeps diagonally
+          // across to add liveness.
+          const totalW = m.cols * (m.cell + m.gap) - m.gap;
+          const totalH = m.rows * (m.cell + m.gap) - m.gap;
+          const x0 = m.x - totalW / 2;
+          const y0 = m.y - totalH / 2;
+          for (let c = 0; c < m.cols; c++) {
+            for (let r = 0; r < m.rows; r++) {
+              // Deterministic baseline 0..1 from cell coords
+              const base = ((c * 31 + r * 17) % 7) / 6;
+              // Diagonal wave that sweeps over time
+              const waveT = (c * 0.35 + r * 0.45 + frame * 0.018) % 6.28;
+              const wave = Math.max(0, Math.sin(waveT)) * 0.6;
+              const intensity = Math.min(1, base * 0.6 + wave);
+              const x = x0 + c * (m.cell + m.gap);
+              const y = y0 + r * (m.cell + m.gap);
+              // Cell — fade between cool (dim) and accent (bright)
+              const ar = Math.round(cool[0] + (accent[0] - cool[0]) * intensity);
+              const ag = Math.round(cool[1] + (accent[1] - cool[1]) * intensity);
+              const ab = Math.round(cool[2] + (accent[2] - cool[2]) * intensity);
+              ctx.fillStyle = rgba([ar, ag, ab], dark ? 0.45 + intensity * 0.45 : 0.32 + intensity * 0.5);
+              ctx.fillRect(x, y, m.cell, m.cell);
+              if (intensity > 0.7) {
+                // Bright cell gets a soft halo
+                ctx.fillStyle = rgba(accent, (intensity - 0.7) * 0.18);
+                ctx.fillRect(x - 2, y - 2, m.cell + 4, m.cell + 4);
+              }
+            }
+          }
+        } else if (m.type === "labels") {
+          // Floating mono-style skill text orbiting a central anchor at
+          // varying radii + speeds. Each label drops a soft trailing dot.
+          m.items.forEach((it) => {
+            const theta = frame * 0.006 * it.speed + it.phase;
+            const px = m.x + Math.cos(theta) * it.r;
+            const py = m.y + Math.sin(theta) * it.r * 0.6; // squashed orbit
+            ctx.font = `600 ${dark ? 13 : 12}px ui-monospace, Menlo, monospace`;
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            // Subtle "halo" pass for legibility
+            ctx.fillStyle = rgba(accent, 0.10);
+            ctx.fillText(it.text, px, py);
+            ctx.fillStyle = rgba(accent, dark ? 0.82 : 0.7);
+            ctx.fillText(it.text, px, py);
+            // Anchor dot at orbit centre
+          });
+          // Central anchor — small ring + dot
+          ctx.beginPath();
+          ctx.arc(m.x, m.y, 4, 0, Math.PI * 2);
+          ctx.fillStyle = rgba(accent, dark ? 0.85 : 0.7);
+          ctx.fill();
+          ctx.beginPath();
+          ctx.arc(m.x, m.y, 14, 0, Math.PI * 2);
+          ctx.strokeStyle = rgba(accent, 0.25);
+          ctx.lineWidth = 1;
+          ctx.stroke();
         }
       });
 

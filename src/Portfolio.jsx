@@ -530,7 +530,7 @@ export default function Portfolio() {
             <span className="sect-n">03</span>
             <h2>Publication</h2>
           </div>
-          <TiltCard className="pub-card-wrap">
+          <div className="pub-card-wrap">
             <a
               href={D.publication.links[0]?.url || "#"}
               target="_blank"
@@ -552,7 +552,7 @@ export default function Portfolio() {
                 </span>
               </div>
             </a>
-          </TiltCard>
+          </div>
         </Section>
 
         {/* ── Projects ── */}

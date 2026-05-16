@@ -171,24 +171,57 @@ body::before {
 }
 
 /* ════════════════════════════════════════════════════════════════════
-   Neural-network canvas wrapper
-
-   Now contained inside the sticky left "stage" pane (.lstage-canvas)
-   rather than being a full-bleed fixed background. The cool-gray bg is
-   applied at the pane level so the canvas's edges blend naturally with
-   the surrounding stage chrome.
+   Atmosphere — full-bleed neural-network canvas
+   The network IS the page's background. Everything else (content,
+   identity badge, nav rail, controls) floats on top.
    ════════════════════════════════════════════════════════════════════ */
-.bgnet {
-  position: absolute;
+.atmos {
+  position: fixed;
   inset: 0;
   z-index: 0;
   pointer-events: none;
+  /* Cool-gray backdrop so the network reads against something cohesive
+     instead of pure white. Body bg can be tinted in the same direction. */
+  background: #DDE3EB;
 }
-.bgnet > div,
-.bgnet canvas {
+:root[data-theme="dark"] .atmos { background: #0A1322; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .atmos { background: #0A1322; }
+}
+.atmos > div:not(.atmos-vignette),
+.atmos canvas {
   width: 100% !important;
   height: 100% !important;
 }
+.atmos-vignette {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 80% 60% at 50% 50%,
+      transparent 0%,
+      transparent 50%,
+      color-mix(in srgb, #DDE3EB 70%, transparent) 100%);
+}
+:root[data-theme="dark"] .atmos-vignette {
+  background:
+    radial-gradient(ellipse 80% 60% at 50% 50%,
+      transparent 0%,
+      transparent 50%,
+      color-mix(in srgb, #0A1322 70%, transparent) 100%);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .atmos-vignette {
+    background:
+      radial-gradient(ellipse 80% 60% at 50% 50%,
+        transparent 0%,
+        transparent 50%,
+        color-mix(in srgb, #0A1322 70%, transparent) 100%);
+  }
+}
+
+/* Legacy alias — some places may still reference .bgnet, keep as no-op */
+.bgnet { display: none; }
 
 /* ════════════════════════════════════════════════════════════════════
    Top scroll progress bar
@@ -210,137 +243,94 @@ body::before {
 }
 
 /* ════════════════════════════════════════════════════════════════════
-   Split-stage layout
+   Unified layout
    ════════════════════════════════════════════════════════════════════
 
-   Two halves, side-by-side:
-     - .lstage  (sticky) — the cinematic "screen" with the neural net
-                          canvas + floating identity + section nav rail
-     - .main    (flow)   — the scrolling story column with section copy
-
-   While the user scrolls .main, .lstage stays put and the canvas's
-   virtual camera pans/zooms to the matching scene anchor — each section
-   slide-in on the right is synchronised with a camera move on the left.
-
-   Collapses to single-column on ≤968px (canvas fades out, identity
-   stacks above content).
+   The atmosphere (fixed network canvas) sits behind everything.
+   The .main column scrolls a single centred reading column on top.
+   Identity, nav and theme controls float in viewport corners — so
+   the page reads as ONE living scene, not as panes side-by-side.
    ════════════════════════════════════════════════════════════════════ */
-.layout {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  margin: 0;
-  position: relative;
-  z-index: 2;
-  gap: 0;
-}
 
-/* ── Left stage (sticky cinematic screen) ── */
-.lstage {
-  position: sticky;
-  top: 0;
-  height: 100svh;
-  overflow: hidden;
-  z-index: 10;
-  isolation: isolate;
-  /* Cool-gray stage backdrop — gives the network something to read
-     against without committing to flat white. Switches dark in dark mode. */
-  background: #D6DCE5;
-}
-:root[data-theme="dark"] .lstage { background: #0F172A; }
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) .lstage { background: #0F172A; }
-}
-
-.lstage-canvas {
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-}
-/* Soft radial vignette so identity text + nav read against the network
-   without needing card chrome — fades the corners just enough that copy
-   sits cleanly on top. */
-.lstage-vignette {
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  pointer-events: none;
-  background:
-    radial-gradient(ellipse 70% 50% at 50% 50%,
-      transparent 0%,
-      transparent 40%,
-      color-mix(in srgb, #D6DCE5 60%, transparent) 100%);
-}
-:root[data-theme="dark"] .lstage-vignette {
-  background:
-    radial-gradient(ellipse 70% 50% at 50% 50%,
-      transparent 0%,
-      transparent 40%,
-      color-mix(in srgb, #0F172A 60%, transparent) 100%);
-}
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) .lstage-vignette {
-    background:
-      radial-gradient(ellipse 70% 50% at 50% 50%,
-        transparent 0%,
-        transparent 40%,
-        color-mix(in srgb, #0F172A 60%, transparent) 100%);
-  }
-}
-
-/* Small identity badge top-left of the stage — avatar + name only.
-   The big "Qiankang Wang" headline lives in the hero scene on the right,
-   so this is just a discreet permanent signature. */
-.lstage-badge {
-  position: absolute;
-  top: clamp(1.25rem, 3vh, 2rem);
-  left: clamp(1.25rem, 3vw, 2.25rem);
-  z-index: 3;
+/* Identity badge — top-left of the viewport */
+.id-badge {
+  position: fixed;
+  top: clamp(1rem, 2.5vh, 1.75rem);
+  left: clamp(1rem, 2.5vw, 1.75rem);
+  z-index: 60;
   display: flex;
   align-items: center;
-  gap: .75rem;
+  gap: .65rem;
+  padding: .35rem .85rem .35rem .35rem;
+  border-radius: 9999px;
+  background: color-mix(in srgb, var(--bg) 55%, transparent);
+  backdrop-filter: blur(14px) saturate(1.2);
+  -webkit-backdrop-filter: blur(14px) saturate(1.2);
+  border: 1px solid var(--border);
 }
-.lstage-badge-meta {
+.id-badge-meta {
   display: flex;
   flex-direction: column;
   line-height: 1.2;
 }
-.lstage-badge-name {
+.id-badge-name {
   font-family: var(--serif);
   font-style: italic;
-  font-size: 1rem;
+  font-size: .95rem;
   color: var(--fg);
   letter-spacing: -.01em;
 }
-.lstage-badge-sub {
+.id-badge-sub {
   font-family: var(--mono);
-  font-size: .58rem;
+  font-size: .55rem;
   letter-spacing: .14em;
   text-transform: uppercase;
   color: var(--fg3);
 }
 
-/* Nav rail vertically centred on the left edge of the stage. */
-.lstage-nav {
-  position: absolute;
+/* Side rail — vertical nav, fixed to left edge, mid-viewport.
+   Hidden on hero (visible class toggled when user has scrolled). */
+.side-rail {
+  position: fixed;
   top: 50%;
-  left: clamp(1.25rem, 3vw, 2.25rem);
+  left: clamp(1rem, 2.5vw, 1.75rem);
   transform: translateY(-50%);
-  z-index: 3;
+  z-index: 60;
   display: flex;
   flex-direction: column;
-  gap: .35rem;
+  gap: .25rem;
+  padding: .9rem .8rem;
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--bg) 50%, transparent);
+  backdrop-filter: blur(14px) saturate(1.2);
+  -webkit-backdrop-filter: blur(14px) saturate(1.2);
+  border: 1px solid var(--border);
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-12px, -50%);
+  transition: opacity .5s cubic-bezier(.22,1,.36,1), transform .5s cubic-bezier(.22,1,.36,1);
+}
+.side-rail.visible {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translate(0, -50%);
 }
 
-/* Foot row at the bottom: contacts on the left, theme toggle on the right. */
-.lstage-foot {
-  position: absolute;
-  bottom: clamp(1.25rem, 3vh, 2rem);
-  left: clamp(1.5rem, 3vw, 2.5rem);
-  right: clamp(1.5rem, 3vw, 2.5rem);
-  z-index: 2;
+/* Corner controls (contacts + theme toggle) — bottom-right */
+.corner-controls {
+  position: fixed;
+  bottom: clamp(1rem, 2.5vh, 1.75rem);
+  right: clamp(1rem, 2.5vw, 1.75rem);
+  z-index: 60;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: .25rem;
+  padding: .25rem .35rem;
+  border-radius: 9999px;
+  background: color-mix(in srgb, var(--bg) 55%, transparent);
+  backdrop-filter: blur(14px) saturate(1.2);
+  -webkit-backdrop-filter: blur(14px) saturate(1.2);
+  border: 1px solid var(--border);
 }
 
 .sb-avatar-btn {
@@ -487,18 +477,15 @@ body::before {
 }
 
 /* ════════════════════════════════════════════════════════════════════
-   Main column — holds the scrolling sections (scenes)
+   Main column — single centred reading column on top of the atmosphere
    ════════════════════════════════════════════════════════════════════ */
 .main {
   position: relative;
   z-index: 2;
   width: 100%;
-  /* Comfortable reading column inside the right pane — caps at 640px so
-     long paragraphs don't sprawl, but the pane itself fills 50vw. */
-  max-width: 640px;
-  /* Editorial gutters: generous on the left so copy "starts" away from
-     the split, normal on the right. */
-  padding: 0 clamp(1rem, 3vw, 3rem) 0 clamp(2.5rem, 5vw, 4.5rem);
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 0 clamp(1rem, 4vw, 2.5rem);
 }
 
 /* Each section is a tall scroll container; its inner stage pins to the
@@ -530,16 +517,23 @@ body::before {
 .sect-stage {
   position: relative;
   width: 100%;
-  /* No card chrome — content sits directly on the bg as editorial copy.
-     Each stage starts hidden + offset; the .in class (driven by the
-     IntersectionObserver in <Section>) triggers the slide-in when the
-     section actually scrolls into the right column, syncing with the
-     camera move on the left "screen". */
+  /* Subtle glass treatment so the network reads through the content
+     block while paragraphs stay legible. No hard borders — just a soft
+     bg tint + backdrop blur and a single hairline. Feels integrated
+     into the atmosphere instead of stamped on top. */
+  padding: clamp(2rem, 4vh, 3rem) clamp(1.5rem, 3.5vw, 2.75rem);
+  border-radius: 24px;
+  background: color-mix(in srgb, var(--bg) 55%, transparent);
+  backdrop-filter: blur(18px) saturate(1.15);
+  -webkit-backdrop-filter: blur(18px) saturate(1.15);
+  border: 1px solid color-mix(in srgb, var(--fg) 6%, transparent);
+  /* IO-driven slide-in: starts faintly offset, lands when the section
+     scrolls into view — synced with the camera move on the bg canvas. */
   opacity: 0;
-  transform: translateX(40px);
+  transform: translateY(48px);
   transition:
-    opacity .9s cubic-bezier(.22, 1, .36, 1),
-    transform .9s cubic-bezier(.22, 1, .36, 1);
+    opacity 1s cubic-bezier(.22, 1, .36, 1),
+    transform 1s cubic-bezier(.22, 1, .36, 1);
   will-change: opacity, transform;
 }
 .sect.in .sect-stage {

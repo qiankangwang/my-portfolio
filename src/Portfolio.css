@@ -207,8 +207,27 @@ body::before {
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) .atmos { background: #0A1322; }
 }
-.atmos > div:not(.atmos-vignette),
+.atmos > div:not(.atmos-vignette):not(.vanta-layer),
 .atmos canvas {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* Two stacked Vanta layers — cross-fade on scene change.
+   The .vanta-front class marks which one is currently visible; the
+   other fades to 0 over 900ms. */
+.vanta-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  opacity: 0;
+  transition: opacity .9s cubic-bezier(.22, 1, .36, 1);
+  pointer-events: none;
+}
+.vanta-layer.vanta-front {
+  opacity: 1;
+}
+.vanta-layer > canvas {
   width: 100% !important;
   height: 100% !important;
 }

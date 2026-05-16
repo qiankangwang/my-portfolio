@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback, memo } from "react";
 import D from "./data";
-import NeuralNetCanvas from "./NeuralNetCanvas";
+import VantaScene from "./VantaScene";
 import "./Portfolio.css";
 
 /* ── Ambient background orbs ── */
@@ -37,14 +37,14 @@ function useTypewriter(text, speed = 28) {
 }
 
 /* ── Atmosphere ──
-   Full-bleed fixed neural-network canvas sitting behind everything.
-   The network is the page's continuous atmosphere — content scrolls
-   on top of it; the camera repositions per scene without ever splitting
-   off into its own pane. */
-const Atmosphere = memo(function Atmosphere({ sceneRef }) {
+   Full-bleed fixed Three.js-backed scene sitting behind everything.
+   Each scroll scene gets its OWN dedicated Vanta effect; cross-fade
+   between effects on scene change so each scene reads as its own
+   animation rather than a single backdrop with motifs piled on top. */
+const Atmosphere = memo(function Atmosphere({ activeScene }) {
   return (
     <div className="atmos" aria-hidden="true">
-      <NeuralNetCanvas sceneRef={sceneRef} />
+      <VantaScene activeScene={activeScene} />
       <div className="atmos-vignette" />
     </div>
   );
@@ -308,11 +308,15 @@ export default function Portfolio() {
   const [active, setActive] = useState("");
   const [repos, setRepos] = useState([]);
   const [repoLoading, setRepoLoading] = useState(true);
+  // Integer index of the currently active scene (0..5). Drives the
+  // Atmosphere's Vanta-effect switcher — flips when the user crosses
+  // into a new scroll scene.
+  const [activeScene, setActiveScene] = useState(0);
 
-  // Continuous "scene index" handed to the canvas — a value in
-  // [0, SCENE_IDS.length-1] that tracks which scene the user is currently
-  // viewing, with smooth fractions in between. Scene 0 = hero (wide
-  // network), 1 = about (input layer zoom), etc.
+  // Continuous "scene index" — a value in [0, SCENE_IDS.length-1] that
+  // tracks the current scroll position as a float. Used for the smoother
+  // scene-edge detection; the integer activeScene state is derived from
+  // its rounded value.
   const sceneRef = useRef(0);
 
   useEffect(() => {
@@ -353,6 +357,10 @@ export default function Portfolio() {
           }
         }
         sceneRef.current = scene;
+        // Round to integer for the Vanta scene switcher. setState skips
+        // the work when the value hasn't actually changed.
+        const sceneInt = Math.round(scene);
+        setActiveScene((cur) => (cur === sceneInt ? cur : sceneInt));
 
         // Nav rail highlight — flip when a NAV section's top crosses
         // the upper threshold of the viewport. (Hero isn't in the rail.)
@@ -466,7 +474,7 @@ export default function Portfolio() {
          page's living atmosphere. Identity badge, nav rail, and theme
          controls float in the viewport corners. Content scrolls in a
          single centred column on top — no split panes anywhere. */}
-      <Atmosphere sceneRef={sceneRef} />
+      <Atmosphere activeScene={activeScene} />
       <IdentityBadge onAvatarClick={onAvatarClick} avatarRef={avatarRef} />
       <SideRail active={active} scrollTo={scrollTo} visible={scrolled} />
       <CornerControls theme={theme} toggleTheme={toggleTheme} />

@@ -3,89 +3,44 @@
    ════════════════════════════════════════════════════════════════════ */
 
 :root {
-  --bg:          #F8FAFC;
-  --bg2:         #F1F5F9;
-  --bg3:         #E2E8F0;
-  --fg:          #0F172A;
-  --fg2:         #334155;
-  --fg3:         #64748B;
-  --fg4:         #94A3B8;
-  --accent:      #3B82F6;
-  --accent2:     #2563EB;
-  --accent3:     #1D4ED8;
-  --warm:        #F59E0B;
-  --accent-soft: rgba(59,130,246,.08);
-  --accent-soft2: rgba(59,130,246,.12);
-  --warm-soft:   rgba(245,158,11,.08);
-  --border:      rgba(15,23,42,.06);
-  --border-strong: rgba(15,23,42,.10);
-  --card:        #FFFFFF;
-  --card2:       #FAFBFC;
-  --glass:       rgba(255,255,255,.72);
-  --serif: 'Instrument Serif', Georgia, 'Times New Roman', serif;
-  --sans:  'Satoshi', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  --mono:  'JetBrains Mono', 'Fira Code', ui-monospace, monospace;
-  --r:     16px;
-  --r-sm:  12px;
-  --r-lg:  20px;
-  --sh-sm: 0 1px 2px rgba(15,23,42,.03), 0 2px 8px rgba(15,23,42,.04);
-  --sh:    0 1px 3px rgba(15,23,42,.04), 0 4px 20px rgba(15,23,42,.06);
-  --sh2:   0 2px 8px rgba(15,23,42,.05), 0 12px 40px rgba(15,23,42,.08);
-  --sh3:   0 4px 16px rgba(15,23,42,.06), 0 20px 60px rgba(15,23,42,.12);
+  /* Terminal / AI-lab palette — true black + terminal green + grey-zero
+     amber. Light mode is intentionally absent; this is a dark-only
+     research-console aesthetic. */
+  --bg:          #050505;
+  --bg2:         #0B0E12;
+  --bg3:         #14181F;
+  --fg:          #E6E6E6;
+  --fg2:         #A8B0B5;
+  --fg3:         #6B7077;
+  --fg4:         #3F454C;
+  --accent:      #00FFA3;             /* terminal green */
+  --accent2:     #34D399;             /* mid-saturation green */
+  --accent3:     #047857;             /* deep green */
+  --warm:        #FFB347;             /* signal amber for status accents */
+  --accent-soft:  rgba(0, 255, 163, .08);
+  --accent-soft2: rgba(0, 255, 163, .14);
+  --warm-soft:    rgba(255, 179, 71, .10);
+  --border:        rgba(230, 230, 230, .06);
+  --border-strong: rgba(230, 230, 230, .12);
+  --card:        #0B0E12;
+  --card2:       #14181F;
+  --glass:       rgba(11, 14, 18, .68);
+  --serif: 'JetBrains Mono', ui-monospace, monospace;
+  --sans:  'Space Grotesk', system-ui, -apple-system, sans-serif;
+  --mono:  'JetBrains Mono', ui-monospace, monospace;
+  --r:     8px;
+  --r-sm:  4px;
+  --r-lg:  12px;
+  --sh-sm: 0 1px 2px rgba(0,0,0,.45);
+  --sh:    0 1px 3px rgba(0,0,0,.55), 0 4px 18px rgba(0,0,0,.45);
+  --sh2:   0 2px 8px rgba(0,0,0,.55), 0 12px 36px rgba(0,0,0,.55);
+  --sh3:   0 4px 16px rgba(0,0,0,.65), 0 20px 60px rgba(0,0,0,.65);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --bg:          #020617;
-    --bg2:         #0F172A;
-    --bg3:         #1E293B;
-    --fg:          #F1F5F9;
-    --fg2:         #CBD5E1;
-    --fg3:         #64748B;
-    --fg4:         #475569;
-    --accent:      #60A5FA;
-    --accent2:     #3B82F6;
-    --accent3:     #2563EB;
-    --warm:        #FBBF24;
-    --accent-soft: rgba(96,165,250,.10);
-    --accent-soft2: rgba(96,165,250,.15);
-    --warm-soft:   rgba(251,191,36,.10);
-    --border:      rgba(241,245,249,.06);
-    --border-strong: rgba(241,245,249,.10);
-    --card:        #0F172A;
-    --card2:       #1E293B;
-    --glass:       rgba(15,23,42,.64);
-    --sh-sm: 0 1px 2px rgba(0,0,0,.20), 0 2px 8px rgba(0,0,0,.15);
-    --sh:    0 1px 3px rgba(0,0,0,.25), 0 4px 20px rgba(0,0,0,.20);
-    --sh2:   0 2px 8px rgba(0,0,0,.30), 0 12px 40px rgba(0,0,0,.25);
-    --sh3:   0 4px 16px rgba(0,0,0,.35), 0 20px 60px rgba(0,0,0,.30);
-  }
-}
-
-[data-theme="dark"] {
-  --bg:          #020617;
-  --bg2:         #0F172A;
-  --bg3:         #1E293B;
-  --fg:          #F1F5F9;
-  --fg2:         #CBD5E1;
-  --fg3:         #64748B;
-  --fg4:         #475569;
-  --accent:      #60A5FA;
-  --accent2:     #3B82F6;
-  --accent3:     #2563EB;
-  --warm:        #FBBF24;
-  --accent-soft: rgba(96,165,250,.10);
-  --accent-soft2: rgba(96,165,250,.15);
-  --warm-soft:   rgba(251,191,36,.10);
-  --border:      rgba(241,245,249,.06);
-  --border-strong: rgba(241,245,249,.10);
-  --card:        #0F172A;
-  --card2:       #1E293B;
-  --glass:       rgba(15,23,42,.64);
-  --sh-sm: 0 1px 2px rgba(0,0,0,.20), 0 2px 8px rgba(0,0,0,.15);
-  --sh:    0 1px 3px rgba(0,0,0,.25), 0 4px 20px rgba(0,0,0,.20);
-  --sh2:   0 2px 8px rgba(0,0,0,.30), 0 12px 40px rgba(0,0,0,.25);
-  --sh3:   0 4px 16px rgba(0,0,0,.35), 0 20px 60px rgba(0,0,0,.30);
+/* Light mode is unsupported in the terminal aesthetic; any [data-theme]
+   override falls back to the same palette so the toggle is harmless. */
+[data-theme] {
+  color-scheme: dark;
 }
 
 /* ════════════════════════════════════════════════════════════════════
@@ -138,56 +93,37 @@ body {
 input, textarea, [contenteditable] { cursor: text; }
 ::selection { background: var(--accent); color: #fff; }
 
-/* Subtle grain texture */
+/* CRT-style hairline scan lines + soft grain — gives the terminal
+   backdrop a tactile feel without competing with the particles. */
 body::after {
   content: '';
   position: fixed; inset: 0; z-index: 9999;
   pointer-events: none;
-  opacity: .025;
+  opacity: .04;
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
   background-size: 256px 256px;
+  mix-blend-mode: overlay;
 }
-
-/* Dot grid background */
 body::before {
   content: '';
   position: fixed; inset: 0; z-index: 0; pointer-events: none;
-  background-image: radial-gradient(circle, var(--border-strong) 1px, transparent 1px);
-  background-size: 48px 48px;
-  mask-image: radial-gradient(ellipse 80% 50% at 50% 0%, #000 0%, transparent 70%);
-  -webkit-mask-image: radial-gradient(ellipse 80% 50% at 50% 0%, #000 0%, transparent 70%);
-  opacity: .6;
+  background-image: repeating-linear-gradient(
+    0deg,
+    rgba(255, 255, 255, .015) 0px,
+    rgba(255, 255, 255, .015) 1px,
+    transparent 1px,
+    transparent 4px
+  );
 }
 
 /* ════════════════════════════════════════════════════════════════════
    Ambient Orbs
    ════════════════════════════════════════════════════════════════════ */
 
-.ambient { position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
-.amb-orb { position: absolute; border-radius: 50%; filter: blur(120px); }
-.amb-1 {
-  width: 700px; height: 700px;
-  background: radial-gradient(circle, var(--accent-soft2) 0%, transparent 65%);
-  top: -20%; right: -15%;
-  animation: floatOrb 20s ease-in-out infinite;
-}
-.amb-2 {
-  width: 550px; height: 550px;
-  background: radial-gradient(circle, var(--warm-soft) 0%, transparent 65%);
-  bottom: 10%; left: -12%;
-  animation: floatOrb 25s ease-in-out infinite reverse;
-}
-.amb-3 {
-  width: 400px; height: 400px;
-  background: radial-gradient(circle, var(--accent-soft) 0%, transparent 65%);
-  top: 40%; left: 60%;
-  animation: floatOrb 18s ease-in-out infinite 5s;
-}
-@keyframes floatOrb {
-  0%, 100% { transform: translate(0, 0) scale(1); }
-  33% { transform: translate(30px, -20px) scale(1.05); }
-  66% { transform: translate(-20px, 15px) scale(0.95); }
-}
+/* Ambient orbs removed — too soft / glamorous for the terminal feel. */
+.ambient,
+.amb-orb,
+.amb-1, .amb-2, .amb-3 { display: none; }
 
 /* ════════════════════════════════════════════════════════════════════
    Atmosphere — full-bleed neural-network canvas
@@ -199,13 +135,9 @@ body::before {
   inset: 0;
   z-index: 0;
   pointer-events: none;
-  /* Cool-gray backdrop so the network reads against something cohesive
-     instead of pure white. Body bg can be tinted in the same direction. */
-  background: #DDE3EB;
-}
-:root[data-theme="dark"] .atmos { background: #0A1322; }
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) .atmos { background: #0A1322; }
+  /* True-black terminal backdrop so the green/amber particles glow
+     against pure darkness. */
+  background: #050505;
 }
 .atmos > div:not(.atmos-vignette):not(.particle-scene),
 .atmos canvas {
@@ -230,27 +162,21 @@ body::before {
   position: absolute;
   inset: 0;
   pointer-events: none;
+  /* Subtle vignette + a hairline scan-line pattern for the CRT/terminal
+     look. The scan lines are 2px tall, very low alpha, so they read as
+     texture not stripes. */
   background:
+    repeating-linear-gradient(
+      0deg,
+      rgba(255,255,255,.022) 0px,
+      rgba(255,255,255,.022) 1px,
+      transparent 1px,
+      transparent 3px
+    ),
     radial-gradient(ellipse 80% 60% at 50% 50%,
       transparent 0%,
-      transparent 50%,
-      color-mix(in srgb, #DDE3EB 70%, transparent) 100%);
-}
-:root[data-theme="dark"] .atmos-vignette {
-  background:
-    radial-gradient(ellipse 80% 60% at 50% 50%,
-      transparent 0%,
-      transparent 50%,
-      color-mix(in srgb, #0A1322 70%, transparent) 100%);
-}
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) .atmos-vignette {
-    background:
-      radial-gradient(ellipse 80% 60% at 50% 50%,
-        transparent 0%,
-        transparent 50%,
-        color-mix(in srgb, #0A1322 70%, transparent) 100%);
-  }
+      transparent 55%,
+      rgba(0, 0, 0, .55) 100%);
 }
 
 

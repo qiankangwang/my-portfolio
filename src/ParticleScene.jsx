@@ -189,23 +189,23 @@ export default function ParticleScene({ sceneRef }) {
     const formations = buildFormations(PARTICLE_COUNT);
 
     // ── Per-scene colour palettes ──────────────────────────────────
-    // Each scene has its own (accentR, accentG, accentB, warmR, warmG,
-    // warmB) pair. Each frame the active colour is lerped between
-    // adjacent scenes' palettes so the chromatic identity flows in
-    // sync with the morph (Hero cool → About pink → … → Skills violet).
+    // Terminal aesthetic: single chromatic family (terminal green +
+    // signal amber) with subtle hue variation per scene. Stays cohesive
+    // like a research console, not a rainbow demo.
+    //   (accentR, accentG, accentB, warmR, warmG, warmB)
     const SCENE_PALETTE = [
-      // 0 Hero — cool blue cloud + gold sparks (theme anchor)
-      [0.28, 0.62, 0.96,  0.98, 0.68, 0.28],
-      // 1 About — biology pink + cream (cellular warmth)
-      [0.88, 0.50, 0.78,  0.98, 0.78, 0.55],
-      // 2 Research — cool blue + cyan (analytical)
-      [0.32, 0.66, 0.98,  0.55, 0.92, 0.96],
-      // 3 Publication — academic gold + ember (paper / citation)
-      [0.96, 0.78, 0.30,  0.96, 0.42, 0.30],
-      // 4 Projects — engineer teal + lime (build / make)
-      [0.30, 0.86, 0.72,  0.86, 0.92, 0.35],
-      // 5 Skills — violet + magenta (orbital / mixed toolset)
-      [0.72, 0.45, 0.98,  0.98, 0.45, 0.78],
+      // 0 Hero       — terminal green + amber signal
+      [0.00, 1.00, 0.64,   1.00, 0.70, 0.28],
+      // 1 About      — cooler green-cyan + amber
+      [0.18, 0.95, 0.78,   1.00, 0.70, 0.28],
+      // 2 Research   — pure terminal green + amber
+      [0.00, 1.00, 0.64,   1.00, 0.78, 0.32],
+      // 3 Publication — yellower phosphor (older CRT) + amber
+      [0.55, 1.00, 0.45,   1.00, 0.62, 0.22],
+      // 4 Projects   — light green + cyan amber
+      [0.40, 1.00, 0.68,   0.40, 0.95, 0.95],
+      // 5 Skills     — cyan-leaning phosphor + amber
+      [0.18, 0.95, 0.88,   1.00, 0.70, 0.28],
     ];
 
     // ── Geometry ───────────────────────────────────────────────────
@@ -234,29 +234,31 @@ export default function ParticleScene({ sceneRef }) {
     geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
     geometry.setAttribute("color", new THREE.BufferAttribute(colors, 3));
 
-    // ── Particle sprite — solid centre with a soft halo. Bolder than
-    //     the previous ink dot so colours read against the editorial
-    //     background. ────────────────────────────────────────────────
+    // ── Particle sprite — phosphor pixel: tight bright core + soft
+    //     bloom halo. Reads like a CRT phosphor dot or a node on an
+    //     oscilloscope. Additive blending so overlapping particles
+    //     compound into brighter glow (terminal phosphor behaviour). ─
     const haloCanvas = document.createElement("canvas");
     haloCanvas.width = 64;
     haloCanvas.height = 64;
     const hctx = haloCanvas.getContext("2d");
     const grad = hctx.createRadialGradient(32, 32, 0, 32, 32, 32);
     grad.addColorStop(0.00, "rgba(255,255,255,1.00)");
-    grad.addColorStop(0.22, "rgba(255,255,255,0.92)");
-    grad.addColorStop(0.55, "rgba(255,255,255,0.45)");
+    grad.addColorStop(0.14, "rgba(255,255,255,0.95)");
+    grad.addColorStop(0.40, "rgba(255,255,255,0.35)");
+    grad.addColorStop(0.90, "rgba(255,255,255,0.04)");
     grad.addColorStop(1.00, "rgba(255,255,255,0)");
     hctx.fillStyle = grad;
     hctx.fillRect(0, 0, 64, 64);
     const haloTex = new THREE.CanvasTexture(haloCanvas);
 
     const material = new THREE.PointsMaterial({
-      size: 5.5,
+      size: 4.2,
       map: haloTex,
       vertexColors: true,
       transparent: true,
-      opacity: 0.95,
-      blending: THREE.NormalBlending,
+      opacity: 1.0,
+      blending: THREE.AdditiveBlending,
       depthWrite: false,
       sizeAttenuation: true,
     });
@@ -270,7 +272,7 @@ export default function ParticleScene({ sceneRef }) {
     //     traces the formation's natural ordering — DNA strands, ring
     //     orbits, grid rows. Single saturated colour pulled from the
     //     active scene palette per frame. ──────────────────────────
-    const LINE_STRIDE = 8;
+    const LINE_STRIDE = 4;
     const linePairs = [];
     for (let i = 0; i + 1 < PARTICLE_COUNT; i += LINE_STRIDE) {
       linePairs.push([i, i + 1]);
@@ -279,10 +281,10 @@ export default function ParticleScene({ sceneRef }) {
     const lineGeometry = new THREE.BufferGeometry();
     lineGeometry.setAttribute("position", new THREE.BufferAttribute(linePositions, 3));
     const lineMaterial = new THREE.LineBasicMaterial({
-      color: 0x3b82f6,
+      color: 0x00ffa3,
       transparent: true,
-      opacity: 0.85,
-      blending: THREE.NormalBlending,
+      opacity: 0.55,
+      blending: THREE.AdditiveBlending,
       depthWrite: false,
     });
     const lines = new THREE.LineSegments(lineGeometry, lineMaterial);

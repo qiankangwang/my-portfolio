@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback, memo } from "react";
 import D from "./data";
-import VantaScene from "./VantaScene";
+import ParticleScene from "./ParticleScene";
 import "./Portfolio.css";
 
 /* ── Ambient background orbs ── */
@@ -37,14 +37,14 @@ function useTypewriter(text, speed = 28) {
 }
 
 /* ── Atmosphere ──
-   Full-bleed fixed Three.js-backed scene sitting behind everything.
-   Each scroll scene gets its OWN dedicated Vanta effect; cross-fade
-   between effects on scene change so each scene reads as its own
-   animation rather than a single backdrop with motifs piled on top. */
-const Atmosphere = memo(function Atmosphere({ activeScene }) {
+   Full-bleed Three.js particle scene that morphs between formations
+   as the user scrolls — one continuous animation, not six swapped
+   ones. Receives the continuous sceneRef so the morph is smooth
+   between sections, not stepped on scene boundaries. */
+const Atmosphere = memo(function Atmosphere({ sceneRef }) {
   return (
     <div className="atmos" aria-hidden="true">
-      <VantaScene activeScene={activeScene} />
+      <ParticleScene sceneRef={sceneRef} />
       <div className="atmos-vignette" />
     </div>
   );
@@ -308,15 +308,10 @@ export default function Portfolio() {
   const [active, setActive] = useState("");
   const [repos, setRepos] = useState([]);
   const [repoLoading, setRepoLoading] = useState(true);
-  // Integer index of the currently active scene (0..5). Drives the
-  // Atmosphere's Vanta-effect switcher — flips when the user crosses
-  // into a new scroll scene.
-  const [activeScene, setActiveScene] = useState(0);
 
   // Continuous "scene index" — a value in [0, SCENE_IDS.length-1] that
-  // tracks the current scroll position as a float. Used for the smoother
-  // scene-edge detection; the integer activeScene state is derived from
-  // its rounded value.
+  // tracks the current scroll position as a float. Handed to the
+  // ParticleScene every frame to drive the morph between formations.
   const sceneRef = useRef(0);
 
   useEffect(() => {
@@ -357,10 +352,6 @@ export default function Portfolio() {
           }
         }
         sceneRef.current = scene;
-        // Round to integer for the Vanta scene switcher. setState skips
-        // the work when the value hasn't actually changed.
-        const sceneInt = Math.round(scene);
-        setActiveScene((cur) => (cur === sceneInt ? cur : sceneInt));
 
         // Nav rail highlight — flip when a NAV section's top crosses
         // the upper threshold of the viewport. (Hero isn't in the rail.)
@@ -474,7 +465,7 @@ export default function Portfolio() {
          page's living atmosphere. Identity badge, nav rail, and theme
          controls float in the viewport corners. Content scrolls in a
          single centred column on top — no split panes anywhere. */}
-      <Atmosphere activeScene={activeScene} />
+      <Atmosphere sceneRef={sceneRef} />
       <IdentityBadge onAvatarClick={onAvatarClick} avatarRef={avatarRef} />
       <SideRail active={active} scrollTo={scrollTo} visible={scrolled} />
       <CornerControls theme={theme} toggleTheme={toggleTheme} />

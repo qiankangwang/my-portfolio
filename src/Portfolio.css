@@ -207,29 +207,24 @@ body::before {
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) .atmos { background: #0A1322; }
 }
-.atmos > div:not(.atmos-vignette):not(.vanta-layer),
+.atmos > div:not(.atmos-vignette):not(.particle-scene),
 .atmos canvas {
   width: 100% !important;
   height: 100% !important;
 }
 
-/* Two stacked Vanta layers — cross-fade on scene change.
-   The .vanta-front class marks which one is currently visible; the
-   other fades to 0 over 900ms. */
-.vanta-layer {
+/* Single Three.js particle field container. The morph between
+   formations is continuous — no cross-fade overlays needed. */
+.particle-scene {
   position: absolute;
   inset: 0;
   z-index: 0;
-  opacity: 0;
-  transition: opacity .9s cubic-bezier(.22, 1, .36, 1);
   pointer-events: none;
 }
-.vanta-layer.vanta-front {
-  opacity: 1;
-}
-.vanta-layer > canvas {
+.particle-scene > canvas {
   width: 100% !important;
   height: 100% !important;
+  display: block;
 }
 .atmos-vignette {
   position: absolute;

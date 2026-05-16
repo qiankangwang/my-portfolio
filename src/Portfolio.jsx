@@ -25,7 +25,31 @@ function AmbientBg() {
    - sb-nav items show an animated rail; the active one extends + brightens
    - sb-foot has contact icons + theme toggle
    - On ≤968px the layout collapses; this becomes a top header in the CSS. */
+// Typewriter — character-by-character reveal at 28ms / char (the speed
+// the user previously dialled in and likes). Cursor blinks while typing
+// and disappears once the full string is on screen.
+function useTypewriter(text, speed = 28) {
+  const [out, setOut] = useState("");
+  const [done, setDone] = useState(false);
+  useEffect(() => {
+    setOut("");
+    setDone(false);
+    let i = 0;
+    const id = setInterval(() => {
+      i++;
+      setOut(text.slice(0, i));
+      if (i >= text.length) {
+        clearInterval(id);
+        setDone(true);
+      }
+    }, speed);
+    return () => clearInterval(id);
+  }, [text, speed]);
+  return { text: out, done };
+}
+
 const Sidebar = memo(function Sidebar({ active, theme, toggleTheme, onAvatarClick, avatarRef, scrollTo }) {
+  const tagline = useTypewriter(D.tagline);
   return (
     <aside className="sidebar">
       <div className="sb-top">
@@ -46,7 +70,10 @@ const Sidebar = memo(function Sidebar({ active, theme, toggleTheme, onAvatarClic
         </button>
         <h1 className="sb-name">{D.fullName}</h1>
         <div className="sb-kicker">UC Berkeley · Data Science · 2027</div>
-        <p className="sb-tagline">{D.tagline}</p>
+        <p className="sb-tagline">
+          {tagline.text}
+          <span className={`sb-caret${tagline.done ? " sb-caret-done" : ""}`} aria-hidden="true" />
+        </p>
       </div>
 
       <nav className="sb-nav" aria-label="Section navigation">

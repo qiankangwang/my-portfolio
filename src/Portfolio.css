@@ -234,16 +234,16 @@ body::before {
    ════════════════════════════════════════════════════════════════════ */
 .layout {
   display: grid;
-  grid-template-columns: minmax(280px, 24%) minmax(0, 1fr);
-  /* Narrower max-width so the 3D scene breathes visibly on both edges of
-     the viewport at wider screen sizes — the animation reads as the stage
-     and the text content reads as a panel laid over it. */
-  max-width: 1180px;
-  margin: 0 auto;
+  /* Sidebar column has a flexible-but-bounded width via clamp so it scales
+     with the viewport. No max-width on .layout — the sidebar text now
+     hugs the viewport's left edge (its own padding-left is the page's
+     left margin). Main column is capped via .main max-width below so
+     cards don't stretch ultra-wide on big monitors. */
+  grid-template-columns: clamp(240px, 22vw, 320px) minmax(0, 1fr);
+  margin: 0;
   position: relative;
   z-index: 2;
   gap: clamp(1.5rem, 3vw, 3.5rem);
-  padding-inline: clamp(1.5rem, 3vw, 2.5rem);
 }
 
 /* ── Sidebar ── */
@@ -255,8 +255,11 @@ body::before {
   flex-direction: column;
   justify-content: space-between;
   padding-block: clamp(3rem, 8vh, 6rem);
-  padding-inline: 1.5rem;
-  margin-inline: -1.5rem;
+  /* Left padding = the page's left margin. Responsive: 16px on small
+     screens, up to 40px on ≥1600px viewports. Right side is a smaller
+     consistent gap into the gutter between sidebar and main. */
+  padding-left: clamp(1rem, 2.2vw, 2.5rem);
+  padding-right: 1.25rem;
   gap: 2rem;
   z-index: 50;
   /* Soft glass panel — quieter than before so it doesn't compete with
@@ -311,6 +314,27 @@ body::before {
   font-size: .95rem;
   line-height: 1.6;
   max-width: 28ch;
+}
+/* Typewriter caret — slim vertical bar that blinks while typing, then
+   gracefully disappears once the tagline is fully revealed. */
+.sb-caret {
+  display: inline-block;
+  width: 2px;
+  height: 1em;
+  margin-left: 2px;
+  vertical-align: -2px;
+  background: var(--accent);
+  animation: caret-blink 1s steps(2, end) infinite;
+}
+.sb-caret-done {
+  animation: caret-fade .6s ease-out forwards;
+}
+@keyframes caret-blink {
+  0%, 50% { opacity: 1; }
+  50.01%, 100% { opacity: 0; }
+}
+@keyframes caret-fade {
+  to { opacity: 0; }
 }
 
 /* ── Nav rail (animates from a 24px tick to a 64px line on hover/active) ── */
@@ -403,9 +427,12 @@ body::before {
   .sidebar {
     position: static;
     height: auto;
-    padding-block: 3rem;
-    padding-inline: 0;
+    padding: 3rem clamp(1rem, 4vw, 1.75rem);
     gap: 1.5rem;
+  }
+  .main {
+    max-width: none;
+    padding: 0 clamp(1rem, 4vw, 1.75rem);
   }
   .sb-tagline { max-width: none; }
   .sb-nav { display: none; }
@@ -418,6 +445,11 @@ body::before {
 .main {
   position: relative;
   z-index: 2;
+  /* Cap content width so on ultra-wide screens cards stay readable
+     instead of stretching to 1200px+. Right padding is the page's
+     right edge margin, responsive like the sidebar's left padding. */
+  max-width: 880px;
+  padding-right: clamp(1rem, 3vw, 3rem);
 }
 
 /* Each section is a tall scroll container; its inner stage pins to the

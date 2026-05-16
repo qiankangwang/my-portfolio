@@ -14,20 +14,8 @@ function AmbientBg() {
   );
 }
 
-/* ── Sidebar ──
-   The page's constant identity panel. Sticky on the left across the whole
-   page (Brittany-Chiang-style), replacing both the old fixed top nav and
-   the cinematic hero — name/avatar/tagline live here permanently, so the
-   right column is free to play out as a sequence of cinematic scenes.
-
-   - sb-avatar carries the click-to-headpat easter egg (same behaviour as
-     the old hero avatar)
-   - sb-nav items show an animated rail; the active one extends + brightens
-   - sb-foot has contact icons + theme toggle
-   - On ≤968px the layout collapses; this becomes a top header in the CSS. */
-// Typewriter — character-by-character reveal at 28ms / char (the speed
-// the user previously dialled in and likes). Cursor blinks while typing
-// and disappears once the full string is on screen.
+// Typewriter — character-by-character reveal at 28ms / char.
+// Cursor blinks while typing and disappears once fully revealed.
 function useTypewriter(text, speed = 28) {
   const [out, setOut] = useState("");
   const [done, setDone] = useState(false);
@@ -267,16 +255,13 @@ function useTheme() {
   return [theme, toggle];
 }
 
-/* (TiltCard / useTilt removed — the editorial layout has no card chrome
-   to tilt. Hover lift moved into per-element CSS transitions instead.) */
-
 /* ── Hero scene ──
-   First viewport of the page. The user's name is rendered HUGE in italic
-   serif over the network on the left, the tagline types out below, then
-   a scroll cue points down. Sets the page's overall art direction.
+   First viewport of the page. The page subject's name is rendered HUGE
+   in italic serif over the network, the tagline types out below, then
+   a scroll cue points down. Sets the overall art direction.
 
-   id="hero" so the scroll-handler's SCENE_IDS picks up its centre as the
-   first camera waypoint (the wide-overview shot). */
+   id="hero" so the scroll-handler's SCENE_IDS picks up its centre as
+   the first camera waypoint (the wide-overview shot). */
 const HeroScene = memo(function HeroScene() {
   const tagline = useTypewriter(D.tagline);
   return (

@@ -7,6 +7,7 @@ import {
   useEffect,
   Suspense,
   useState,
+  memo,
 } from "react";
 import * as THREE from "three";
 
@@ -81,14 +82,15 @@ function buildNetwork(N = 150, K = 6, radius = 2.85) {
 }
 
 /* ─── Neural network (InstancedMesh ×4 + wireframe containment) ─────── */
-function NeuralBrain({ pulseSpeedRef }) {
+function NeuralBrain() {
   const groupRef = useRef();
   const coreRef = useRef();
   const haloRef = useRef();
 
-  // Neural net is the hero: bigger radius, denser nodes, denser edges so the
-  // network reads as the dominant "AI" subject (DNA helix is now a side motif).
-  const { nodes, edges } = useMemo(() => buildNetwork(200, 7, 3.5), []);
+  // 160 nodes / K=6 keeps the network feeling dense without paying for 200×
+  // per-frame color buffer rewrites on lower-end GPUs (one of the sources
+  // of the choppy feel — the GPU was uploading ~1200 floats per frame).
+  const { nodes, edges } = useMemo(() => buildNetwork(160, 6, 3.4), []);
 
   // Initialise instance matrices + initial colors once.
   useEffect(() => {
@@ -110,21 +112,18 @@ function NeuralBrain({ pulseSpeedRef }) {
   useFrame(({ clock }) => {
     if (!coreRef.current) return;
     const t = clock.elapsedTime;
-    const speed = pulseSpeedRef?.current ?? 1;
 
-    // Travelling activation wave around the sphere's azimuth.
+    // Slow, continuous "breathing" activation wave instead of the old fast
+    // disco-pulse. Frequency 0.45/s (was 1.5/s and coupled to scroll
+    // velocity) gives a calm, cinematic shimmer. Burst is shaped by sin²
+    // for a softer ramp-in/out — no harsh on/off snaps.
     for (let i = 0; i < nodes.length; i++) {
       const n = nodes[i];
-      const wave = Math.sin(t * 1.5 * speed - n.wavePos * Math.PI * 4 + n.basePhase * 0.3);
+      const wave = Math.sin(t * 0.45 - n.wavePos * Math.PI * 4 + n.basePhase * 0.3);
       const burst = Math.max(0, wave);
-      // Lower at-rest intensity (0.6) so resting nodes read as solid dark
-      // blue dots on the light backdrop — only the bursting peaks blow into
-      // HDR territory for Bloom to pick up.
-      const intensity = 0.6 + burst * burst * 6.0;
+      const intensity = 0.6 + burst * burst * 5.5;
       _color.setRGB(0.376 * intensity, 0.647 * intensity, 0.98 * intensity);
       coreRef.current.setColorAt(i, _color);
-      // Halo: dimmer companion. Use a fresh color so multiplyScalar doesn't
-      // compound across frames.
       _color.multiplyScalar(0.3);
       haloRef.current.setColorAt(i, _color);
     }
@@ -132,8 +131,10 @@ function NeuralBrain({ pulseSpeedRef }) {
     haloRef.current.instanceColor.needsUpdate = true;
 
     if (groupRef.current) {
-      groupRef.current.rotation.y = t * 0.05;
-      groupRef.current.rotation.x = Math.sin(t * 0.07) * 0.1;
+      // Slow continuous orbit. Halved from t*0.05 so the network rotation
+      // reads as ambient drift, not active spinning.
+      groupRef.current.rotation.y = t * 0.025;
+      groupRef.current.rotation.x = Math.sin(t * 0.04) * 0.08;
     }
   });
 
@@ -158,7 +159,7 @@ function NeuralBrain({ pulseSpeedRef }) {
       </instancedMesh>
       {/* Edges + flowing data packets share the network's edges */}
       <NetworkEdges edges={edges} />
-      <DataPackets edges={edges} count={90} pulseSpeedRef={pulseSpeedRef} />
+      <DataPackets edges={edges} count={55} />
       {/* Faint wireframe icosahedron suggesting a containment field */}
       <mesh>
         <icosahedronGeometry args={[4.0, 2]} />
@@ -205,7 +206,7 @@ function NetworkEdges({ edges }) {
 }
 
 /* ─── Data packets streaming along edges (the "tech-thinking" feel) ──── */
-function DataPackets({ edges, count = 80, pulseSpeedRef }) {
+function DataPackets({ edges, count = 55 }) {
   const meshRef = useRef();
   // useMemo guarantees packets exists before the first useFrame tick;
   // useRef + useEffect raced the r3f render loop in StrictMode (first
@@ -214,17 +215,18 @@ function DataPackets({ edges, count = 80, pulseSpeedRef }) {
     () => Array.from({ length: count }, () => ({
       edgeIdx: Math.floor(Math.random() * edges.length),
       t: Math.random(),
-      speed: 0.5 + Math.random() * 0.7,
+      // Narrower speed range so packets travel at a more uniform pace —
+      // looks calmer / more deliberate.
+      speed: 0.35 + Math.random() * 0.35,
     })),
     [edges, count]
   );
 
   useFrame((_, dt) => {
     if (!meshRef.current) return;
-    const speed = pulseSpeedRef?.current ?? 1;
     for (let i = 0; i < count; i++) {
       const p = packets[i];
-      p.t += p.speed * dt * 0.55 * speed;
+      p.t += p.speed * dt * 0.45;
       if (p.t > 1) {
         p.t = 0;
         p.edgeIdx = Math.floor(Math.random() * edges.length);
@@ -616,14 +618,16 @@ function Nebula() {
      half of the canvas, leaving breathing room for the glass card on the
      right.
    ════════════════════════════════════════════════════════════════════════ */
-function CameraRig({ phaseRef, pulseSpeedRef }) {
+function CameraRig({ phaseRef }) {
   const { camera } = useThree();
   const desiredPos = useRef(new THREE.Vector3(0.6, 1.0, 10.5));
   const desiredLook = useRef(new THREE.Vector3(-1.0, 0, 0));
   const currentLook = useRef(new THREE.Vector3(-1.0, 0, 0));
-  const lastPhase = useRef(0);
-  const lastActiveIdx = useRef(-1);
-  const burstSpike = useRef(0);
+  // Low-pass-filtered phase: phaseRef can jump on wheel ticks (discrete
+  // scroll events), and feeding those jumps directly into the camera lerp
+  // produces visible micro-jolts. Smoothing the phase itself removes them
+  // at the source so the camera glides instead of pulses.
+  const smoothedPhase = useRef(0);
 
   // All waypoints stay close enough to the network that it reads as the
   // hero in every section. Look targets biased -1.0 X so the network sits
@@ -648,25 +652,15 @@ function CameraRig({ phaseRef, pulseSpeedRef }) {
   );
 
   useFrame((state, dt) => {
-    const p = Math.min(Math.max(phaseRef?.current ?? 0, 0), 1);
+    const rawP = Math.min(Math.max(phaseRef?.current ?? 0, 0), 1);
 
-    // Scroll velocity → pulse speed
-    const dp = Math.abs(p - lastPhase.current);
-    lastPhase.current = p;
-    const scrollVel = Math.min(dp * 60, 1);
-
-    // Section change detection — discrete segment index
-    const segCount = waypoints.length - 1;
-    const activeIdx = Math.min(Math.floor(p * segCount), segCount - 1);
-    if (activeIdx !== lastActiveIdx.current && lastActiveIdx.current >= 0) {
-      burstSpike.current = 1;
-    }
-    lastActiveIdx.current = activeIdx;
-
-    // Decay the spike
-    burstSpike.current *= Math.exp(-3.2 * dt);
-
-    pulseSpeedRef.current = 1 + scrollVel * 2.5 + burstSpike.current * 4;
+    // First-order low-pass on the phase itself. tau ≈ 0.10s — debounces
+    // discrete wheel-tick jumps without making the camera feel laggy. The
+    // camera-follow lerp downstream adds another ~0.25s smoothing, giving
+    // a total perceived response of ~0.35s — cinematic but responsive.
+    const kPhase = 1 - Math.exp(-(dt / 0.10));
+    smoothedPhase.current += (rawP - smoothedPhase.current) * kPhase;
+    const p = smoothedPhase.current;
 
     // Waypoint interpolation
     const idx = p * (waypoints.length - 1);
@@ -689,16 +683,22 @@ function CameraRig({ phaseRef, pulseSpeedRef }) {
     );
     const fov = a.fov + (b.fov - a.fov) * eased;
 
-    // Critical-damped follow
-    const k = 1 - Math.exp(-2.8 * dt);
+    // Critical-damped follow (tau ≈ 0.25s). Combined with the upstream
+    // 0.10s phase filter, the camera glides into each waypoint over ~0.35s
+    // total — fast enough to feel directly linked to scroll, slow enough
+    // to never appear to "snap".
+    const k = 1 - Math.exp(-dt / 0.25);
     camera.position.lerp(desiredPos.current, k);
     currentLook.current.lerp(desiredLook.current, k);
     camera.lookAt(currentLook.current);
 
-    // Handheld jitter
+    // Subtle slow drift in lieu of the old handheld jitter. ~0.5x lower
+    // amplitude and ~3x slower frequency — reads as "breathing", not
+    // "shaky cam". Applied as a relative offset to the lerped position so
+    // it doesn't compound frame-over-frame.
     const tNow = state.clock.elapsedTime;
-    camera.position.x += Math.sin(tNow * 0.7) * 0.014;
-    camera.position.y += Math.cos(tNow * 0.5) * 0.011;
+    camera.position.x += Math.sin(tNow * 0.22) * 0.006;
+    camera.position.y += Math.cos(tNow * 0.17) * 0.005;
 
     if (Math.abs(camera.fov - fov) > 0.05) {
       camera.fov = THREE.MathUtils.lerp(camera.fov, fov, k);
@@ -737,12 +737,17 @@ function Theme() {
 /* ════════════════════════════════════════════════════════════════════════
    Composition
    ════════════════════════════════════════════════════════════════════════ */
-export default function BgScene3D({ phaseRef }) {
-  const pulseSpeedRef = useRef(1);
-
+// Memoised: Portfolio re-renders on every scroll event (setProgress for the
+// CSS scroll bar). phaseRef is a stable useRef so React.memo's default
+// shallow compare skips the whole 3D subtree, leaving the Canvas's internal
+// useFrame loop to drive animation — no React work per scroll tick.
+function BgScene3DInner({ phaseRef }) {
   return (
     <Canvas
-      dpr={[1, 2]}
+      // DPR capped at 1.5 (was 2) — on retina laptops a 2× framebuffer is
+      // 1.78× the pixel work of 1.5×, and a steady 60fps is more important
+      // than the marginal sharpness gain for a soft animated backdrop.
+      dpr={[1, 1.5]}
       camera={{ position: [0.6, 1.0, 10.5], fov: 50, near: 0.1, far: 140 }}
       gl={{ antialias: true, powerPreference: "high-performance" }}
       style={{ position: "absolute", inset: 0, zIndex: 0 }}
@@ -764,7 +769,7 @@ export default function BgScene3D({ phaseRef }) {
         <pointLight position={[-5, 3, -3]} intensity={1.2} color={COL.blue} distance={18} />
         <pointLight position={[4, -1, 4]} intensity={0.9} color={COL.amber} distance={14} />
 
-        <CameraRig phaseRef={phaseRef} pulseSpeedRef={pulseSpeedRef} />
+        <CameraRig phaseRef={phaseRef} />
 
         {/* Stars are invisible on a light backdrop — Sparkles inside the
            neural cluster carries the "particles in the volume" feel. */}
@@ -781,7 +786,7 @@ export default function BgScene3D({ phaseRef }) {
         <Nebula />
 
         {/* Primary subject: neural network (AI side of AI+Bio research) */}
-        <NeuralBrain pulseSpeedRef={pulseSpeedRef} />
+        <NeuralBrain />
         {/* Side motif: DNA helix tucked behind-right of the network as a
            supporting "Bio" signal, scaled down so it doesn't compete with
            the network for visual weight. */}
@@ -828,3 +833,5 @@ export default function BgScene3D({ phaseRef }) {
     </Canvas>
   );
 }
+
+export default memo(BgScene3DInner);

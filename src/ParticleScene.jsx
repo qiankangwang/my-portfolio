@@ -280,6 +280,38 @@ export default function ParticleScene({ sceneRef }) {
     const lines = new THREE.LineSegments(lineGeometry, lineMaterial);
     scene.add(lines);
 
+    // ── Per-scene camera vantage points ────────────────────────────
+    // Each scene has its own base camera offset so the formation is
+    // viewed from a deliberately different angle, not just zoom drift.
+    // (x, y, z, lookY) — camera position + where it's pointed vertically.
+    const SCENE_CAMS = [
+      // 0 Hero — wider, slight tilt up (atmospheric)
+      { x:  0, y:  20, z: 195, lookY: -5 },
+      // 1 About — angled in from upper-right onto the helix
+      { x: 35, y:  40, z: 175, lookY:  0 },
+      // 2 Research — straight-on like reading a chart
+      { x:  0, y:  10, z: 150, lookY:  0 },
+      // 3 Publication — looking down-into the sphere
+      { x:-30, y:  50, z: 170, lookY:-10 },
+      // 4 Projects — low angle, looking up at the grid
+      { x:  0, y: -45, z: 165, lookY: 20 },
+      // 5 Skills — high orbit, looking down at the rings
+      { x: 25, y:  60, z: 180, lookY:-15 },
+    ];
+
+    // ── Mouse parallax ─────────────────────────────────────────────
+    // Cursor position drives a subtle rotation of the whole scene —
+    // moves up to ~5° away from the cursor on each axis. Low-pass on
+    // arrival so it doesn't twitch on every move event.
+    const mouse = { x: 0, y: 0, tx: 0, ty: 0 };
+    const onMouseMove = (e) => {
+      mouse.tx = (e.clientX / window.innerWidth)  * 2 - 1;
+      mouse.ty = (e.clientY / window.innerHeight) * 2 - 1;
+    };
+    if (!reducedMotion) {
+      window.addEventListener("mousemove", onMouseMove, { passive: true });
+    }
+
     // ── Animation loop ─────────────────────────────────────────────
     let raf = 0;
     let frame = 0;
@@ -289,6 +321,9 @@ export default function ParticleScene({ sceneRef }) {
     // doesn't twitch with wheel jitter).
     let smoothedScene = sceneRef?.current ?? 0;
     let lastTime = performance.now();
+
+    // Camera state — interpolated between SCENE_CAMS entries per frame.
+    const cam = { x: SCENE_CAMS[0].x, y: SCENE_CAMS[0].y, z: SCENE_CAMS[0].z, lookY: SCENE_CAMS[0].lookY };
 
     const tmpEuler = new THREE.Euler();
     const tmpQuat = new THREE.Quaternion();
@@ -348,21 +383,42 @@ export default function ParticleScene({ sceneRef }) {
       }
       lineGeometry.attributes.position.needsUpdate = true;
 
-      // Gentle continuous rotation — points cloud always slowly spinning.
-      // Adds depth cue (parallax between near/far particles).
-      const spinY = frame * (reducedMotion ? 0.0006 : 0.0018);
-      const tiltX = Math.sin(frame * 0.0011) * 0.18;
-      // Per-scene camera "drift" — slight offset that varies by scene
-      // index so transitions feel like the camera is also flying.
-      const camDriftZ = 0 + Math.sin(smoothedScene * 0.9) * 12;
-      const camDriftY = Math.sin(smoothedScene * 1.3) * 8;
+      // Low-pass smoothing on mouse parallax — keeps the cursor follow
+      // gentle rather than twitchy.
+      mouse.x += (mouse.tx - mouse.x) * (1 - Math.exp(-dt / 0.18));
+      mouse.y += (mouse.ty - mouse.y) * (1 - Math.exp(-dt / 0.18));
+
+      // Constant gentle rotation + cursor-driven rotation. The cursor
+      // adds up to ~9° of rotation away from where the mouse points,
+      // for a "the field is paying attention to you" feeling.
+      const spinY = frame * (reducedMotion ? 0.0006 : 0.0016) - mouse.x * 0.16;
+      const tiltX = Math.sin(frame * 0.0011) * 0.16 + mouse.y * 0.10;
       tmpEuler.set(tiltX, spinY, 0);
       tmpQuat.setFromEuler(tmpEuler);
       points.quaternion.copy(tmpQuat);
       lines.quaternion.copy(tmpQuat);
 
-      camera.position.set(0, camDriftY, 165 + camDriftZ);
-      camera.lookAt(0, 0, 0);
+      // Per-scene camera vantage — lerp toward the scene's base camera
+      // position so each formation is viewed from a deliberate angle.
+      // Smoothstep on the segment fraction so it eases into place.
+      const camA = SCENE_CAMS[lo];
+      const camB = SCENE_CAMS[hi];
+      const tCam = eased;
+      const camTargetX = camA.x + (camB.x - camA.x) * tCam;
+      const camTargetY = camA.y + (camB.y - camA.y) * tCam;
+      const camTargetZ = camA.z + (camB.z - camA.z) * tCam;
+      const camTargetLY = camA.lookY + (camB.lookY - camA.lookY) * tCam;
+      const camK = 1 - Math.exp(-dt / 0.45);
+      cam.x += (camTargetX - cam.x) * camK;
+      cam.y += (camTargetY - cam.y) * camK;
+      cam.z += (camTargetZ - cam.z) * camK;
+      cam.lookY += (camTargetLY - cam.lookY) * camK;
+
+      // Tiny scene-driven oscillation for ambient motion on top of base.
+      const oscY = Math.sin(smoothedScene * 1.3 + frame * 0.0009) * 4;
+      const oscZ = Math.sin(smoothedScene * 0.9 + frame * 0.0011) * 6;
+      camera.position.set(cam.x, cam.y + oscY, cam.z + oscZ);
+      camera.lookAt(0, cam.lookY, 0);
 
       renderer.render(scene, camera);
     };
@@ -419,6 +475,7 @@ export default function ParticleScene({ sceneRef }) {
       running = false;
       cancelAnimationFrame(raf);
       window.removeEventListener("resize", onResize);
+      window.removeEventListener("mousemove", onMouseMove);
       document.removeEventListener("visibilitychange", onVisibility);
       themeObs.disconnect();
       try {

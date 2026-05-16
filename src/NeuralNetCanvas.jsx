@@ -142,37 +142,47 @@ export default function NeuralNetCanvas({ sceneRef }) {
     };
 
     // Six camera waypoints — one per portfolio scene (incl. hero). Each is
-    // a target (worldX, worldY, zoom) in world coords; the draw loop
-    // interpolates smoothly between them as scroll progress goes 0 → N.
+    // a target (worldX, worldY, zoom, roll) in world coords; the draw loop
+    // interpolates between them along an arc path (not a straight line) and
+    // adds a zoom-dolly pull-back at the midpoint of every transition. This
+    // gives the camera a cinematic "fly-through 3D space" feel even though
+    // the canvas is 2D.
+    //
+    //   roll : per-scene camera bank angle in degrees. Mostly small; the
+    //          banks between scenes are what create the 3D feel.
     const computeWaypoints = () => {
       const layerGap = WORLD_W / (layers.length - 1);
       const left = -WORLD_W / 2;
       const top = -WORLD_H * 0.34;
-      // Bio anchors — pick two of the existing motifs as scene targets.
       const proteinAnchor = { x: left + WORLD_W * 0.76, y: top + WORLD_H * 0.18 };
       const rnaAnchor     = { x: left + WORLD_W * 0.82, y: top + WORLD_H * 0.34 };
 
       return [
-        // 0 — Hero: wide overview of the entire network
-        { x: 0, y: 0, zoom: 1.05 },
-        // 1 — About: close-up on the input layer
-        { x: left + layerGap * 0.5, y: 0, zoom: 2.6 },
-        // 2 — Research: mid-shot on the second hidden layer
-        { x: left + layerGap * 2,   y: 0, zoom: 1.7 },
-        // 3 — Publication: close-up on the output layer
-        { x: left + layerGap * 5,   y: 0, zoom: 2.3 },
-        // 4 — Projects: zoom on a protein α-helix
-        { x: proteinAnchor.x, y: proteinAnchor.y, zoom: 2.8 },
-        // 5 — Skills: zoom on an RNA strand
-        { x: rnaAnchor.x,     y: rnaAnchor.y,     zoom: 2.6 },
+        // 0 — Hero: wide overview, level horizon
+        { x: 0, y: 0, zoom: 1.05, roll: 0 },
+        // 1 — About: input layer, tilt left (camera lookin' in)
+        { x: left + layerGap * 0.5, y: 0, zoom: 2.6, roll: -3.5 },
+        // 2 — Research: hidden layer, tilt right
+        { x: left + layerGap * 2,   y: -20, zoom: 1.75, roll: 2.5 },
+        // 3 — Publication: output layer, tilt left, deeper push-in
+        { x: left + layerGap * 5,   y: 10, zoom: 2.4, roll: -2.8 },
+        // 4 — Projects: protein helix, banked aggressively as if circling
+        { x: proteinAnchor.x, y: proteinAnchor.y, zoom: 2.8, roll: 4.5 },
+        // 5 — Skills: RNA strand, opposite bank for variation
+        { x: rnaAnchor.x,     y: rnaAnchor.y,     zoom: 2.6, roll: -2.5 },
       ];
     };
 
     const waypoints = computeWaypoints();
 
     // Camera state — initialised to the first waypoint so the page opens
-    // already framed on the input layer (no jarring initial fly-in).
-    const cam = { x: waypoints[0].x, y: waypoints[0].y, zoom: waypoints[0].zoom };
+    // already framed on the hero wide shot (no jarring initial fly-in).
+    const cam = {
+      x: waypoints[0].x,
+      y: waypoints[0].y,
+      zoom: waypoints[0].zoom,
+      roll: waypoints[0].roll,
+    };
     let smoothedScene = 0;
     let lastTime = performance.now();
 
@@ -217,25 +227,59 @@ export default function NeuralNetCanvas({ sceneRef }) {
       smoothedScene += (targetScene - smoothedScene) * kS;
 
       // Interpolate the target waypoint from the smoothed scene index —
-      // sceneRef already places the camera at the actual section in view
-      // (not at an even chunk of total scroll), so the transition fires
-      // when the user crosses the section boundary.
+      // sceneRef places the camera at the actual section in view, so the
+      // transition fires when the user crosses the section boundary.
       const lo = Math.floor(smoothedScene);
       const hi = Math.min(lo + 1, segCount);
       const u = smoothedScene - lo;
       const eased = u * u * (3 - 2 * u); // smoothstep
       const a = waypoints[lo];
       const b = waypoints[hi];
-      const targetX = a.x + (b.x - a.x) * eased;
-      const targetY = a.y + (b.y - a.y) * eased;
-      const targetZoom = a.zoom + (b.zoom - a.zoom) * eased;
 
-      // Camera follow — slow critical-damped lerp so the move feels
-      // cinematic (glide-in) rather than tracking the cursor exactly.
+      // 1) Linear interpolation between the two waypoints
+      const linX = a.x + (b.x - a.x) * eased;
+      const linY = a.y + (b.y - a.y) * eased;
+      const linZoom = a.zoom + (b.zoom - a.zoom) * eased;
+      const linRoll = a.roll + (b.roll - a.roll) * eased;
+
+      // 2) Arc path — push the midpoint perpendicular to the straight line
+      //    so the camera *swings* from A to B instead of going dead-straight.
+      //    Arc magnitude scales with segment length, capped. Direction
+      //    alternates by segment index so consecutive arcs swing opposite
+      //    ways (avoids a monotonous "always curves up" feel).
+      const dx = b.x - a.x;
+      const dy = b.y - a.y;
+      const segLen = Math.hypot(dx, dy);
+      let arcDX = 0, arcDY = 0;
+      if (segLen > 5) {
+        const nx = -dy / segLen;
+        const ny = dx / segLen;
+        const arcMag = Math.min(segLen * 0.18, 180);
+        const arcCurve = Math.sin(eased * Math.PI);
+        const arcSign = lo % 2 === 0 ? 1 : -1;
+        arcDX = nx * arcMag * arcCurve * arcSign;
+        arcDY = ny * arcMag * arcCurve * arcSign;
+      }
+
+      // 3) Zoom dolly — briefly pull back at the midpoint of every
+      //    transition, like a director using an establishing shot
+      //    between two close-ups. Creates depth motion that flat panning
+      //    can't produce.
+      const dollyMag = 0.45;
+      const dollyOffset = Math.sin(eased * Math.PI) * dollyMag;
+
+      const targetX = linX + arcDX;
+      const targetY = linY + arcDY;
+      const targetZoom = Math.max(0.7, linZoom - dollyOffset);
+      const targetRoll = linRoll;
+
+      // 4) Camera follow — critically-damped lerp so the move feels like a
+      //    cinematic glide settling into place, not a snap.
       const kC = 1 - Math.exp(-dt / 0.30);
       cam.x += (targetX - cam.x) * kC;
       cam.y += (targetY - cam.y) * kC;
       cam.zoom += (targetZoom - cam.zoom) * kC;
+      cam.roll += (targetRoll - cam.roll) * kC;
 
       // Palette tuned to read against the cool-gray .bgnet backdrop.
       const accent = dark ? [120, 165, 235] : [40, 95, 215];
@@ -255,12 +299,12 @@ export default function NeuralNetCanvas({ sceneRef }) {
       ctx.fillRect(0, 0, w, h);
 
       // ── Camera transform ────────────────────────────────────────────
-      // World point (cam.x, cam.y) maps to the centre of the canvas's
-      // own container. The canvas now lives inside the left half of the
-      // split-stage layout, so the natural anchor is dead-centre of its
-      // pane (no left-bias needed any more).
+      // World point (cam.x, cam.y) maps to dead-centre of the canvas.
+      // Order matters: translate-to-anchor, rotate by roll, scale by zoom,
+      // then shift the world so the target lands on the anchor.
       ctx.save();
       ctx.translate(w * 0.50, h * 0.50);
+      ctx.rotate(cam.roll * Math.PI / 180);
       ctx.scale(cam.zoom, cam.zoom);
       ctx.translate(-cam.x, -cam.y);
 

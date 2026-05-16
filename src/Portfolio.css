@@ -432,10 +432,8 @@ body::before {
     padding: 3rem clamp(1rem, 4vw, 1.75rem);
     gap: 1.5rem;
   }
-  .main {
-    max-width: none;
-    padding: 0 clamp(1rem, 4vw, 1.75rem);
-  }
+  /* (.main mobile chrome reset lives near the .main rule below, with
+     the rest of the unified-panel teardown.) */
   .sb-tagline { max-width: none; }
   .sb-nav { display: none; }
   .sb-foot { justify-content: flex-start; gap: 1rem; }
@@ -447,10 +445,22 @@ body::before {
 .main {
   position: relative;
   z-index: 2;
-  /* Fills the remaining grid cell — sidebar on the left, content on the
-     right takes everything else. Individual elements that need narrow
-     reading widths cap themselves internally (e.g. .about-text below). */
-  padding-right: clamp(1.25rem, 3vw, 3rem);
+  /* One unified content panel — all sections live inside this single
+     container instead of 5 separate floating cards. Section breaks are
+     communicated through typography spacing + subtle dividers, not
+     through individual card boundaries. The page reads as one document. */
+  background: color-mix(in srgb, var(--bg) 76%, transparent);
+  backdrop-filter: blur(10px) saturate(1.18);
+  -webkit-backdrop-filter: blur(10px) saturate(1.18);
+  border: 1px solid color-mix(in srgb, var(--fg) 8%, transparent);
+  border-radius: 26px;
+  margin-block: clamp(2rem, 4vh, 3rem);
+  margin-right: clamp(1rem, 2vw, 2rem);
+  padding: clamp(1.5rem, 2.5vw, 2.5rem) clamp(2rem, 3.5vw, 3.5rem);
+  box-shadow:
+    0 1px 0 color-mix(in srgb, #ffffff 35%, transparent) inset,
+    0 2px 10px -2px color-mix(in srgb, var(--fg) 10%, transparent),
+    0 24px 70px -28px color-mix(in srgb, var(--fg) 30%, transparent);
 }
 
 /* Each section is a tall scroll container; its inner stage pins to the
@@ -463,34 +473,28 @@ body::before {
    content seem to "disappear" mid-scroll. */
 .sect {
   position: relative;
-  padding-block: clamp(5rem, 12vh, 9rem);
-  /* Reserve a left gutter for the numbered timeline marker (01-05) and
-     the vertical spine that connects them. Drawn via .sect::before and
-     .sect::after — see "Timeline spine" block below. */
-  padding-left: clamp(2.75rem, 4.5vw, 4.5rem);
+  /* Sections sit inside the unified .main panel. padding-block provides
+     comfortable spacing between them; the subtle border-bottom (below)
+     gives a quiet divider so they read as separate chapters of one
+     document. */
+  padding-block: clamp(2.75rem, 5.5vh, 4.5rem);
 }
+.sect:first-of-type { padding-top: clamp(1rem, 2.5vh, 2rem); }
+.sect:last-of-type  { padding-bottom: clamp(1rem, 2.5vh, 2rem); }
+.sect:not(:last-of-type) {
+  border-bottom: 1px solid color-mix(in srgb, var(--fg) 7%, transparent);
+}
+
 .sect-pin {
   position: relative;
 }
+
 .sect-stage {
   position: relative;
   width: 100%;
-  /* Light translucent panel — keeps text legible while letting the
-     network structure show through at the edges. */
-  background: color-mix(in srgb, var(--bg) 82%, transparent);
-  backdrop-filter: blur(4px) saturate(1.15);
-  -webkit-backdrop-filter: blur(4px) saturate(1.15);
-  border: 1px solid color-mix(in srgb, var(--fg) 9%, transparent);
-  border-radius: 22px;
-  padding: clamp(1.75rem, 3vw, 2.75rem);
-  /* Soft layered shadow — close drop for definition, far drop for lift. */
-  box-shadow:
-    0 1px 0 color-mix(in srgb, #ffffff 35%, transparent) inset,
-    0 2px 8px -2px color-mix(in srgb, var(--fg) 10%, transparent),
-    0 18px 48px -22px color-mix(in srgb, var(--fg) 30%, transparent);
-
-  /* Fly-in entrance: self-triggering on mount so the card is always
-     visible — independent of any IntersectionObserver firing. */
+  /* No card chrome — the unified .main panel above provides the single
+     background / border / shadow. .sect-stage is now just a content
+     wrapper that carries the entrance animation. */
   animation: stage-enter 1s cubic-bezier(.22, 1, .36, 1) both;
   will-change: opacity, transform;
 }
@@ -535,77 +539,26 @@ body::before {
     transform: none !important;
   }
 }
-/* ════════════════════════════════════════════════════════════════════
-   Timeline spine — links sections 01 → 02 → 03 → 04 → 05
+/* Timeline spine was removed — the user wanted card unity, not a
+   left-rail navigator. Each section now lives inside the single .main
+   panel above and is divided from the next by the subtle border-bottom
+   on .sect. The small ``01`` mono pill inside .section-head provides
+   the section number reference.
 
-   Each section draws (a) a numbered circle marker on the left via
-   ::before, and (b) a 1px vertical line fragment via ::after. The
-   fragments abut between sections, forming a single continuous line
-   that visually threads through every marker. First / last sections
-   trim their line so it starts at marker 01's centre and ends at
-   marker 05's centre — the markers cap the spine.
-   ════════════════════════════════════════════════════════════════════ */
-.sect::before {
-  content: attr(data-n);
-  position: absolute;
-  left: 0;
-  top: clamp(5rem, 12vh, 9rem);
-  width: 2.5rem;
-  height: 2.5rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-family: var(--mono);
-  font-size: .72rem;
-  font-weight: 700;
-  letter-spacing: .06em;
-  color: var(--accent);
-  background: var(--bg);
-  border: 1.5px solid color-mix(in srgb, var(--accent) 45%, transparent);
-  border-radius: 50%;
-  z-index: 3;
-  /* Ring of bg colour around the marker so the spine line behind
-     doesn't bleed through. Outer shadow gives a subtle lift. */
-  box-shadow:
-    0 0 0 4px var(--bg),
-    0 2px 8px -2px color-mix(in srgb, var(--accent) 25%, transparent);
-}
-
-.sect::after {
-  content: '';
-  position: absolute;
-  left: 1.25rem;            /* horizontal centre of the marker (2.5rem / 2) */
-  top: 0;
-  bottom: 0;
-  width: 1px;
-  background: color-mix(in srgb, var(--accent) 22%, transparent);
-  z-index: 1;
-}
-
-/* First section: spine begins at marker 01's centre, not above it. */
-.sect:first-of-type::after {
-  top: calc(clamp(5rem, 12vh, 9rem) + 1.25rem);
-}
-
-/* Last section: spine ends at marker 05's centre, not below it. */
-.sect:last-of-type::after {
-  bottom: auto;
-  height: calc(clamp(5rem, 12vh, 9rem) + 1.25rem);
-}
-
-/* The duplicate small ``01`` pill inside .section-head is now redundant —
-   the outer marker is the canonical reference. */
-.sect-n { display: none; }
-
+   Mobile: collapse .main back to flush-with-viewport (the panel chrome
+   feels cramped at narrow widths), shrink padding. */
 @media (max-width: 968px) {
-  /* Mobile: sections stack without the timeline spine. The inner pill
-     comes back as a fallback so the section number is still visible. */
-  .sect {
-    padding-left: 0;
+  .main {
+    margin: 0;
+    border-radius: 0;
+    border: none;
+    box-shadow: none;
+    padding: 0 clamp(1rem, 4vw, 1.75rem);
+    background: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
   }
-  .sect::before,
-  .sect::after { display: none; }
-  .sect-n { display: inline-flex; }
+  .sect:not(:last-of-type) { border-bottom-color: var(--border); }
 }
 
 /* ════════════════════════════════════════════════════════════════════

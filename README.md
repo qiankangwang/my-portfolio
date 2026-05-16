@@ -1,12 +1,12 @@
 # Kant's Portfolio
 
-[![Live Site](https://img.shields.io/badge/Live%20Site-Visit-2563EB?style=flat-square&logo=github)](https://xiaole5211314.github.io/my-portfolio/)
+[![Live Site](https://img.shields.io/badge/Live%20Site-Visit-2563EB?style=flat-square&logo=github)](https://qiankangwang.github.io/my-portfolio/)
 
 Personal portfolio website showcasing my background in machine learning, scientific computing, and biophysics research. Built with performance and design in mind.
 
 ## Live Site
 
-**[xiaole5211314.github.io/my-portfolio](https://xiaole5211314.github.io/my-portfolio/)**
+**[qiankangwang.github.io/my-portfolio](https://qiankangwang.github.io/my-portfolio/)**
 
 ## Features
 
@@ -78,5 +78,5 @@ The site is automatically built and deployed to GitHub Pages on every push to th
 ## Contact
 
 - **Email**: qkwang@berkeley.edu
-- **GitHub**: [@xiaole5211314](https://github.com/xiaole5211314)
+- **GitHub**: [@qiankangwang](https://github.com/qiankangwang)
 - **LinkedIn**: [Qiankang Wang](https://linkedin.com/in/qiankang-wang-737b97279)

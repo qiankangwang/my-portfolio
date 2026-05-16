@@ -334,7 +334,7 @@ export default function Portfolio() {
         }
       }
     } catch { /* corrupt cache — fall through and refetch */ }
-    fetch("https://api.github.com/users/xiaole5211314/repos?sort=updated&per_page=18")
+    fetch("https://api.github.com/users/qiankangwang/repos?sort=updated&per_page=18")
       .then((r) => r.json())
       .then((data) => {
         const list = Array.isArray(data)

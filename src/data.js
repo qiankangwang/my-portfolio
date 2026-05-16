@@ -3,8 +3,8 @@ const D = {
   fullName: "Qiankang (Kant) Wang",
   email: "qkwang@berkeley.edu",
   linkedin: "https://linkedin.com/in/qiankang-wang-737b97279",
-  github: "https://github.com/xiaole5211314",
-  avatar: "https://github.com/xiaole5211314.png",
+  github: "https://github.com/qiankangwang",
+  avatar: "https://github.com/qiankangwang.png",
 
   tagline:
     "Machine learning for biology — representation learning, generative modeling, and scientific computing.",
@@ -63,7 +63,7 @@ const D = {
       description: "SimCLR-style self-supervised learning on CIFAR-10 with ResNet-18 and k-NN evaluation.",
       language: "Python",
       stargazers_count: 1,
-      html_url: "https://github.com/xiaole5211314/simclr-cifar10-pytorch",
+      html_url: "https://github.com/qiankangwang/simclr-cifar10-pytorch",
     },
     {
       id: "fallback-2",
@@ -71,7 +71,7 @@ const D = {
       description: "AI legal operations platform with real-time deposition transcription and intelligent assistance.",
       language: "TypeScript",
       stargazers_count: 0,
-      html_url: "https://github.com/xiaole5211314/regal",
+      html_url: "https://github.com/qiankangwang/regal",
     },
     {
       id: "fallback-3",
@@ -79,7 +79,7 @@ const D = {
       description: "From-scratch C++ decision tree classifier with Gini impurity on the Titanic dataset.",
       language: "C++",
       stargazers_count: 0,
-      html_url: "https://github.com/xiaole5211314/Decision-Tree",
+      html_url: "https://github.com/qiankangwang/Decision-Tree",
     },
   ],
 

@@ -295,15 +295,16 @@ body::before {
   font-family: var(--serif);
   font-style: italic;
   font-weight: 400;
-  font-size: clamp(2rem, 3.4vw, 3rem);
-  line-height: 1.05;
-  letter-spacing: -.02em;
+  /* Bigger / more confident on desktop — this is the page's hero text. */
+  font-size: clamp(2.4rem, 4.2vw, 3.6rem);
+  line-height: 1.02;
+  letter-spacing: -.025em;
   color: var(--fg);
   margin-top: .4rem;
 }
 .sb-kicker {
   font-family: var(--mono);
-  font-size: .65rem;
+  font-size: .68rem;
   letter-spacing: .14em;
   text-transform: uppercase;
   color: var(--accent);
@@ -314,6 +315,7 @@ body::before {
   font-size: .95rem;
   line-height: 1.6;
   max-width: 28ch;
+  min-height: 4.5em; /* reserve space so layout doesn't jump as the typewriter fills */
 }
 /* Typewriter caret — slim vertical bar that blinks while typing, then
    gracefully disappears once the tagline is fully revealed. */
@@ -470,19 +472,19 @@ body::before {
 .sect-stage {
   position: relative;
   width: 100%;
-  /* Translucent panel with very light blur so the network's structure
-     (node columns + edges) is still visible through the card — heavy
-     backdrop-blur was dissolving the network into mush. The 78% --bg
-     fill keeps text legible without being a frosted slab. */
-  background: color-mix(in srgb, var(--bg) 78%, transparent);
-  backdrop-filter: blur(3px) saturate(1.1);
-  -webkit-backdrop-filter: blur(3px) saturate(1.1);
-  border: 1px solid color-mix(in srgb, var(--fg) 10%, transparent);
-  border-radius: 20px;
-  padding: clamp(1.75rem, 3vw, 2.5rem);
+  /* Light translucent panel — keeps text legible while letting the
+     network structure show through at the edges. */
+  background: color-mix(in srgb, var(--bg) 82%, transparent);
+  backdrop-filter: blur(4px) saturate(1.15);
+  -webkit-backdrop-filter: blur(4px) saturate(1.15);
+  border: 1px solid color-mix(in srgb, var(--fg) 9%, transparent);
+  border-radius: 22px;
+  padding: clamp(1.75rem, 3vw, 2.75rem);
+  /* Soft layered shadow — close drop for definition, far drop for lift. */
   box-shadow:
-    0 1px 0 color-mix(in srgb, #ffffff 30%, transparent) inset,
-    0 12px 36px -18px color-mix(in srgb, var(--fg) 35%, transparent);
+    0 1px 0 color-mix(in srgb, #ffffff 35%, transparent) inset,
+    0 2px 8px -2px color-mix(in srgb, var(--fg) 10%, transparent),
+    0 18px 48px -22px color-mix(in srgb, var(--fg) 30%, transparent);
 
   /* Fly-in entrance: self-triggering on mount so the card is always
      visible — independent of any IntersectionObserver firing. */

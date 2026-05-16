@@ -304,6 +304,10 @@ export default function Portfolio() {
   const [repos, setRepos] = useState([]);
   const [repoLoading, setRepoLoading] = useState(true);
 
+  // Scroll progress consumed by the canvas inside its rAF loop — handed
+  // over via ref so the canvas doesn't re-render on each scroll tick.
+  const progressRef = useRef(0);
+
   useEffect(() => {
     let ticking = false;
     const onScroll = () => {
@@ -316,6 +320,7 @@ export default function Portfolio() {
         const docH = document.documentElement.scrollHeight - winH;
         const p = docH > 0 ? Math.min(y / docH, 1) : 0;
         setProgress(p);
+        progressRef.current = p;
 
         // Flip the sidebar nav highlight when a section's pin centres in the
         // viewport. With sections sized at 150svh and pinned for 50svh, this
@@ -421,7 +426,7 @@ export default function Portfolio() {
          and reads as the literal "neural network" shape (input → hidden →
          output) — not a node cloud. */}
       <div className="bgnet" aria-hidden="true">
-        <NeuralNetCanvas />
+        <NeuralNetCanvas progressRef={progressRef} />
       </div>
       <a className="skip" href="#about">Skip to content</a>
 

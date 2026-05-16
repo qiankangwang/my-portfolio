@@ -189,23 +189,25 @@ export default function ParticleScene({ sceneRef }) {
     const formations = buildFormations(PARTICLE_COUNT);
 
     // ── Per-scene colour palettes ──────────────────────────────────
-    // Terminal aesthetic: single chromatic family (terminal green +
-    // signal amber) with subtle hue variation per scene. Stays cohesive
-    // like a research console, not a rainbow demo.
+    // Research-paper palette: muted deep navy + warm rust, with tiny
+    // hue shifts per scene. Particles are rendered with mix-blend-mode:
+    // multiply on the canvas, so these colours read as INK on cream
+    // paper, not glowing pixels. Saturated enough to show against the
+    // warm bg, restrained enough to coexist with serif body text.
     //   (accentR, accentG, accentB, warmR, warmG, warmB)
     const SCENE_PALETTE = [
-      // 0 Hero       — terminal green + amber signal
-      [0.00, 1.00, 0.64,   1.00, 0.70, 0.28],
-      // 1 About      — cooler green-cyan + amber
-      [0.18, 0.95, 0.78,   1.00, 0.70, 0.28],
-      // 2 Research   — pure terminal green + amber
-      [0.00, 1.00, 0.64,   1.00, 0.78, 0.32],
-      // 3 Publication — yellower phosphor (older CRT) + amber
-      [0.55, 1.00, 0.45,   1.00, 0.62, 0.22],
-      // 4 Projects   — light green + cyan amber
-      [0.40, 1.00, 0.68,   0.40, 0.95, 0.95],
-      // 5 Skills     — cyan-leaning phosphor + amber
-      [0.18, 0.95, 0.88,   1.00, 0.70, 0.28],
+      // 0 Hero       — deep journal navy + warm rust
+      [0.12, 0.22, 0.55,   0.70, 0.32, 0.04],
+      // 1 About      — slightly warmer ink + rust
+      [0.18, 0.20, 0.45,   0.74, 0.36, 0.08],
+      // 2 Research   — analytical mid-navy + ochre
+      [0.10, 0.25, 0.55,   0.62, 0.45, 0.10],
+      // 3 Publication — graphite + warm sienna
+      [0.18, 0.22, 0.30,   0.68, 0.30, 0.05],
+      // 4 Projects   — engineer indigo + steel teal
+      [0.22, 0.20, 0.50,   0.12, 0.40, 0.42],
+      // 5 Skills     — refined navy + accent rust
+      [0.16, 0.22, 0.48,   0.70, 0.32, 0.04],
     ];
 
     // ── Geometry ───────────────────────────────────────────────────
@@ -234,31 +236,34 @@ export default function ParticleScene({ sceneRef }) {
     geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
     geometry.setAttribute("color", new THREE.BufferAttribute(colors, 3));
 
-    // ── Particle sprite — phosphor pixel: tight bright core + soft
-    //     bloom halo. Reads like a CRT phosphor dot or a node on an
-    //     oscilloscope. Additive blending so overlapping particles
-    //     compound into brighter glow (terminal phosphor behaviour). ─
+    // ── Particle sprite — soft ink dot. Gentler than the previous
+    //     phosphor sprite: no hot white core, just a tactile mark.
+    //     Combined with the canvas mix-blend-mode: multiply this reads
+    //     as printed ink on paper, not glowing light. ────────────────
     const haloCanvas = document.createElement("canvas");
     haloCanvas.width = 64;
     haloCanvas.height = 64;
     const hctx = haloCanvas.getContext("2d");
     const grad = hctx.createRadialGradient(32, 32, 0, 32, 32, 32);
     grad.addColorStop(0.00, "rgba(255,255,255,1.00)");
-    grad.addColorStop(0.14, "rgba(255,255,255,0.95)");
-    grad.addColorStop(0.40, "rgba(255,255,255,0.35)");
-    grad.addColorStop(0.90, "rgba(255,255,255,0.04)");
+    grad.addColorStop(0.25, "rgba(255,255,255,0.80)");
+    grad.addColorStop(0.60, "rgba(255,255,255,0.30)");
     grad.addColorStop(1.00, "rgba(255,255,255,0)");
     hctx.fillStyle = grad;
     hctx.fillRect(0, 0, 64, 64);
     const haloTex = new THREE.CanvasTexture(haloCanvas);
 
+    // The CANVAS has mix-blend-mode: multiply applied at the .atmos
+    // level, so additive blending here would fight that. Use normal
+    // alpha and let the canvas-level multiply do the integration —
+    // particles read as ink dots on the paper, not phosphor pixels.
     const material = new THREE.PointsMaterial({
-      size: 4.2,
+      size: 3.6,
       map: haloTex,
       vertexColors: true,
       transparent: true,
-      opacity: 1.0,
-      blending: THREE.AdditiveBlending,
+      opacity: 0.85,
+      blending: THREE.NormalBlending,
       depthWrite: false,
       sizeAttenuation: true,
     });
@@ -272,7 +277,7 @@ export default function ParticleScene({ sceneRef }) {
     //     traces the formation's natural ordering — DNA strands, ring
     //     orbits, grid rows. Single saturated colour pulled from the
     //     active scene palette per frame. ──────────────────────────
-    const LINE_STRIDE = 4;
+    const LINE_STRIDE = 8;
     const linePairs = [];
     for (let i = 0; i + 1 < PARTICLE_COUNT; i += LINE_STRIDE) {
       linePairs.push([i, i + 1]);
@@ -281,10 +286,10 @@ export default function ParticleScene({ sceneRef }) {
     const lineGeometry = new THREE.BufferGeometry();
     lineGeometry.setAttribute("position", new THREE.BufferAttribute(linePositions, 3));
     const lineMaterial = new THREE.LineBasicMaterial({
-      color: 0x00ffa3,
+      color: 0x1e3a8a,
       transparent: true,
-      opacity: 0.55,
-      blending: THREE.AdditiveBlending,
+      opacity: 0.42,
+      blending: THREE.NormalBlending,
       depthWrite: false,
     });
     const lines = new THREE.LineSegments(lineGeometry, lineMaterial);
@@ -389,8 +394,8 @@ export default function ParticleScene({ sceneRef }) {
       // middle of each scene transition, then settle back as the next
       // formation comes in. Magnitude peaks at u = 0.5 and is zero at
       // u = 0 and u = 1 so the rest position of each scene is exact.
-      const dispersal = 1 + Math.sin(u * Math.PI) * 0.35;
-      const scatterAmp = Math.sin(u * Math.PI) * 18;
+      const dispersal = 1 + Math.sin(u * Math.PI) * 0.18;
+      const scatterAmp = Math.sin(u * Math.PI) * 10;
       for (let i = 0; i < PARTICLE_COUNT; i++) {
         const idx = i * 3;
         const ax = A[idx],     ay = A[idx + 1],     az = A[idx + 2];
@@ -483,7 +488,7 @@ export default function ParticleScene({ sceneRef }) {
       const tCam = eased;
       const camTargetX = camA.x + (camB.x - camA.x) * tCam;
       const camTargetY = camA.y + (camB.y - camA.y) * tCam;
-      const pullback = Math.sin(u * Math.PI) * 130;
+      const pullback = Math.sin(u * Math.PI) * 45;
       const camTargetZ = camA.z + (camB.z - camA.z) * tCam + pullback;
       const camTargetLX = camA.lookX + (camB.lookX - camA.lookX) * tCam;
       const camTargetLY = camA.lookY + (camB.lookY - camA.lookY) * tCam;

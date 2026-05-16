@@ -3,44 +3,42 @@
    ════════════════════════════════════════════════════════════════════ */
 
 :root {
-  /* Terminal / AI-lab palette — true black + terminal green + grey-zero
-     amber. Light mode is intentionally absent; this is a dark-only
-     research-console aesthetic. */
-  --bg:          #050505;
-  --bg2:         #0B0E12;
-  --bg3:         #14181F;
-  --fg:          #E6E6E6;
-  --fg2:         #A8B0B5;
-  --fg3:         #6B7077;
-  --fg4:         #3F454C;
-  --accent:      #00FFA3;             /* terminal green */
-  --accent2:     #34D399;             /* mid-saturation green */
-  --accent3:     #047857;             /* deep green */
-  --warm:        #FFB347;             /* signal amber for status accents */
-  --accent-soft:  rgba(0, 255, 163, .08);
-  --accent-soft2: rgba(0, 255, 163, .14);
-  --warm-soft:    rgba(255, 179, 71, .10);
-  --border:        rgba(230, 230, 230, .06);
-  --border-strong: rgba(230, 230, 230, .12);
-  --card:        #0B0E12;
-  --card2:       #14181F;
-  --glass:       rgba(11, 14, 18, .68);
-  --serif: 'JetBrains Mono', ui-monospace, monospace;
+  /* Research-paper palette — warm cream + deep ink + restrained navy.
+     Easy on the eyes for long-form reading, like a science journal.
+     Single light theme; the toggle no longer flips palettes. */
+  --bg:          #F4F1EA;             /* warm cream */
+  --bg2:         #ECE7DC;
+  --bg3:         #DDD7C9;
+  --fg:          #1B1F26;             /* deep ink (slight blue) */
+  --fg2:         #3F4753;
+  --fg3:         #6B7280;
+  --fg4:         #9BA3AE;
+  --accent:      #1E3A8A;             /* deep journal navy */
+  --accent2:     #2754C2;
+  --accent3:     #1E2A5E;
+  --warm:        #B45309;             /* warm rust for hand-noted accents */
+  --accent-soft:  rgba(30, 58, 138, .08);
+  --accent-soft2: rgba(30, 58, 138, .14);
+  --warm-soft:    rgba(180, 83, 9, .10);
+  --border:        rgba(27, 31, 38, .08);
+  --border-strong: rgba(27, 31, 38, .16);
+  --card:        rgba(244, 241, 234, .80);
+  --card2:       rgba(236, 231, 220, .85);
+  --glass:       rgba(244, 241, 234, .72);
+  --serif: 'Source Serif 4', 'Instrument Serif', Georgia, serif;
   --sans:  'Space Grotesk', system-ui, -apple-system, sans-serif;
   --mono:  'JetBrains Mono', ui-monospace, monospace;
-  --r:     8px;
-  --r-sm:  4px;
-  --r-lg:  12px;
-  --sh-sm: 0 1px 2px rgba(0,0,0,.45);
-  --sh:    0 1px 3px rgba(0,0,0,.55), 0 4px 18px rgba(0,0,0,.45);
-  --sh2:   0 2px 8px rgba(0,0,0,.55), 0 12px 36px rgba(0,0,0,.55);
-  --sh3:   0 4px 16px rgba(0,0,0,.65), 0 20px 60px rgba(0,0,0,.65);
+  --r:     12px;
+  --r-sm:  6px;
+  --r-lg:  16px;
+  --sh-sm: 0 1px 2px rgba(27,31,38,.04);
+  --sh:    0 1px 3px rgba(27,31,38,.06), 0 4px 18px rgba(27,31,38,.05);
+  --sh2:   0 2px 8px rgba(27,31,38,.07), 0 12px 36px rgba(27,31,38,.08);
+  --sh3:   0 4px 16px rgba(27,31,38,.09), 0 20px 60px rgba(27,31,38,.10);
 }
 
-/* Light mode is unsupported in the terminal aesthetic; any [data-theme]
-   override falls back to the same palette so the toggle is harmless. */
 [data-theme] {
-  color-scheme: dark;
+  color-scheme: light;
 }
 
 /* ════════════════════════════════════════════════════════════════════
@@ -93,28 +91,17 @@ body {
 input, textarea, [contenteditable] { cursor: text; }
 ::selection { background: var(--accent); color: #fff; }
 
-/* CRT-style hairline scan lines + soft grain — gives the terminal
-   backdrop a tactile feel without competing with the particles. */
+/* Subtle paper-fibre noise for that "research notebook" texture. */
 body::after {
   content: '';
   position: fixed; inset: 0; z-index: 9999;
   pointer-events: none;
-  opacity: .04;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  opacity: .035;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
   background-size: 256px 256px;
-  mix-blend-mode: overlay;
+  mix-blend-mode: multiply;
 }
-body::before {
-  content: '';
-  position: fixed; inset: 0; z-index: 0; pointer-events: none;
-  background-image: repeating-linear-gradient(
-    0deg,
-    rgba(255, 255, 255, .015) 0px,
-    rgba(255, 255, 255, .015) 1px,
-    transparent 1px,
-    transparent 4px
-  );
-}
+body::before { display: none; }
 
 /* ════════════════════════════════════════════════════════════════════
    Ambient Orbs
@@ -133,11 +120,18 @@ body::before {
 .atmos {
   position: fixed;
   inset: 0;
-  z-index: 0;
+  /* z-index 4 — ABOVE the main content (z-index 2) so particles
+     visually intersect / occlude the text. Combined with the canvas's
+     mix-blend-mode (multiply) the particles read as if they're ON the
+     paper with the text, not behind a glass pane. */
+  z-index: 4;
   pointer-events: none;
-  /* True-black terminal backdrop so the green/amber particles glow
-     against pure darkness. */
-  background: #050505;
+  background: transparent;
+  /* Multiply so the particles DARKEN the page where they land — they
+     look like ink on the same paper as the text, not glowing pixels
+     on a separate layer. This is the single biggest "text + animation
+     fused into one whole" trick. */
+  mix-blend-mode: multiply;
 }
 .atmos > div:not(.atmos-vignette):not(.particle-scene),
 .atmos canvas {
@@ -162,21 +156,18 @@ body::before {
   position: absolute;
   inset: 0;
   pointer-events: none;
-  /* Subtle vignette + a hairline scan-line pattern for the CRT/terminal
-     look. The scan lines are 2px tall, very low alpha, so they read as
-     texture not stripes. */
+  /* Soft halo around the text-safe centre. Brightens the centre so
+     particles fade out where the title sits — text reads cleanly while
+     particles surround it. */
   background:
-    repeating-linear-gradient(
-      0deg,
-      rgba(255,255,255,.022) 0px,
-      rgba(255,255,255,.022) 1px,
-      transparent 1px,
-      transparent 3px
-    ),
-    radial-gradient(ellipse 80% 60% at 50% 50%,
+    radial-gradient(ellipse 35% 28% at 50% 50%,
+      rgba(244, 241, 234, .85) 0%,
+      rgba(244, 241, 234, .0) 100%),
+    radial-gradient(ellipse 90% 75% at 50% 50%,
       transparent 0%,
-      transparent 55%,
-      rgba(0, 0, 0, .55) 100%);
+      transparent 65%,
+      rgba(244, 241, 234, .35) 100%);
+  mix-blend-mode: lighten;
 }
 
 

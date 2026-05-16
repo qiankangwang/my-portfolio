@@ -187,6 +187,17 @@ body::before {
   inset: 0;
   z-index: 0;
   pointer-events: none;
+  /* Cool-gray backdrop for the network to read against; the translucent
+     cards above blend with this slightly cooler tone instead of pure white. */
+  background: #D6DCE5;
+}
+:root[data-theme="dark"] .bgnet {
+  background: #0F172A;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .bgnet {
+    background: #0F172A;
+  }
 }
 .bgnet > div,
 .bgnet canvas {
@@ -427,14 +438,14 @@ body::before {
 .sect-stage {
   position: relative;
   width: 100%;
-  /* Quieter glass: the 3D scene is the visual hero now, so the card pulls
-     way back — light translucent fill, subtle border, soft shadow. The
-     animation shows clearly *through* the card instead of being hidden
-     behind a frosted slab. */
-  background: color-mix(in srgb, var(--bg) 55%, transparent);
-  backdrop-filter: blur(14px) saturate(1.15);
-  -webkit-backdrop-filter: blur(14px) saturate(1.15);
-  border: 1px solid color-mix(in srgb, var(--fg) 8%, transparent);
+  /* Translucent panel with very light blur so the network's structure
+     (node columns + edges) is still visible through the card — heavy
+     backdrop-blur was dissolving the network into mush. The 78% --bg
+     fill keeps text legible without being a frosted slab. */
+  background: color-mix(in srgb, var(--bg) 78%, transparent);
+  backdrop-filter: blur(3px) saturate(1.1);
+  -webkit-backdrop-filter: blur(3px) saturate(1.1);
+  border: 1px solid color-mix(in srgb, var(--fg) 10%, transparent);
   border-radius: 20px;
   padding: clamp(1.75rem, 3vw, 2.5rem);
   box-shadow:

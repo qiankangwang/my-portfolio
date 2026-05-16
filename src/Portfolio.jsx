@@ -1,10 +1,7 @@
-import { useState, useEffect, useRef, useCallback, lazy, Suspense, memo } from "react";
+import { useState, useEffect, useRef, useCallback, memo } from "react";
 import D from "./data";
+import NeuralNetCanvas from "./NeuralNetCanvas";
 import "./Portfolio.css";
-
-// 3D scene is heavy (three + r3f + postprocessing) — lazy so it doesn't
-// gate first paint.
-const BgScene3D = lazy(() => import("./BgScene3D"));
 
 /* ── Ambient background orbs ── */
 function AmbientBg() {
@@ -280,11 +277,6 @@ export default function Portfolio() {
   const [repos, setRepos] = useState([]);
   const [repoLoading, setRepoLoading] = useState(true);
 
-  // Whole-page scroll progress (0..1) — handed to BgScene3D via ref so the
-  // 3D camera can interpolate waypoints inside its own useFrame loop with
-  // zero React renders per scroll frame.
-  const phaseRef = useRef(0);
-
   useEffect(() => {
     let ticking = false;
     const onScroll = () => {
@@ -297,7 +289,6 @@ export default function Portfolio() {
         const docH = document.documentElement.scrollHeight - winH;
         const p = docH > 0 ? Math.min(y / docH, 1) : 0;
         setProgress(p);
-        phaseRef.current = p;
 
         // Flip the sidebar nav highlight when a section's pin centres in the
         // viewport. With sections sized at 150svh and pinned for 50svh, this
@@ -397,14 +388,13 @@ export default function Portfolio() {
   return (
     <>
       <AmbientBg />
-      {/* Cinematic 3D backdrop — neural network + DNA helix + protein motifs
-         in real 3D space, with a scroll-driven director-style camera move.
-         Lives fixed behind everything so every section plays out on the
-         same continuous stage. */}
+      {/* Layered feedforward neural network on 2D canvas. AI subject, with
+         RNA + protein bio motifs drifting in the gutters for the AI+Bio
+         research identity. 2D because it animates smoothly on every machine
+         and reads as the literal "neural network" shape (input → hidden →
+         output) — not a node cloud. */}
       <div className="bgnet" aria-hidden="true">
-        <Suspense fallback={null}>
-          <BgScene3D phaseRef={phaseRef} />
-        </Suspense>
+        <NeuralNetCanvas />
       </div>
       <a className="skip" href="#about">Skip to content</a>
 

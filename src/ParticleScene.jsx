@@ -296,24 +296,30 @@ export default function ParticleScene({ sceneRef }) {
     // RIGHT of the viewport — leaving the left side empty for content.
     // Hero is the exception: lookX 0 so the field stays centred behind
     // the giant hero text.
-    // Each scene's camera sits INSIDE its formation, so particles render
-    // around / behind / in front of the centred text. Hero is the only
-    // outside-view scene (arrival shot). Transitions add a z-pullback
-    // pulse so the camera "exits" the current formation, travels
-    // through open space, then "dives into" the next.
+    // Each camera frames its formation so the WHOLE shape is visible
+    // and the centred text sits inside the formation's interior:
+    //   - DNA helix → text inside the helix tube
+    //   - Sphere    → text inside the sphere's projected disc
+    //   - Rings     → text inside the rings' central hole
+    //   - Grid      → text in front of the grid plane
+    //   - Network   → text between the layer columns
+    //   - Hero      → wide overview, text on top of full network
+    // Transitions still add a z-pullback at u=0.5 so the camera flies
+    // out of the current formation, travels open space, then frames
+    // the next one — the "exit → travel → re-enter" beat.
     const SCENE_CAMS = [
-      // 0 Hero — wide outside view (atmospheric arrival)
-      { x:  0, y:  20, z: 200, lookX:   0, lookY:  -5 },
-      // 1 About — inside the DNA helix tube (radius 75)
-      { x:  0, y:   0, z:  50, lookX:   0, lookY:   0 },
-      // 2 Research — inside the layered network
-      { x:  0, y:   0, z:  60, lookX:   0, lookY:   0 },
-      // 3 Publication — inside the sphere (radius 140)
-      { x:  0, y:  10, z:  55, lookX:   0, lookY:  -5 },
-      // 4 Projects — inside the grid surface, low angle up
-      { x:  0, y: -25, z:  45, lookX:   0, lookY:  15 },
-      // 5 Skills — inside the rings system (min radius 70)
-      { x:  0, y:   5, z:  40, lookX:   0, lookY:   0 },
+      // 0 Hero — wide atmospheric arrival
+      { x:  0, y:  20, z: 240, lookX:   0, lookY:  -5 },
+      // 1 About — frame DNA helix (height 260, radius 75) with margin
+      { x: 12, y:   0, z: 260, lookX:   0, lookY:   0 },
+      // 2 Research — frame layered network
+      { x:  0, y:  10, z: 230, lookX:   0, lookY:   0 },
+      // 3 Publication — frame sphere (radius 140 → diameter 280)
+      { x:-12, y:  18, z: 305, lookX:   0, lookY:  -5 },
+      // 4 Projects — frame grid (264 wide × 220 tall), slight low angle
+      { x:  0, y: -38, z: 250, lookX:   0, lookY:  22 },
+      // 5 Skills — frame rings (max radius 160), slight high angle
+      { x: 20, y:  30, z: 285, lookX:   0, lookY: -12 },
     ];
 
     // ── Mouse parallax ─────────────────────────────────────────────
@@ -377,18 +383,12 @@ export default function ParticleScene({ sceneRef }) {
       // Per-particle tiny live drift so the field always breathes.
       const driftAmp = reducedMotion ? 0 : 0.7;
       const t = frame * 0.02;
-      // Dispersal: particles fly OUTWARD from the centre during the
+      // Dispersal: particles fly outward from the centre during the
       // middle of each scene transition, then settle back as the next
-      // formation comes in. This gives every transition a deliberate
-      // "scatter → reform" beat — the camera leaves, particles disperse,
-      // the new formation rises out of the cloud.
-      // Magnitude peaks at u = 0.5 and is zero at u = 0 and u = 1 so
-      // the rest position of each scene is exact.
-      const dispersal = 1 + Math.sin(u * Math.PI) * 0.55;
-      // Per-particle scatter offset that only kicks in during transitions
-      // (so settled formations stay clean). Each particle gets its own
-      // random outward direction, fading from 0 → max → 0 across the seg.
-      const scatterAmp = Math.sin(u * Math.PI) * 26;
+      // formation comes in. Magnitude peaks at u = 0.5 and is zero at
+      // u = 0 and u = 1 so the rest position of each scene is exact.
+      const dispersal = 1 + Math.sin(u * Math.PI) * 0.35;
+      const scatterAmp = Math.sin(u * Math.PI) * 18;
       for (let i = 0; i < PARTICLE_COUNT; i++) {
         const idx = i * 3;
         const ax = A[idx],     ay = A[idx + 1],     az = A[idx + 2];

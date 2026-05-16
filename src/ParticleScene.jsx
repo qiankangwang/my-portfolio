@@ -266,63 +266,58 @@ export default function ParticleScene({ sceneRef }) {
     const points = new THREE.Points(geometry, material);
     scene.add(points);
 
-    // ── Connecting lines between particles within a short radius.
-    //     Adds "network" mass — the field reads as a connected graph,
-    //     not just isolated points. Pre-build pairs once (by particle
-    //     index, not world position) and update per frame. ─────────
-    const MAX_PAIRS = 900; // limit so the line buffer stays small
+    // ── Sequential connecting lines. Each pair is (i, i+1) so the
+    //     line traces the formation's natural ordering: along DNA
+    //     strands, around rings, across grid rows, etc. Far fewer
+    //     and far more meaningful than the previous arbitrary-pair
+    //     mesh. Single uniform colour (the active scene palette's
+    //     accent, updated per frame) — no muddy multi-tint mess. ──
+    const LINE_STRIDE = 3;        // pick every 3rd particle as line origin
     const linePairs = [];
-    {
-      const stride = Math.max(1, Math.floor(PARTICLE_COUNT / 220));
-      for (let i = 0; i < PARTICLE_COUNT && linePairs.length < MAX_PAIRS; i += stride) {
-        // Connect each picked particle to a few near-neighbours by index
-        for (let k = 1; k <= 3; k++) {
-          const j = (i + k * 17) % PARTICLE_COUNT;
-          linePairs.push([i, j]);
-        }
-      }
+    for (let i = 0; i + 1 < PARTICLE_COUNT; i += LINE_STRIDE) {
+      linePairs.push([i, i + 1]);
     }
     const linePositions = new Float32Array(linePairs.length * 2 * 3);
-    const lineColors = new Float32Array(linePairs.length * 2 * 3);
-    for (let p = 0; p < linePairs.length; p++) {
-      const c = (p % 6 === 0) ? [0.96, 0.66, 0.27] : [0.36, 0.62, 0.95];
-      lineColors[p * 6 + 0] = c[0];
-      lineColors[p * 6 + 1] = c[1];
-      lineColors[p * 6 + 2] = c[2];
-      lineColors[p * 6 + 3] = c[0];
-      lineColors[p * 6 + 4] = c[1];
-      lineColors[p * 6 + 5] = c[2];
-    }
     const lineGeometry = new THREE.BufferGeometry();
     lineGeometry.setAttribute("position", new THREE.BufferAttribute(linePositions, 3));
-    lineGeometry.setAttribute("color", new THREE.BufferAttribute(lineColors, 3));
+    // Solid line colour comes from a uniform-like `material.color`; updated
+    // per frame to match the active scene palette. No vertex colours so the
+    // line renders as a clean single hue.
     const lineMaterial = new THREE.LineBasicMaterial({
-      vertexColors: true,
+      color: 0x3b82f6,
       transparent: true,
-      opacity: 0.32,
-      blending: THREE.AdditiveBlending,
+      opacity: 0.55,
+      blending: THREE.NormalBlending,
       depthWrite: false,
     });
     const lines = new THREE.LineSegments(lineGeometry, lineMaterial);
     scene.add(lines);
 
     // ── Per-scene camera vantage points ────────────────────────────
-    // Each scene has its own base camera offset so the formation is
-    // viewed from a deliberately different angle, not just zoom drift.
-    // (x, y, z, lookY) — camera position + where it's pointed vertically.
+    // Each scene has its own (camera pos, lookAt) so the formation is
+    // viewed from a deliberately different angle. `lookX` shifts the
+    // camera target horizontally: negative values move what the camera
+    // looks AT to the left, which pushes the formation visually to the
+    // RIGHT of the viewport — leaving the left side empty for content.
+    // Hero is the exception: lookX 0 so the field stays centred behind
+    // the giant hero text.
+    // Alternating composition: odd-indexed sections (About, Pub, Skills)
+    // place text on the LEFT, so the camera looks LEFT of origin
+    // (lookX < 0) → formation appears on the RIGHT of the viewport.
+    // Even-indexed scrollable sections (Research, Projects) flip it.
     const SCENE_CAMS = [
-      // 0 Hero — wider, slight tilt up (atmospheric)
-      { x:  0, y:  20, z: 195, lookY: -5 },
-      // 1 About — angled in from upper-right onto the helix
-      { x: 35, y:  40, z: 175, lookY:  0 },
-      // 2 Research — straight-on like reading a chart
-      { x:  0, y:  10, z: 150, lookY:  0 },
-      // 3 Publication — looking down-into the sphere
-      { x:-30, y:  50, z: 170, lookY:-10 },
-      // 4 Projects — low angle, looking up at the grid
-      { x:  0, y: -45, z: 165, lookY: 20 },
-      // 5 Skills — high orbit, looking down at the rings
-      { x: 25, y:  60, z: 180, lookY:-15 },
+      // 0 Hero — wide, centred, slight tilt up
+      { x:  0, y:  20, z: 195, lookX:   0, lookY:  -5 },
+      // 1 About — text LEFT, formation RIGHT
+      { x: 35, y:  40, z: 175, lookX: -55, lookY:   0 },
+      // 2 Research — text RIGHT, formation LEFT
+      { x:-15, y:  10, z: 150, lookX:  55, lookY:   0 },
+      // 3 Publication — text LEFT, formation RIGHT
+      { x:-30, y:  50, z: 170, lookX: -55, lookY: -10 },
+      // 4 Projects — text RIGHT, formation LEFT (low angle)
+      { x: 15, y: -45, z: 165, lookX:  55, lookY:  20 },
+      // 5 Skills — text LEFT, formation RIGHT (high orbit)
+      { x: 25, y:  60, z: 180, lookX: -55, lookY: -15 },
     ];
 
     // ── Mouse parallax ─────────────────────────────────────────────
@@ -349,7 +344,13 @@ export default function ParticleScene({ sceneRef }) {
     let lastTime = performance.now();
 
     // Camera state — interpolated between SCENE_CAMS entries per frame.
-    const cam = { x: SCENE_CAMS[0].x, y: SCENE_CAMS[0].y, z: SCENE_CAMS[0].z, lookY: SCENE_CAMS[0].lookY };
+    const cam = {
+      x: SCENE_CAMS[0].x,
+      y: SCENE_CAMS[0].y,
+      z: SCENE_CAMS[0].z,
+      lookX: SCENE_CAMS[0].lookX,
+      lookY: SCENE_CAMS[0].lookY,
+    };
 
     const tmpEuler = new THREE.Euler();
     const tmpQuat = new THREE.Quaternion();
@@ -380,6 +381,18 @@ export default function ParticleScene({ sceneRef }) {
       // Per-particle tiny live drift so the field always breathes.
       const driftAmp = reducedMotion ? 0 : 0.7;
       const t = frame * 0.02;
+      // Dispersal: particles fly OUTWARD from the centre during the
+      // middle of each scene transition, then settle back as the next
+      // formation comes in. This gives every transition a deliberate
+      // "scatter → reform" beat — the camera leaves, particles disperse,
+      // the new formation rises out of the cloud.
+      // Magnitude peaks at u = 0.5 and is zero at u = 0 and u = 1 so
+      // the rest position of each scene is exact.
+      const dispersal = 1 + Math.sin(u * Math.PI) * 0.55;
+      // Per-particle scatter offset that only kicks in during transitions
+      // (so settled formations stay clean). Each particle gets its own
+      // random outward direction, fading from 0 → max → 0 across the seg.
+      const scatterAmp = Math.sin(u * Math.PI) * 26;
       for (let i = 0; i < PARTICLE_COUNT; i++) {
         const idx = i * 3;
         const ax = A[idx],     ay = A[idx + 1],     az = A[idx + 2];
@@ -387,9 +400,18 @@ export default function ParticleScene({ sceneRef }) {
         const dx = Math.sin(t + i * 0.13) * driftAmp;
         const dy = Math.cos(t * 0.9 + i * 0.27) * driftAmp;
         const dz = Math.sin(t * 1.1 + i * 0.41) * driftAmp;
-        posAttr[idx]     = ax + (bx - ax) * eased + dx;
-        posAttr[idx + 1] = ay + (by - ay) * eased + dy;
-        posAttr[idx + 2] = az + (bz - az) * eased + dz;
+        // Per-particle deterministic scatter direction (3D).
+        const sx = Math.sin(i * 12.9898 + 1.7) * scatterAmp;
+        const sy = Math.cos(i * 7.234  + 4.2) * scatterAmp;
+        const sz = Math.sin(i *  3.111 + 9.0) * scatterAmp;
+        // Lerped position then radial dispersal (multiplies distance
+        // from origin) and a per-particle scatter offset.
+        const lx = (ax + (bx - ax) * eased) * dispersal;
+        const ly = (ay + (by - ay) * eased) * dispersal;
+        const lz = (az + (bz - az) * eased) * dispersal;
+        posAttr[idx]     = lx + dx + sx;
+        posAttr[idx + 1] = ly + dy + sy;
+        posAttr[idx + 2] = lz + dz + sz;
       }
       geometry.attributes.position.needsUpdate = true;
 
@@ -420,11 +442,9 @@ export default function ParticleScene({ sceneRef }) {
       }
       geometry.attributes.color.needsUpdate = true;
 
-      // Update line endpoint positions + colours. Each line's colour
-      // is sampled from one of its endpoint particles so the connecting
-      // lines pick up the current scene's chroma.
+      // Update line endpoint positions. Lines are sequential (i, i+1)
+      // pairs, so their endpoints sit on adjacent particles.
       const lpos = lineGeometry.attributes.position.array;
-      const lcol = lineGeometry.attributes.color.array;
       for (let p = 0; p < linePairs.length; p++) {
         const [ia, ib] = linePairs[p];
         const a3 = ia * 3, b3 = ib * 3;
@@ -434,17 +454,12 @@ export default function ParticleScene({ sceneRef }) {
         lpos[p * 6 + 3] = posAttr[b3];
         lpos[p * 6 + 4] = posAttr[b3 + 1];
         lpos[p * 6 + 5] = posAttr[b3 + 2];
-        // Line vertex colours: pick from endpoint particles (already
-        // recoloured above), so lines reflect the active palette.
-        lcol[p * 6 + 0] = cAttr[a3];
-        lcol[p * 6 + 1] = cAttr[a3 + 1];
-        lcol[p * 6 + 2] = cAttr[a3 + 2];
-        lcol[p * 6 + 3] = cAttr[b3];
-        lcol[p * 6 + 4] = cAttr[b3 + 1];
-        lcol[p * 6 + 5] = cAttr[b3 + 2];
       }
       lineGeometry.attributes.position.needsUpdate = true;
-      lineGeometry.attributes.color.needsUpdate = true;
+      // Single uniform line colour pulled from the lerped accent —
+      // gives the line layer a clean saturated reading against the
+      // particles, instead of mush-mixed vertex colours.
+      lineMaterial.color.setRGB(ar, ag, ab);
 
       // Low-pass smoothing on mouse parallax — keeps the cursor follow
       // gentle rather than twitchy.
@@ -470,18 +485,23 @@ export default function ParticleScene({ sceneRef }) {
       const camTargetX = camA.x + (camB.x - camA.x) * tCam;
       const camTargetY = camA.y + (camB.y - camA.y) * tCam;
       const camTargetZ = camA.z + (camB.z - camA.z) * tCam;
+      const camTargetLX = camA.lookX + (camB.lookX - camA.lookX) * tCam;
       const camTargetLY = camA.lookY + (camB.lookY - camA.lookY) * tCam;
       const camK = 1 - Math.exp(-dt / 0.45);
       cam.x += (camTargetX - cam.x) * camK;
       cam.y += (camTargetY - cam.y) * camK;
       cam.z += (camTargetZ - cam.z) * camK;
+      cam.lookX += (camTargetLX - cam.lookX) * camK;
       cam.lookY += (camTargetLY - cam.lookY) * camK;
 
       // Tiny scene-driven oscillation for ambient motion on top of base.
       const oscY = Math.sin(smoothedScene * 1.3 + frame * 0.0009) * 4;
       const oscZ = Math.sin(smoothedScene * 0.9 + frame * 0.0011) * 6;
       camera.position.set(cam.x, cam.y + oscY, cam.z + oscZ);
-      camera.lookAt(0, cam.lookY, 0);
+      // lookAt is shifted in x for non-hero scenes, pushing the
+      // formation's centre of mass to the right half of the viewport
+      // and leaving the left half for the text content.
+      camera.lookAt(cam.lookX, cam.lookY, 0);
 
       renderer.render(scene, camera);
     };

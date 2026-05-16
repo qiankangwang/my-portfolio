@@ -503,19 +503,28 @@ body::before {
 }
 
 /* ════════════════════════════════════════════════════════════════════
-   Main column — single centred reading column on top of the atmosphere
+   Main column — full-width container. Hero centres itself; sections
+   sit in the LEFT half so the camera-shifted particle formation has
+   the RIGHT half of the viewport to itself. Text floats directly on
+   the atmosphere without card chrome.
    ════════════════════════════════════════════════════════════════════ */
 .main {
   position: relative;
   z-index: 2;
   width: 100%;
+  max-width: 100%;
+  margin: 0;
+  padding: 0;
+}
+/* Hero — full-bleed arrival shot, content centred. */
+.hero-scene {
   max-width: 760px;
   margin: 0 auto;
   padding: 0 clamp(1rem, 4vw, 2.5rem);
 }
 
-/* Each section fills ~one viewport so the background canvas's camera
-   has time to glide between waypoints — one scroll, one scene. */
+/* Each section fills ~one viewport. Content sits in the LEFT half;
+   the camera shifts the particle formation to the RIGHT half. */
 .sect {
   position: relative;
   min-height: 100svh;
@@ -532,49 +541,50 @@ body::before {
 
 .sect-stage {
   position: relative;
-  width: 100%;
-  /* Subtle glass treatment so the network reads through the content
-     block while paragraphs stay legible. No hard borders — just a soft
-     bg tint + backdrop blur and a single hairline. Feels integrated
-     into the atmosphere instead of stamped on top. */
-  padding: clamp(2rem, 4vh, 3rem) clamp(1.5rem, 3.5vw, 2.75rem);
-  border-radius: 24px;
-  background: color-mix(in srgb, var(--bg) 55%, transparent);
-  backdrop-filter: blur(18px) saturate(1.15);
-  -webkit-backdrop-filter: blur(18px) saturate(1.15);
-  border: 1px solid color-mix(in srgb, var(--fg) 6%, transparent);
-  /* Inner highlight + soft shadow give the glass real depth:
-     - inset top edge: subtle white sheen ("lit from above")
-     - inset bottom edge: faint dark line catches the curve
-     - outer drop: very soft cast so the card "hovers" over the network */
-  box-shadow:
-    inset 0 1px 0 color-mix(in srgb, white 25%, transparent),
-    inset 0 -1px 0 color-mix(in srgb, var(--fg) 4%, transparent),
-    0 6px 28px color-mix(in srgb, var(--fg) 6%, transparent),
-    0 1px 3px color-mix(in srgb, var(--fg) 4%, transparent);
-  /* IO-driven slide-in: starts faintly offset, lands when the section
-     scrolls into view — synced with the camera move on the bg canvas. */
+  /* No card chrome. Sections alternate which side of the viewport they
+     sit on; the centred particle formation appears in the open gutter
+     on the OTHER side. Animation through the middle = one unified whole.
+     Defaults to left-aligned; #research and #projects override below.
+     Left margin is generous so text fully clears the fixed nav rail. */
+  max-width: 440px;
+  margin-left: clamp(13rem, 22vw, 20rem);
+  margin-right: auto;
+  padding-right: clamp(1rem, 2vw, 1.5rem);
+  /* IO-driven slide-in: starts offset, slides in toward its side. */
   opacity: 0;
-  transform: translateY(48px);
+  transform: translateX(-32px);
   transition:
     opacity 1s cubic-bezier(.22, 1, .36, 1),
     transform 1s cubic-bezier(.22, 1, .36, 1);
   will-change: opacity, transform;
+  /* Faint text-shadow halo gives body copy legibility against the
+     live particles behind. Headings get their own override below. */
+  text-shadow:
+    0 0 12px color-mix(in srgb, var(--bg) 70%, transparent),
+    0 1px 0 color-mix(in srgb, var(--bg) 50%, transparent);
 }
-/* Top-edge sheen — a 1px gradient strip that catches "light" on the
-   card's top edge. Sits inside the border-radius. */
-.sect-stage::before {
-  content: '';
-  position: absolute;
-  inset: 0 0 auto 0;
-  height: 1px;
-  border-radius: 24px 24px 0 0;
-  background: linear-gradient(90deg,
-    transparent 0%,
-    color-mix(in srgb, white 60%, transparent) 50%,
-    transparent 100%);
-  pointer-events: none;
-  opacity: .6;
+/* Right-aligned sections — Research (scene 2) and Projects (scene 4).
+   Camera lookX flips for these scenes so the formation slides over to
+   the LEFT half of the viewport, opening the right gutter for text.
+   Right margin clears the back-to-top button + corner controls pill. */
+#research .sect-stage,
+#projects .sect-stage {
+  margin-left: auto;
+  margin-right: clamp(5rem, 8vw, 7rem);
+  padding-right: 0;
+  padding-left: clamp(1rem, 2vw, 1.5rem);
+  transform: translateX(32px);
+  text-align: right;
+}
+/* Bigger / heavier elements don't need the halo and can look fuzzy
+   with one applied — opt them out. */
+.sect-stage h1,
+.sect-stage h2,
+.sect-stage .sect-title,
+.sect-stage .stat-n,
+.sect-stage .pub-title,
+.sect-stage .sect-meta {
+  text-shadow: none;
 }
 .sect.in .sect-stage {
   opacity: 1;

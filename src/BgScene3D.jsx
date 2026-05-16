@@ -1,19 +1,6 @@
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import {
-  EffectComposer,
-  Bloom,
-  Vignette,
-  Noise,
-  ChromaticAberration,
-} from "@react-three/postprocessing";
-import { BlendFunction } from "postprocessing";
-import {
-  Stars,
-  Sparkles,
-  Float,
-  Environment,
-  Trail,
-} from "@react-three/drei";
+import { EffectComposer, Bloom } from "@react-three/postprocessing";
+import { Sparkles, Float, Environment, Trail } from "@react-three/drei";
 import {
   useRef,
   useMemo,
@@ -99,7 +86,9 @@ function NeuralBrain({ pulseSpeedRef }) {
   const coreRef = useRef();
   const haloRef = useRef();
 
-  const { nodes, edges } = useMemo(() => buildNetwork(150, 6, 2.85), []);
+  // Neural net is the hero: bigger radius, denser nodes, denser edges so the
+  // network reads as the dominant "AI" subject (DNA helix is now a side motif).
+  const { nodes, edges } = useMemo(() => buildNetwork(200, 7, 3.5), []);
 
   // Initialise instance matrices + initial colors once.
   useEffect(() => {
@@ -128,12 +117,15 @@ function NeuralBrain({ pulseSpeedRef }) {
       const n = nodes[i];
       const wave = Math.sin(t * 1.5 * speed - n.wavePos * Math.PI * 4 + n.basePhase * 0.3);
       const burst = Math.max(0, wave);
-      // HDR boost (>1) so Bloom picks the bright nodes up.
-      const intensity = 1.1 + burst * burst * 5.5;
+      // Lower at-rest intensity (0.6) so resting nodes read as solid dark
+      // blue dots on the light backdrop — only the bursting peaks blow into
+      // HDR territory for Bloom to pick up.
+      const intensity = 0.6 + burst * burst * 6.0;
       _color.setRGB(0.376 * intensity, 0.647 * intensity, 0.98 * intensity);
       coreRef.current.setColorAt(i, _color);
-      // Halo gets the same colour but dimmer + scaled up when active
-      _color.multiplyScalar(0.35);
+      // Halo: dimmer companion. Use a fresh color so multiplyScalar doesn't
+      // compound across frames.
+      _color.multiplyScalar(0.3);
       haloRef.current.setColorAt(i, _color);
     }
     coreRef.current.instanceColor.needsUpdate = true;
@@ -147,18 +139,18 @@ function NeuralBrain({ pulseSpeedRef }) {
 
   return (
     <group ref={groupRef}>
-      {/* Bright HDR core dots — Bloom picks these up for the glow */}
+      {/* Solid blue core dots — readable as nodes on the light backdrop */}
       <instancedMesh ref={coreRef} args={[null, null, nodes.length]}>
-        <icosahedronGeometry args={[0.05, 1]} />
+        <icosahedronGeometry args={[0.075, 1]} />
         <meshBasicMaterial vertexColors toneMapped={false} />
       </instancedMesh>
-      {/* Outer additive halo — gives every node a soft aura */}
+      {/* Outer additive halo — soft aura on the burst peaks */}
       <instancedMesh ref={haloRef} args={[null, null, nodes.length]}>
-        <icosahedronGeometry args={[0.18, 1]} />
+        <icosahedronGeometry args={[0.2, 1]} />
         <meshBasicMaterial
           vertexColors
           transparent
-          opacity={0.6}
+          opacity={0.45}
           blending={THREE.AdditiveBlending}
           depthWrite={false}
           toneMapped={false}
@@ -169,12 +161,12 @@ function NeuralBrain({ pulseSpeedRef }) {
       <DataPackets edges={edges} count={90} pulseSpeedRef={pulseSpeedRef} />
       {/* Faint wireframe icosahedron suggesting a containment field */}
       <mesh>
-        <icosahedronGeometry args={[3.3, 2]} />
+        <icosahedronGeometry args={[4.0, 2]} />
         <meshBasicMaterial
           color={COL.blue}
           wireframe
           transparent
-          opacity={0.06}
+          opacity={0.08}
           toneMapped={false}
         />
       </mesh>
@@ -201,11 +193,11 @@ function NetworkEdges({ edges }) {
   }, [edges]);
   return (
     <instancedMesh ref={meshRef} args={[null, null, edges.length]}>
-      <cylinderGeometry args={[0.006, 0.006, 1, 5]} />
+      <cylinderGeometry args={[0.008, 0.008, 1, 5]} />
       <meshBasicMaterial
-        color={COL.blue}
+        color={COL.blueDeep}
         transparent
-        opacity={0.32}
+        opacity={0.55}
         toneMapped={false}
       />
     </instancedMesh>
@@ -572,7 +564,9 @@ function OrbitingTracer({ radius = 3.4, axisTilt = 0.5, speed = 0.6, color = COL
   );
 }
 
-/* ─── Nebula plane (warmer, brighter — fixes "too dark" feedback) ─────── */
+/* ─── Atmosphere plane ─ soft pastel lobes that integrate with the light
+   backdrop instead of fighting it. Lower opacity than before — the airy
+   feel comes from the bg + fog, not a saturated nebula. ─────────────── */
 function Nebula() {
   const texture = useMemo(() => {
     const c = document.createElement("canvas");
@@ -580,23 +574,23 @@ function Nebula() {
     c.height = 512;
     const g = c.getContext("2d");
     // Cool blue lobe
-    const g1 = g.createRadialGradient(380, 220, 0, 380, 220, 400);
-    g1.addColorStop(0, "rgba(96, 165, 250, 0.65)");
-    g1.addColorStop(0.35, "rgba(59, 130, 246, 0.32)");
+    const g1 = g.createRadialGradient(380, 220, 0, 380, 220, 420);
+    g1.addColorStop(0, "rgba(147, 197, 253, 0.28)");
+    g1.addColorStop(0.4, "rgba(96, 165, 250, 0.14)");
     g1.addColorStop(1, "rgba(0, 0, 0, 0)");
     g.fillStyle = g1;
     g.fillRect(0, 0, 1024, 512);
     // Warm amber lobe (right of frame, picks up the DNA gold)
-    const g2 = g.createRadialGradient(720, 300, 0, 720, 300, 320);
-    g2.addColorStop(0, "rgba(251, 191, 36, 0.45)");
-    g2.addColorStop(0.45, "rgba(245, 158, 11, 0.18)");
+    const g2 = g.createRadialGradient(720, 300, 0, 720, 300, 340);
+    g2.addColorStop(0, "rgba(253, 224, 174, 0.22)");
+    g2.addColorStop(0.45, "rgba(251, 191, 36, 0.08)");
     g2.addColorStop(1, "rgba(0, 0, 0, 0)");
     g.fillStyle = g2;
     g.fillRect(0, 0, 1024, 512);
     // Violet accent lobe (centre)
-    const g3 = g.createRadialGradient(540, 180, 0, 540, 180, 220);
-    g3.addColorStop(0, "rgba(167, 139, 250, 0.35)");
-    g3.addColorStop(0.5, "rgba(124, 58, 237, 0.14)");
+    const g3 = g.createRadialGradient(540, 180, 0, 540, 180, 240);
+    g3.addColorStop(0, "rgba(196, 181, 253, 0.18)");
+    g3.addColorStop(0.5, "rgba(167, 139, 250, 0.06)");
     g3.addColorStop(1, "rgba(0, 0, 0, 0)");
     g.fillStyle = g3;
     g.fillRect(0, 0, 1024, 512);
@@ -624,27 +618,31 @@ function Nebula() {
    ════════════════════════════════════════════════════════════════════════ */
 function CameraRig({ phaseRef, pulseSpeedRef }) {
   const { camera } = useThree();
-  const desiredPos = useRef(new THREE.Vector3(0, 0.8, 12));
-  const desiredLook = useRef(new THREE.Vector3(-0.5, 0, 0));
-  const currentLook = useRef(new THREE.Vector3(-0.5, 0, 0));
+  const desiredPos = useRef(new THREE.Vector3(0.6, 1.0, 10.5));
+  const desiredLook = useRef(new THREE.Vector3(-1.0, 0, 0));
+  const currentLook = useRef(new THREE.Vector3(-1.0, 0, 0));
   const lastPhase = useRef(0);
   const lastActiveIdx = useRef(-1);
   const burstSpike = useRef(0);
 
+  // All waypoints stay close enough to the network that it reads as the
+  // hero in every section. Look targets biased -1.0 X so the network sits
+  // on the LEFT half of the canvas, leaving breathing room on the right
+  // for the glass card panel.
   const waypoints = useMemo(
     () => [
-      // p=0.0 ── Top of page: wide opening establishing shot
-      { pos: [0.8, 0.8, 12.5], look: [-0.5, 0, 0], fov: 54 },
-      // p=0.2 ── About: close hero on DNA, "introducing self"
-      { pos: [1.4, 0.4, 4.4], look: [-0.4, 0, 0], fov: 38 },
-      // p=0.4 ── Research: orbit on neural cluster from the left
-      { pos: [-3.6, 1.6, 4.8], look: [-2.0, 0.5, 0], fov: 42 },
-      // p=0.6 ── Publication: DNA macro detail, slight right-side angle
-      { pos: [2.6, -0.2, 3.4], look: [0.2, 0, 0], fov: 30 },
-      // p=0.8 ── Projects: crane top-down survey of the composition
-      { pos: [-2.2, 5.4, 7.8], look: [-0.4, -0.8, 0], fov: 48 },
-      // p=1.0 ── Skills: final wide pull-back closer
-      { pos: [2.6, 1.4, 14], look: [-0.5, 0, 0], fov: 58 },
+      // p=0.0 ── About: opening shot, network fills the upper-left
+      { pos: [0.6, 1.0, 10.5], look: [-1.0, 0, 0], fov: 50 },
+      // p=0.2 ── drift around to the near-left face
+      { pos: [-2.0, 1.3, 8.2], look: [-1.2, 0.2, 0], fov: 46 },
+      // p=0.4 ── Research: orbit upper-left, network filling frame
+      { pos: [-4.2, 2.2, 6.8], look: [-1.4, 0.4, 0], fov: 46 },
+      // p=0.6 ── Publication: ease right past the network, side-DNA glances in
+      { pos: [2.6, 0.9, 8.6], look: [-0.2, -0.2, -0.4], fov: 44 },
+      // p=0.8 ── Projects: crane up + back, network mid-frame from above
+      { pos: [-1.0, 3.6, 9.5], look: [-1.0, -0.5, 0], fov: 48 },
+      // p=1.0 ── Skills: closer wide shot, not a far pull-back
+      { pos: [1.4, 1.4, 11.5], look: [-1.0, 0, 0], fov: 52 },
     ],
     []
   );
@@ -715,22 +713,23 @@ function CameraRig({ phaseRef, pulseSpeedRef }) {
 function Theme() {
   const [dark, setDark] = useState(() => {
     if (typeof document === "undefined") return true;
-    return document.documentElement.getAttribute("data-theme") !== "light";
+    return document.documentElement.getAttribute("data-theme") === "dark";
   });
   useEffect(() => {
     const obs = new MutationObserver(() => {
-      setDark(document.documentElement.getAttribute("data-theme") !== "light");
+      setDark(document.documentElement.getAttribute("data-theme") === "dark");
     });
     obs.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
     return () => obs.disconnect();
   }, []);
-  // Lifted from #070b1c → #0a1024 (brighter base with subtle blue tint).
-  const bgColor = dark ? "#0a1024" : "#101a36";
-  const fogColor = dark ? "#0a1024" : "#101a36";
+  // Light mode: soft cool-gray atmosphere so the 3D feels bright and reads
+  // as part of the same airy palette as the cards. Dark mode: deep navy.
+  const bgColor = dark ? "#0F172A" : "#D6DCE5";
+  const fogColor = dark ? "#0F172A" : "#D6DCE5";
   return (
     <>
       <color attach="background" args={[bgColor]} />
-      <fog attach="fog" args={[fogColor, 11, 32]} />
+      <fog attach="fog" args={[fogColor, 12, 34]} />
     </>
   );
 }
@@ -744,106 +743,86 @@ export default function BgScene3D({ phaseRef }) {
   return (
     <Canvas
       dpr={[1, 2]}
-      camera={{ position: [0.8, 0.8, 12.5], fov: 54, near: 0.1, far: 140 }}
+      camera={{ position: [0.6, 1.0, 10.5], fov: 50, near: 0.1, far: 140 }}
       gl={{ antialias: true, powerPreference: "high-performance" }}
       style={{ position: "absolute", inset: 0, zIndex: 0 }}
     >
       <Suspense fallback={null}>
         <Theme />
 
-        {/* HDR environment so PhysicalMaterials get real reflections */}
-        <Environment preset="night" environmentIntensity={1.0} />
+        {/* HDR environment so PhysicalMaterials get real reflections.
+           Brighter "studio" preset reads better on the light backdrop than
+           "night" which was tuned for the old dark scene. */}
+        <Environment preset="studio" environmentIntensity={0.85} />
 
-        {/* Lighting: ambient + hemisphere fill + warm key + colour rims */}
-        <ambientLight intensity={0.32} />
-        <hemisphereLight color={COL.blue} groundColor={COL.amber} intensity={0.45} />
-        <directionalLight position={[6, 8, 4]} intensity={0.95} color="#fff2dc" />
-        <pointLight position={[-6, 2, -4]} intensity={2.6} color={COL.blue} distance={22} />
-        <pointLight position={[3, -2, 5]} intensity={1.8} color={COL.amber} distance={16} />
-        <pointLight position={[0, 0, 0]} intensity={1.0} color={COL.violet} distance={7} />
+        {/* Lighting: airy fill + soft key + gentle accent rims. Reduced
+           power-point lights so the scene reads bright/clean rather than
+           a moody nightclub. */}
+        <ambientLight intensity={0.85} />
+        <hemisphereLight color="#FFFFFF" groundColor="#C8D2E0" intensity={0.65} />
+        <directionalLight position={[6, 8, 4]} intensity={0.7} color="#fff5e6" />
+        <pointLight position={[-5, 3, -3]} intensity={1.2} color={COL.blue} distance={18} />
+        <pointLight position={[4, -1, 4]} intensity={0.9} color={COL.amber} distance={14} />
 
         <CameraRig phaseRef={phaseRef} pulseSpeedRef={pulseSpeedRef} />
 
-        {/* Distant starfield */}
-        <Stars radius={60} depth={35} count={2200} factor={3.5} fade speed={0.5} />
+        {/* Stars are invisible on a light backdrop — Sparkles inside the
+           neural cluster carries the "particles in the volume" feel. */}
+        <Sparkles
+          count={140}
+          scale={[8, 6, 6]}
+          size={2.2}
+          speed={0.35}
+          color={COL.blue}
+          noise={0.5}
+        />
 
         {/* Coloured nebula plane far behind the scene */}
         <Nebula />
 
-        {/* Main subjects: neural cluster + central DNA */}
+        {/* Primary subject: neural network (AI side of AI+Bio research) */}
         <NeuralBrain pulseSpeedRef={pulseSpeedRef} />
-        <DNAHelix />
+        {/* Side motif: DNA helix tucked behind-right of the network as a
+           supporting "Bio" signal, scaled down so it doesn't compete with
+           the network for visual weight. */}
+        <group position={[4.4, -0.6, -1.8]} scale={0.42} rotation={[0.2, 0.4, 0.15]}>
+          <DNAHelix />
+        </group>
 
-        {/* Protein α-helix ribbons (Float-wrapped, palette-matched) */}
-        <Float speed={1.3} rotationIntensity={0.7} floatIntensity={0.9}>
+        {/* Two small bio motifs (protein helix + RNA loop), pushed back and
+           down-scaled — supporting "Bio" signal next to the dominant neural
+           network. More than this clutters the network's silhouette. */}
+        <Float speed={1.1} rotationIntensity={0.5} floatIntensity={0.7}>
           <ProteinRibbon
-            pos={[-4.6, 1.6, -1]}
+            pos={[-5.2, 1.4, -2.6]}
             color={COL.amberPale}
             emissiveColor={COL.amber}
-            scale={0.85}
-            speed={0.5}
+            scale={0.55}
+            speed={0.45}
             turns={4.5}
           />
         </Float>
-        <Float speed={1.0} rotationIntensity={0.5} floatIntensity={0.7}>
-          <ProteinRibbon
-            pos={[5.2, -1.2, -2]}
-            color={COL.bluePale}
-            emissiveColor={COL.blueDeep}
-            scale={0.7}
-            speed={-0.6}
-            turns={5}
-          />
-        </Float>
-        <Float speed={1.6} rotationIntensity={0.8} floatIntensity={0.6}>
-          <ProteinRibbon
-            pos={[3.8, 2.8, -3]}
-            color={COL.amberPale}
-            emissiveColor={COL.amberDeep}
-            scale={0.55}
-            speed={0.7}
-            turns={3.5}
-          />
-        </Float>
-        <Float speed={1.1} rotationIntensity={0.6} floatIntensity={0.8}>
-          <ProteinRibbon
-            pos={[-3.4, -2.4, -2.4]}
-            color={COL.bluePale}
-            emissiveColor={COL.blue}
-            scale={0.7}
-            speed={-0.45}
-            turns={5.5}
-          />
-        </Float>
-
-        {/* RNA loops */}
         <Float speed={0.9} rotationIntensity={0.4} floatIntensity={0.5}>
-          <RNALoop pos={[4.2, 1.4, 1.2]} scale={0.7} color={COL.violet} speed={0.4} />
-        </Float>
-        <Float speed={1.2} rotationIntensity={0.6} floatIntensity={0.6}>
-          <RNALoop pos={[-3.8, -0.4, 2]} scale={0.55} color={COL.violetDeep} speed={-0.55} />
+          <RNALoop pos={[-3.6, -2.6, -1.5]} scale={0.45} color={COL.violet} speed={0.4} />
         </Float>
 
-        {/* Long-tail orbiting tracers */}
-        <OrbitingTracer radius={3.6} axisTilt={0.5} speed={0.45} color={COL.amber} />
-        <OrbitingTracer radius={3.4} axisTilt={-0.3} speed={-0.55} color={COL.bluePale} />
-        <OrbitingTracer radius={4.0} axisTilt={0.7} speed={0.32} color={COL.violet} />
+        {/* Two long-tail tracers orbiting the neural cluster — reinforces
+           the "network has activity" feel without the 3rd amber trail. */}
+        <OrbitingTracer radius={4.0} axisTilt={0.5} speed={0.4} color={COL.bluePale} />
+        <OrbitingTracer radius={3.7} axisTilt={-0.35} speed={-0.5} color={COL.violet} />
 
-        {/* Filmic post chain — no ref on <Bloom>: React 19 puts refs into the
-           props bag, which @react-three/postprocessing then JSON.stringifies
-           in a useMemo dep. Three.js Object3D has circular parent↔children
-           refs, so the stringify throws on every scroll-driven re-render and
-           tears down the React tree. Constant intensity here, no ref needed. */}
+        {/* Gentle bloom on the bright HDR emissives — clean, no ref (see
+           commit history: React 19 puts refs in the props bag and drei's
+           postprocessing JSON.stringifies them). Vignette / aberration /
+           noise dropped: they darkened the corners and added film grain,
+           which fought the bright airy palette we want now. */}
         <EffectComposer multisampling={0} disableNormalPass>
           <Bloom
-            intensity={1.7}
-            luminanceThreshold={0.2}
-            luminanceSmoothing={0.3}
+            intensity={1.1}
+            luminanceThreshold={0.7}
+            luminanceSmoothing={0.35}
             mipmapBlur
           />
-          <ChromaticAberration offset={[0.0009, 0.0014]} radialModulation={false} modulationOffset={0} />
-          <Vignette eskil={false} offset={0.2} darkness={0.55} />
-          <Noise opacity={0.035} premultiply blendFunction={BlendFunction.SCREEN} />
         </EffectComposer>
       </Suspense>
     </Canvas>

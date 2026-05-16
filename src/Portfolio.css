@@ -223,13 +223,16 @@ body::before {
    ════════════════════════════════════════════════════════════════════ */
 .layout {
   display: grid;
-  grid-template-columns: minmax(320px, 28%) 1fr;
-  max-width: 1500px;
+  grid-template-columns: minmax(280px, 24%) minmax(0, 1fr);
+  /* Narrower max-width so the 3D scene breathes visibly on both edges of
+     the viewport at wider screen sizes — the animation reads as the stage
+     and the text content reads as a panel laid over it. */
+  max-width: 1180px;
   margin: 0 auto;
   position: relative;
   z-index: 2;
-  gap: clamp(2rem, 4vw, 5rem);
-  padding-inline: clamp(1.5rem, 3vw, 3rem);
+  gap: clamp(1.5rem, 3vw, 3.5rem);
+  padding-inline: clamp(1.5rem, 3vw, 2.5rem);
 }
 
 /* ── Sidebar ── */
@@ -245,19 +248,12 @@ body::before {
   margin-inline: -1.5rem;
   gap: 2rem;
   z-index: 50;
-  /* Glassmorphism tinted with accent so the panel belongs to the same
-     colour world as the 3D scene's emissive blue/amber surfaces. */
-  background: linear-gradient(
-    180deg,
-    color-mix(in srgb, var(--bg) 80%, transparent),
-    color-mix(in srgb, var(--bg) 62%, transparent)
-  );
-  backdrop-filter: blur(16px) saturate(1.5);
-  -webkit-backdrop-filter: blur(16px) saturate(1.5);
-  border-right: 1px solid color-mix(in srgb, var(--accent) 14%, transparent);
-  box-shadow:
-    24px 0 80px -40px color-mix(in srgb, var(--accent) 32%, transparent),
-    1px 0 0 color-mix(in srgb, var(--accent) 6%, transparent);
+  /* Soft glass panel — quieter than before so it doesn't compete with
+     the network animation for visual weight. */
+  background: color-mix(in srgb, var(--bg) 50%, transparent);
+  backdrop-filter: blur(14px) saturate(1.15);
+  -webkit-backdrop-filter: blur(14px) saturate(1.15);
+  border-right: 1px solid color-mix(in srgb, var(--fg) 6%, transparent);
 }
 
 .sb-top { display: flex; flex-direction: column; gap: 1rem; }
@@ -431,27 +427,19 @@ body::before {
 .sect-stage {
   position: relative;
   width: 100%;
-  /* Glass card tinted with the same accent palette as the 3D emissive
-     surfaces. The card now reads as part of the scene's design language
-     rather than a separate UI layer pasted on top. */
-  background: linear-gradient(
-    135deg,
-    color-mix(in srgb, var(--bg) 80%, transparent),
-    color-mix(in srgb, var(--bg) 64%, transparent)
-  );
-  backdrop-filter: blur(20px) saturate(1.5);
-  -webkit-backdrop-filter: blur(20px) saturate(1.5);
-  border: 1px solid color-mix(in srgb, var(--accent) 22%, transparent);
-  border-radius: 24px;
-  padding: clamp(2rem, 3.5vw, 3rem);
-  /* Layered shadow with accent + warm tint so the card "sits in" the
-     coloured scene; the outer aura connects it back to the network /
-     DNA glows without being noisy. */
+  /* Quieter glass: the 3D scene is the visual hero now, so the card pulls
+     way back — light translucent fill, subtle border, soft shadow. The
+     animation shows clearly *through* the card instead of being hidden
+     behind a frosted slab. */
+  background: color-mix(in srgb, var(--bg) 55%, transparent);
+  backdrop-filter: blur(14px) saturate(1.15);
+  -webkit-backdrop-filter: blur(14px) saturate(1.15);
+  border: 1px solid color-mix(in srgb, var(--fg) 8%, transparent);
+  border-radius: 20px;
+  padding: clamp(1.75rem, 3vw, 2.5rem);
   box-shadow:
-    0 0 0 1px color-mix(in srgb, var(--accent) 8%, transparent) inset,
-    0 1px 0 color-mix(in srgb, var(--ivory, #F8FAFC) 8%, transparent) inset,
-    0 24px 64px -28px color-mix(in srgb, var(--accent) 45%, black),
-    0 60px 140px -50px color-mix(in srgb, var(--warm) 22%, black);
+    0 1px 0 color-mix(in srgb, #ffffff 30%, transparent) inset,
+    0 12px 36px -18px color-mix(in srgb, var(--fg) 35%, transparent);
 
   /* Fly-in entrance: self-triggering on mount so the card is always
      visible — independent of any IntersectionObserver firing. */
@@ -465,33 +453,9 @@ body::before {
 /* Outer glow aura — sits just outside the card with a soft accent halo
    that visually "leaks" the 3D scene's emissive light onto the card
    edges. Softens the hard rectangle boundary. */
-.sect-stage::before {
-  content: '';
-  position: absolute;
-  inset: -2px;
-  border-radius: inherit;
-  padding: 1px;
-  background: linear-gradient(
-    135deg,
-    color-mix(in srgb, var(--accent) 38%, transparent),
-    color-mix(in srgb, var(--warm) 28%, transparent) 45%,
-    color-mix(in srgb, var(--accent) 22%, transparent)
-  );
-  -webkit-mask:
-    linear-gradient(#000 0 0) content-box,
-    linear-gradient(#000 0 0);
-  -webkit-mask-composite: xor;
-          mask-composite: exclude;
-  opacity: .55;
-  pointer-events: none;
-}
-.sect-stage::before {
-  animation: card-aura-shimmer 8s ease-in-out infinite;
-}
-@keyframes card-aura-shimmer {
-  0%, 100% { opacity: .55; }
-  50%      { opacity: .85; }
-}
+/* Card aura removed — it was painting an accent+warm gradient ring around
+   every card, which fought the airy "card laid over animation" feel. The
+   subtle border on .sect-stage is enough to delimit the panel. */
 @media (prefers-reduced-motion: reduce) {
   .sect-stage {
     animation: none !important;

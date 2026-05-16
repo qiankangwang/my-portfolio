@@ -141,9 +141,9 @@ export default function NeuralNetCanvas({ sceneRef }) {
       ];
     };
 
-    // Five camera waypoints — one per portfolio section. Each is a target
-    // (worldX, worldY, zoom) in world coords; the draw loop interpolates
-    // smoothly between them as scroll progress goes 0 → 1.
+    // Six camera waypoints — one per portfolio scene (incl. hero). Each is
+    // a target (worldX, worldY, zoom) in world coords; the draw loop
+    // interpolates smoothly between them as scroll progress goes 0 → N.
     const computeWaypoints = () => {
       const layerGap = WORLD_W / (layers.length - 1);
       const left = -WORLD_W / 2;
@@ -153,15 +153,17 @@ export default function NeuralNetCanvas({ sceneRef }) {
       const rnaAnchor     = { x: left + WORLD_W * 0.82, y: top + WORLD_H * 0.34 };
 
       return [
-        // 0 — About: close-up on the input layer
+        // 0 — Hero: wide overview of the entire network
+        { x: 0, y: 0, zoom: 1.05 },
+        // 1 — About: close-up on the input layer
         { x: left + layerGap * 0.5, y: 0, zoom: 2.6 },
-        // 1 — Research: mid-shot on the second hidden layer
+        // 2 — Research: mid-shot on the second hidden layer
         { x: left + layerGap * 2,   y: 0, zoom: 1.7 },
-        // 2 — Publication: close-up on the output layer
+        // 3 — Publication: close-up on the output layer
         { x: left + layerGap * 5,   y: 0, zoom: 2.3 },
-        // 3 — Projects: zoom on a protein α-helix
+        // 4 — Projects: zoom on a protein α-helix
         { x: proteinAnchor.x, y: proteinAnchor.y, zoom: 2.8 },
-        // 4 — Skills: zoom on an RNA strand
+        // 5 — Skills: zoom on an RNA strand
         { x: rnaAnchor.x,     y: rnaAnchor.y,     zoom: 2.6 },
       ];
     };

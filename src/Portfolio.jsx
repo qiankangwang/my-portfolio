@@ -64,19 +64,20 @@ const LeftStage = memo(function LeftStage({
   scrollTo,
   sceneRef,
 }) {
-  const tagline = useTypewriter(D.tagline);
   return (
     <aside className="lstage" aria-label="Profile and navigation">
-      {/* Neural network canvas fills the pane behind identity + nav */}
+      {/* Neural network canvas fills the entire pane — it IS the stage. */}
       <div className="lstage-canvas" aria-hidden="true">
         <NeuralNetCanvas sceneRef={sceneRef} />
-        {/* Soft vignette so identity / nav text reads on top of the
-            animation without needing card chrome */}
+        {/* Soft vignette tied to bg color, so corner copy reads without
+            card chrome on top of the live network */}
         <div className="lstage-vignette" />
       </div>
 
-      {/* Identity at the top of the stage */}
-      <header className="lstage-id">
+      {/* Small identity badge in the top-left corner. Just an avatar +
+         tiny kicker — the big name lives in the hero scene on the right.
+         Avatar still carries the click-to-headpat easter egg. */}
+      <header className="lstage-badge">
         <button
           type="button"
           className="sb-avatar-btn"
@@ -92,21 +93,14 @@ const LeftStage = memo(function LeftStage({
             decoding="async"
           />
         </button>
-        <div className="lstage-id-text">
-          <div className="sb-kicker">UC Berkeley · Data Science · 2027</div>
-          <h1 className="sb-name">{D.fullName}</h1>
-          <p className="sb-tagline">
-            {tagline.text}
-            <span
-              className={`sb-caret${tagline.done ? " sb-caret-done" : ""}`}
-              aria-hidden="true"
-            />
-          </p>
+        <div className="lstage-badge-meta">
+          <span className="lstage-badge-name">Qiankang Wang</span>
+          <span className="lstage-badge-sub">UC Berkeley</span>
         </div>
       </header>
 
-      {/* Section nav at the bottom of the stage — shows which "scene"
-         is currently playing, click to jump */}
+      {/* Section nav rail — vertically centred on the left edge of the
+         stage. Shows which scene is currently playing; click to jump. */}
       <nav className="lstage-nav" aria-label="Section navigation">
         {NAV.map((n, i) => {
           const isActive = active === n;
@@ -272,59 +266,53 @@ function useTheme() {
   return [theme, toggle];
 }
 
-/* ── 3D Tilt card hook (rAF + direct DOM writes; no re-renders on mousemove) ── */
-function useTilt(intensity = 8) {
-  const ref = useRef(null);
-  const raf = useRef(0);
-  const target = useRef({ rx: 0, ry: 0 });
+/* (TiltCard / useTilt removed — the editorial layout has no card chrome
+   to tilt. Hover lift moved into per-element CSS transitions instead.) */
 
-  const onMove = useCallback((e) => {
-    const el = ref.current;
-    if (!el) return;
-    const rect = el.getBoundingClientRect();
-    target.current.ry = ((e.clientX - rect.left) / rect.width - 0.5) * intensity;
-    target.current.rx = ((e.clientY - rect.top) / rect.height - 0.5) * -intensity;
-    if (raf.current) return;
-    raf.current = requestAnimationFrame(() => {
-      raf.current = 0;
-      const el2 = ref.current;
-      if (!el2) return;
-      const { rx, ry } = target.current;
-      el2.style.transition = "transform 0.15s ease-out";
-      el2.style.transform = `perspective(800px) rotateX(${rx}deg) rotateY(${ry}deg) scale3d(1.01,1.01,1.01)`;
-    });
-  }, [intensity]);
+/* ── Hero scene ──
+   First viewport of the page. The user's name is rendered HUGE in italic
+   serif over the network on the left, the tagline types out below, then
+   a scroll cue points down. Sets the page's overall art direction.
 
-  const onLeave = useCallback(() => {
-    if (raf.current) {
-      cancelAnimationFrame(raf.current);
-      raf.current = 0;
-    }
-    const el = ref.current;
-    if (!el) return;
-    el.style.transition = "transform 0.4s cubic-bezier(.22,1,.36,1)";
-    el.style.transform = "perspective(800px) rotateX(0) rotateY(0) scale3d(1,1,1)";
-  }, []);
-
-  return [ref, onMove, onLeave];
-}
-
-/* ── Tilt card wrapper ── */
-const TiltCard = memo(function TiltCard({ children, className = "" }) {
-  const [ref, onMove, onLeave] = useTilt(6);
+   id="hero" so the scroll-handler's SCENE_IDS picks up its centre as the
+   first camera waypoint (the wide-overview shot). */
+const HeroScene = memo(function HeroScene() {
+  const tagline = useTypewriter(D.tagline);
   return (
-    <div
-      ref={ref}
-      className={className}
-      onMouseMove={onMove}
-      onMouseLeave={onLeave}
-    >
-      {children}
-    </div>
+    <section id="hero" className="hero-scene">
+      <span className="hero-kicker">Qiankang (Kant) Wang · 2026 portfolio</span>
+      <h1 className="hero-name">
+        <span className="hero-name-line">Qiankang</span>
+        <span className="hero-name-line hero-name-line-2">Wang.</span>
+      </h1>
+      <p className="hero-tagline">
+        {tagline.text}
+        <span
+          className={`sb-caret${tagline.done ? " sb-caret-done" : ""}`}
+          aria-hidden="true"
+        />
+      </p>
+      <div className="hero-meta">
+        <span>UC Berkeley</span>
+        <span className="hero-meta-dot" aria-hidden="true">·</span>
+        <span>Data Science · 2027</span>
+      </div>
+      <a href="#about" className="hero-cue" aria-label="Scroll to about">
+        <span>Scroll</span>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <line x1="12" y1="5" x2="12" y2="19"/>
+          <polyline points="19 12 12 19 5 12"/>
+        </svg>
+      </a>
+    </section>
   );
 });
 
-/* ── Main ── */
+/* ── Main ──
+   SCENE_IDS drives the canvas camera path (one waypoint per id, in order),
+   while NAV is what the nav rail shows (hero is the implicit entry, not
+   a clickable rail item). */
+const SCENE_IDS = ["hero", "about", "research", "publication", "projects", "skills"];
 const NAV = ["About", "Research", "Publication", "Projects", "Skills"];
 
 export default function Portfolio() {
@@ -335,12 +323,10 @@ export default function Portfolio() {
   const [repos, setRepos] = useState([]);
   const [repoLoading, setRepoLoading] = useState(true);
 
-  // Continuous "scene index" handed to the canvas — a value in [0, 4]
-  // that tracks which section the user is currently reading, with
-  // smooth fractions between sections. The canvas uses this to pick
-  // its camera waypoint (idx 0 = About anchor, idx 4 = Skills anchor)
-  // so the camera lines up with the section actually in view, not with
-  // an even chunk of total scroll.
+  // Continuous "scene index" handed to the canvas — a value in
+  // [0, SCENE_IDS.length-1] that tracks which scene the user is currently
+  // viewing, with smooth fractions in between. Scene 0 = hero (wide
+  // network), 1 = about (input layer zoom), etc.
   const sceneRef = useRef(0);
 
   useEffect(() => {
@@ -356,13 +342,11 @@ export default function Portfolio() {
         const p = docH > 0 ? Math.min(y / docH, 1) : 0;
         setProgress(p);
 
-        const sects = NAV.map((n) => document.getElementById(n.toLowerCase()));
+        // Camera path: use ALL scenes (hero + 5 sections). Each scene's
+        // anchor is its element's vertical centre in doc coords.
+        const sceneEls = SCENE_IDS.map((id) => document.getElementById(id));
         const viewCentre = y + winH * 0.5;
-        // Compute each section's absolute centre in document coords. Use
-        // getBoundingClientRect + scrollY rather than offsetTop because
-        // offsetTop is relative to the offset parent (.main / .layout),
-        // which gave wrong section centres and an out-of-sync camera.
-        const centres = sects.map((s) => {
+        const centres = sceneEls.map((s) => {
           if (!s) return null;
           const rect = s.getBoundingClientRect();
           return rect.top + y + rect.height * 0.5;
@@ -384,11 +368,12 @@ export default function Portfolio() {
         }
         sceneRef.current = scene;
 
-        // Sidebar nav highlight — flip when a section's top crosses
-        // the upper threshold of the viewport.
+        // Nav rail highlight — flip when a NAV section's top crosses
+        // the upper threshold of the viewport. (Hero isn't in the rail.)
+        const navEls = NAV.map((n) => document.getElementById(n.toLowerCase()));
         const flipAt = winH * 0.4;
-        for (let i = sects.length - 1; i >= 0; i--) {
-          if (sects[i] && sects[i].getBoundingClientRect().top < flipAt) {
+        for (let i = navEls.length - 1; i >= 0; i--) {
+          if (navEls[i] && navEls[i].getBoundingClientRect().top < flipAt) {
             setActive(NAV[i]);
             ticking = false;
             return;
@@ -508,178 +493,135 @@ export default function Portfolio() {
 
       <main className="main">
 
-        {/* ── About ── */}
-        <Section id="about" data-n="01">
-          <div className="section-head">
-            <span className="sect-n">01</span>
-            <h2>About</h2>
-          </div>
-          <div className="about-layout">
-            <div className="about-stats">
-              {D.stats.map((s) => (
-                <div key={s.l} className="stat">
-                  <span className="stat-n">{s.n}</span>
-                  <span className="stat-l">{s.l}</span>
-                </div>
-              ))}
-              <div className="stat">
-                <span className="stat-n"><CountUp target={new Date().getFullYear() - 2024} suffix="+" /></span>
-                <span className="stat-l">Years in Research</span>
-              </div>
-            </div>
-            <div className="about-text-wrap">
-              <p className="about-text">{D.about}</p>
-              <div className="about-highlights">
-                <div className="about-highlight">
-                  <div className="about-hl-icon">🧬</div>
-                  <div className="about-hl-text">
-                    <strong>AI for Biology</strong>
-                    <span>Applying ML to biophysics & molecular simulation</span>
-                  </div>
-                </div>
-                <div className="about-highlight">
-                  <div className="about-hl-icon">⚡</div>
-                  <div className="about-hl-text">
-                    <strong>Scientific Computing</strong>
-                    <span>GPU acceleration & high-performance workflows</span>
-                  </div>
-                </div>
-                <div className="about-highlight">
-                  <div className="about-hl-icon">🔬</div>
-                  <div className="about-hl-text">
-                    <strong>Research</strong>
-                    <span>Self-supervised learning & representation learning</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </Section>
+        {/* ── Hero — first viewport, giant name floating over the network ── */}
+        <HeroScene />
 
-        {/* ── Research ── */}
-        <Section id="research" delay={0.05} data-n="02">
-          <div className="section-head">
-            <span className="sect-n">02</span>
-            <h2>Research</h2>
+        {/* ── About — editorial pull-quote intro, stats row, focus list ── */}
+        <Section id="about">
+          <div className="sect-meta">
+            <span className="sect-n">01 · About</span>
           </div>
-          <div className="timeline" ref={expRef}>
-            {D.experience.map((exp, i) => (
-              <StaggerItem key={exp.org} index={i} visible={expVis}>
-                <TiltCard className="tl-card-wrap">
-                  <div className="tl-item">
-                    <div className="tl-rail">
-                      <div className="tl-dot" />
-                    </div>
-                    <div className="tl-card">
-                      <div className="tl-top">
-                        <span className="tl-tag">{exp.tag}</span>
-                        <time className="tl-period">{exp.period}</time>
-                      </div>
-                      <h3 className="tl-role">{exp.role}</h3>
-                      <div className="tl-org">{exp.org}</div>
-                      <p className="tl-desc">{exp.desc}</p>
-                    </div>
-                  </div>
-                </TiltCard>
-              </StaggerItem>
+          <p className="about-lede">{D.about}</p>
+          <div className="about-stats-row">
+            {D.stats.map((s) => (
+              <div key={s.l} className="stat-inline">
+                <span className="stat-n">{s.n}</span>
+                <span className="stat-l">{s.l}</span>
+              </div>
             ))}
+            <div className="stat-inline">
+              <span className="stat-n"><CountUp target={new Date().getFullYear() - 2024} suffix="+" /></span>
+              <span className="stat-l">Years researching</span>
+            </div>
           </div>
+          <ul className="focus-list">
+            {D.focuses.map((f) => (
+              <li key={f} className="focus-item">{f}</li>
+            ))}
+          </ul>
         </Section>
 
-        {/* ── Publication ── */}
-        <Section id="publication" delay={0.05} data-n="03">
-          <div className="section-head">
-            <span className="sect-n">03</span>
-            <h2>Publication</h2>
+        {/* ── Research — year-led editorial rows, no card chrome ── */}
+        <Section id="research">
+          <div className="sect-meta">
+            <span className="sect-n">02 · Research</span>
           </div>
-          <div className="pub-card-wrap">
-            <a
-              href={D.publication.links[0]?.url || "#"}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="pub-card"
-            >
-              <div className="pub-venue">
-                <span>{D.publication.venue}</span>
-                <strong>{D.publication.year}</strong>
-              </div>
-              <h3>{D.publication.title}</h3>
-              <p className="pub-authors">
-                {D.publication.authors} <em>· {D.publication.role}</em>
-              </p>
-              <div className="pub-cta">
-                <span className="pub-btn">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
-                  Read Paper
-                </span>
-              </div>
-            </a>
-          </div>
+          <h2 className="sect-title">Field notes<br/>from three labs.</h2>
+          <ol className="exp-list" ref={expRef}>
+            {D.experience.map((exp, i) => {
+              const startYear = exp.period.match(/(\d{4})/)?.[1] ?? "—";
+              return (
+                <StaggerItem key={exp.org} index={i} visible={expVis}>
+                  <li className="exp-row">
+                    <time className="exp-year">{startYear}</time>
+                    <div className="exp-body">
+                      <div className="exp-role">{exp.role}</div>
+                      <div className="exp-org">{exp.org}</div>
+                      <div className="exp-period">{exp.period}</div>
+                      <p className="exp-desc">{exp.desc}</p>
+                      <span className="exp-tag">{exp.tag}</span>
+                    </div>
+                  </li>
+                </StaggerItem>
+              );
+            })}
+          </ol>
         </Section>
 
-        {/* ── Projects ── */}
-        <Section id="projects" delay={0.05} data-n="04">
-          <div className="section-head">
-            <span className="sect-n">04</span>
-            <h2>Projects</h2>
+        {/* ── Publication — huge serif title, no card ── */}
+        <Section id="publication">
+          <div className="sect-meta">
+            <span className="sect-n">03 · Publication</span>
+            <span className="sect-meta-aux">{D.publication.venue} · {D.publication.year}</span>
           </div>
+          <a
+            href={D.publication.links[0]?.url || "#"}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="pub-link"
+          >
+            <h2 className="pub-title">{D.publication.title}</h2>
+            <p className="pub-authors">
+              {D.publication.authors} · <em>{D.publication.role}</em>
+            </p>
+            <span className="pub-cta">
+              Read paper
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+            </span>
+          </a>
+        </Section>
+
+        {/* ── Projects — list rows, hover-revealed underline ── */}
+        <Section id="projects">
+          <div className="sect-meta">
+            <span className="sect-n">04 · Projects</span>
+          </div>
+          <h2 className="sect-title">Things I built.</h2>
           {repoLoading ? (
             <div className="projects-loading">
               <div className="spinner" />
               <span>Loading repositories…</span>
             </div>
           ) : (
-            <div className="projects-grid">
+            <ul className="proj-list">
               {(repos.length > 0 ? repos : D.projects).map((repo, i) => (
-                <a
-                  key={repo.id || repo.name}
-                  href={repo.html_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="project-card"
-                  style={{
-                    opacity: 1,
-                    animation: `fadeUp 0.6s ${0.08 * i}s cubic-bezier(.22,1,.36,1) forwards`,
-                  }}
-                >
-                  <div className="project-card-top">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="project-icon"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
-                    <span className="project-lang">{repo.language}</span>
-                  </div>
-                  <h3>{repo.name}</h3>
-                  <p>{repo.description || "No description provided."}</p>
-                  <div className="project-meta">
-                    <span className="project-stars">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-                      {repo.stargazers_count}
+                <li key={repo.id || repo.name} className="proj-row" style={{ "--stag-i": i }}>
+                  <a
+                    href={repo.html_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="proj-link"
+                  >
+                    <span className="proj-name">{repo.name}</span>
+                    <span className="proj-desc">{repo.description || "No description provided."}</span>
+                    <span className="proj-meta">
+                      <span className="proj-lang">{repo.language || "—"}</span>
+                      <span className="proj-arrow" aria-hidden="true">→</span>
                     </span>
-                    <span className="project-arrow">→</span>
-                  </div>
-                </a>
+                  </a>
+                </li>
               ))}
-            </div>
+            </ul>
           )}
         </Section>
 
-        {/* ── Skills ── */}
-        <Section id="skills" delay={0.05} data-n="05">
-          <div className="section-head">
-            <span className="sect-n">05</span>
-            <h2>Skills</h2>
+        {/* ── Skills — pill cloud grouped under mono labels ── */}
+        <Section id="skills">
+          <div className="sect-meta">
+            <span className="sect-n">05 · Skills</span>
           </div>
-          <div className="skill-bento" ref={skillRef}>
+          <h2 className="sect-title">Tools of<br/>the trade.</h2>
+          <div className="skill-groups" ref={skillRef}>
             {Object.entries(D.skills).map(([cat, items], ci) => (
               <StaggerItem key={cat} index={ci} visible={skillVis}>
-                <TiltCard className="skill-card-wrap">
-                  <article className={`skill-card${ci < 2 ? " featured" : ""}`}>
-                    <div className="skill-cat">{cat}</div>
-                    <div className="skill-pills">
-                      {items.map((s) => (
-                        <span key={s} className="pill">{s}</span>
-                      ))}
-                    </div>
-                  </article>
-                </TiltCard>
+                <div className="skill-group">
+                  <div className="skill-cat">{cat}</div>
+                  <ul className="skill-pills">
+                    {items.map((s) => (
+                      <li key={s} className="pill">{s}</li>
+                    ))}
+                  </ul>
+                </div>
               </StaggerItem>
             ))}
           </div>

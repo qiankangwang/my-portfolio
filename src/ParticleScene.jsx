@@ -145,14 +145,6 @@ function mulberry32(seed) {
   };
 }
 
-const readDark = () => {
-  if (typeof document === "undefined") return false;
-  const attr = document.documentElement.getAttribute("data-theme");
-  if (attr === "dark") return true;
-  if (attr === "light") return false;
-  return window.matchMedia("(prefers-color-scheme: dark)").matches;
-};
-
 export default function ParticleScene({ sceneRef }) {
   const containerRef = useRef(null);
 
@@ -186,25 +178,46 @@ export default function ParticleScene({ sceneRef }) {
     // ── Formations ─────────────────────────────────────────────────
     const formations = buildFormations(PARTICLE_COUNT);
 
+    // ── Per-scene colour palettes ──────────────────────────────────
+    // Each scene has its own (accentR, accentG, accentB, warmR, warmG,
+    // warmB) pair. Each frame the active colour is lerped between
+    // adjacent scenes' palettes so the chromatic identity flows in
+    // sync with the morph (Hero cool → About pink → … → Skills violet).
+    const SCENE_PALETTE = [
+      // 0 Hero — cool blue cloud + gold sparks (theme anchor)
+      [0.28, 0.62, 0.96,  0.98, 0.68, 0.28],
+      // 1 About — biology pink + cream (cellular warmth)
+      [0.88, 0.50, 0.78,  0.98, 0.78, 0.55],
+      // 2 Research — cool blue + cyan (analytical)
+      [0.32, 0.66, 0.98,  0.55, 0.92, 0.96],
+      // 3 Publication — academic gold + ember (paper / citation)
+      [0.96, 0.78, 0.30,  0.96, 0.42, 0.30],
+      // 4 Projects — engineer teal + lime (build / make)
+      [0.30, 0.86, 0.72,  0.86, 0.92, 0.35],
+      // 5 Skills — violet + magenta (orbital / mixed toolset)
+      [0.72, 0.45, 0.98,  0.98, 0.45, 0.78],
+    ];
+
     // ── Geometry ───────────────────────────────────────────────────
     const positions = new Float32Array(PARTICLE_COUNT * 3);
     positions.set(formations[0]);
+    // Colours initialise to the hero palette; the animation loop
+    // refreshes them every frame based on the smoothed scene index.
     const colors = new Float32Array(PARTICLE_COUNT * 3);
-    for (let i = 0; i < PARTICLE_COUNT; i++) {
-      const t = i / PARTICLE_COUNT;
-      // Per-particle base hue: most are accent blue, a fraction warm.
-      // The mix-ratio is held across formations so each particle has
-      // an identity colour.
-      const warm = (i % 9 === 0);
-      if (warm) {
-        colors[i * 3]     = 0.96; // r
-        colors[i * 3 + 1] = 0.66; // g
-        colors[i * 3 + 2] = 0.27; // b
-      } else {
-        // Gentle accent blue with slight per-particle hue shift
-        colors[i * 3]     = 0.24 + 0.15 * t;
-        colors[i * 3 + 1] = 0.58 + 0.20 * (1 - t);
-        colors[i * 3 + 2] = 0.95;
+    {
+      const [ar, ag, ab, wr, wg, wb] = SCENE_PALETTE[0];
+      for (let i = 0; i < PARTICLE_COUNT; i++) {
+        const t = i / PARTICLE_COUNT;
+        const warm = (i % 9 === 0);
+        if (warm) {
+          colors[i * 3]     = wr;
+          colors[i * 3 + 1] = wg;
+          colors[i * 3 + 2] = wb;
+        } else {
+          colors[i * 3]     = ar * (0.85 + 0.30 * t);
+          colors[i * 3 + 1] = ag * (0.92 + 0.16 * (1 - t));
+          colors[i * 3 + 2] = ab;
+        }
       }
     }
     const geometry = new THREE.BufferGeometry();
@@ -367,10 +380,38 @@ export default function ParticleScene({ sceneRef }) {
       }
       geometry.attributes.position.needsUpdate = true;
 
-      // Update line endpoint positions to match the (post-drift) particle
-      // positions. Lines are short connections that stretch + rearrange
-      // as the field morphs — adds visible network mass.
+      // Per-frame palette lerp — same eased fraction as the morph, so
+      // colour changes are perfectly synchronised with shape changes.
+      const palA = SCENE_PALETTE[lo];
+      const palB = SCENE_PALETTE[hi];
+      const ar = palA[0] + (palB[0] - palA[0]) * eased;
+      const ag = palA[1] + (palB[1] - palA[1]) * eased;
+      const ab = palA[2] + (palB[2] - palA[2]) * eased;
+      const wr = palA[3] + (palB[3] - palA[3]) * eased;
+      const wg = palA[4] + (palB[4] - palA[4]) * eased;
+      const wb = palA[5] + (palB[5] - palA[5]) * eased;
+      const cAttr = geometry.attributes.color.array;
+      for (let i = 0; i < PARTICLE_COUNT; i++) {
+        const ti = i / PARTICLE_COUNT;
+        const warm = (i % 9 === 0);
+        const ci = i * 3;
+        if (warm) {
+          cAttr[ci]     = wr;
+          cAttr[ci + 1] = wg;
+          cAttr[ci + 2] = wb;
+        } else {
+          cAttr[ci]     = ar * (0.85 + 0.30 * ti);
+          cAttr[ci + 1] = ag * (0.92 + 0.16 * (1 - ti));
+          cAttr[ci + 2] = ab;
+        }
+      }
+      geometry.attributes.color.needsUpdate = true;
+
+      // Update line endpoint positions + colours. Each line's colour
+      // is sampled from one of its endpoint particles so the connecting
+      // lines pick up the current scene's chroma.
       const lpos = lineGeometry.attributes.position.array;
+      const lcol = lineGeometry.attributes.color.array;
       for (let p = 0; p < linePairs.length; p++) {
         const [ia, ib] = linePairs[p];
         const a3 = ia * 3, b3 = ib * 3;
@@ -380,8 +421,17 @@ export default function ParticleScene({ sceneRef }) {
         lpos[p * 6 + 3] = posAttr[b3];
         lpos[p * 6 + 4] = posAttr[b3 + 1];
         lpos[p * 6 + 5] = posAttr[b3 + 2];
+        // Line vertex colours: pick from endpoint particles (already
+        // recoloured above), so lines reflect the active palette.
+        lcol[p * 6 + 0] = cAttr[a3];
+        lcol[p * 6 + 1] = cAttr[a3 + 1];
+        lcol[p * 6 + 2] = cAttr[a3 + 2];
+        lcol[p * 6 + 3] = cAttr[b3];
+        lcol[p * 6 + 4] = cAttr[b3 + 1];
+        lcol[p * 6 + 5] = cAttr[b3 + 2];
       }
       lineGeometry.attributes.position.needsUpdate = true;
+      lineGeometry.attributes.color.needsUpdate = true;
 
       // Low-pass smoothing on mouse parallax — keeps the cursor follow
       // gentle rather than twitchy.
@@ -446,30 +496,9 @@ export default function ParticleScene({ sceneRef }) {
     };
     document.addEventListener("visibilitychange", onVisibility);
 
-    // Theme change observer — rebuild colours on dark/light flip.
-    const applyTheme = () => {
-      const dark = readDark();
-      for (let i = 0; i < PARTICLE_COUNT; i++) {
-        const t = i / PARTICLE_COUNT;
-        const warm = (i % 9 === 0);
-        if (warm) {
-          colors[i * 3]     = dark ? 0.99 : 0.96;
-          colors[i * 3 + 1] = dark ? 0.78 : 0.66;
-          colors[i * 3 + 2] = dark ? 0.42 : 0.27;
-        } else {
-          colors[i * 3]     = (dark ? 0.40 : 0.24) + 0.15 * t;
-          colors[i * 3 + 1] = (dark ? 0.68 : 0.58) + 0.20 * (1 - t);
-          colors[i * 3 + 2] = dark ? 0.96 : 0.95;
-        }
-      }
-      geometry.attributes.color.needsUpdate = true;
-    };
-    applyTheme();
-    const themeObs = new MutationObserver(applyTheme);
-    themeObs.observe(document.documentElement, {
-      attributes: true,
-      attributeFilter: ["data-theme"],
-    });
+    // (Per-scene palettes are applied per frame above, so no separate
+    // theme observer is needed — the colour buffer is rewritten every
+    // frame regardless of theme.)
 
     return () => {
       running = false;
@@ -477,7 +506,6 @@ export default function ParticleScene({ sceneRef }) {
       window.removeEventListener("resize", onResize);
       window.removeEventListener("mousemove", onMouseMove);
       document.removeEventListener("visibilitychange", onVisibility);
-      themeObs.disconnect();
       try {
         container.removeChild(renderer.domElement);
       } catch {

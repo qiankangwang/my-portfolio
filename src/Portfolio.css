@@ -464,6 +464,10 @@ body::before {
 .sect {
   position: relative;
   padding-block: clamp(5rem, 12vh, 9rem);
+  /* Reserve a left gutter for the numbered timeline marker (01-05) and
+     the vertical spine that connects them. Drawn via .sect::before and
+     .sect::after — see "Timeline spine" block below. */
+  padding-left: clamp(2.75rem, 4.5vw, 4.5rem);
 }
 .sect-pin {
   position: relative;
@@ -531,21 +535,77 @@ body::before {
     transform: none !important;
   }
 }
+/* ════════════════════════════════════════════════════════════════════
+   Timeline spine — links sections 01 → 02 → 03 → 04 → 05
+
+   Each section draws (a) a numbered circle marker on the left via
+   ::before, and (b) a 1px vertical line fragment via ::after. The
+   fragments abut between sections, forming a single continuous line
+   that visually threads through every marker. First / last sections
+   trim their line so it starts at marker 01's centre and ends at
+   marker 05's centre — the markers cap the spine.
+   ════════════════════════════════════════════════════════════════════ */
 .sect::before {
   content: attr(data-n);
   position: absolute;
-  left: -3.5rem;
-  top: 7.5rem;
-  font-family: var(--serif);
-  font-size: 5.5rem; font-style: italic;
+  left: 0;
+  top: clamp(5rem, 12vh, 9rem);
+  width: 2.5rem;
+  height: 2.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--mono);
+  font-size: .72rem;
+  font-weight: 700;
+  letter-spacing: .06em;
   color: var(--accent);
-  opacity: .05;
-  pointer-events: none;
-  line-height: 1;
-  z-index: 0;
+  background: var(--bg);
+  border: 1.5px solid color-mix(in srgb, var(--accent) 45%, transparent);
+  border-radius: 50%;
+  z-index: 3;
+  /* Ring of bg colour around the marker so the spine line behind
+     doesn't bleed through. Outer shadow gives a subtle lift. */
+  box-shadow:
+    0 0 0 4px var(--bg),
+    0 2px 8px -2px color-mix(in srgb, var(--accent) 25%, transparent);
 }
-@media (max-width: 1200px) {
-  .sect::before { display: none; }
+
+.sect::after {
+  content: '';
+  position: absolute;
+  left: 1.25rem;            /* horizontal centre of the marker (2.5rem / 2) */
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: color-mix(in srgb, var(--accent) 22%, transparent);
+  z-index: 1;
+}
+
+/* First section: spine begins at marker 01's centre, not above it. */
+.sect:first-of-type::after {
+  top: calc(clamp(5rem, 12vh, 9rem) + 1.25rem);
+}
+
+/* Last section: spine ends at marker 05's centre, not below it. */
+.sect:last-of-type::after {
+  bottom: auto;
+  height: calc(clamp(5rem, 12vh, 9rem) + 1.25rem);
+}
+
+/* The duplicate small ``01`` pill inside .section-head is now redundant —
+   the outer marker is the canonical reference. */
+.sect-n { display: none; }
+
+@media (max-width: 968px) {
+  /* Mobile: sections stack without the timeline spine. The inner pill
+     comes back as a fallback so the section number is still visible. */
+  .sect {
+    padding-left: 0;
+  }
+  .sect::before,
+  .sect::after { display: none; }
+  .sect-n { display: inline-flex; }
 }
 
 /* ════════════════════════════════════════════════════════════════════

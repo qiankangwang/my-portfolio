@@ -234,12 +234,12 @@ body::before {
    ════════════════════════════════════════════════════════════════════ */
 .layout {
   display: grid;
-  /* Sidebar column has a flexible-but-bounded width via clamp so it scales
-     with the viewport. No max-width on .layout — the sidebar text now
-     hugs the viewport's left edge (its own padding-left is the page's
-     left margin). Main column is capped via .main max-width below so
-     cards don't stretch ultra-wide on big monitors. */
-  grid-template-columns: clamp(240px, 22vw, 320px) minmax(0, 1fr);
+  /* Wider sidebar column for more presence — gives the hero text room to
+     breathe and keeps a substantial left-hand panel even on a 1920+
+     viewport. clamp lets it scale: 300px on small desktops, up to 440px
+     on big monitors. Main column fills the rest (no max-width — the
+     right side fills instead of leaving a gutter). */
+  grid-template-columns: clamp(300px, 30vw, 440px) minmax(0, 1fr);
   margin: 0;
   position: relative;
   z-index: 2;
@@ -447,11 +447,10 @@ body::before {
 .main {
   position: relative;
   z-index: 2;
-  /* Cap content width so on ultra-wide screens cards stay readable
-     instead of stretching to 1200px+. Right padding is the page's
-     right edge margin, responsive like the sidebar's left padding. */
-  max-width: 880px;
-  padding-right: clamp(1rem, 3vw, 3rem);
+  /* Fills the remaining grid cell — sidebar on the left, content on the
+     right takes everything else. Individual elements that need narrow
+     reading widths cap themselves internally (e.g. .about-text below). */
+  padding-right: clamp(1.25rem, 3vw, 3rem);
 }
 
 /* Each section is a tall scroll container; its inner stage pins to the

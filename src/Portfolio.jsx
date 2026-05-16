@@ -48,11 +48,35 @@ function useTypewriter(text, speed = 28) {
   return { text: out, done };
 }
 
-const Sidebar = memo(function Sidebar({ active, theme, toggleTheme, onAvatarClick, avatarRef, scrollTo }) {
+/* Sticky left "stage" — the cinematic screen.
+   - Top: identity (avatar / name / kicker / typewriter tagline)
+   - Middle: the neural-network canvas (re-frames per scroll scene)
+   - Bottom: section nav rail + contacts + theme toggle
+   The whole pane is position: sticky so it stays put while the right
+   column scrolls; section-by-section the canvas camera pans to its
+   matching waypoint, "swapping in" the next chapter on the right. */
+const LeftStage = memo(function LeftStage({
+  active,
+  theme,
+  toggleTheme,
+  onAvatarClick,
+  avatarRef,
+  scrollTo,
+  sceneRef,
+}) {
   const tagline = useTypewriter(D.tagline);
   return (
-    <aside className="sidebar">
-      <div className="sb-top">
+    <aside className="lstage" aria-label="Profile and navigation">
+      {/* Neural network canvas fills the pane behind identity + nav */}
+      <div className="lstage-canvas" aria-hidden="true">
+        <NeuralNetCanvas sceneRef={sceneRef} />
+        {/* Soft vignette so identity / nav text reads on top of the
+            animation without needing card chrome */}
+        <div className="lstage-vignette" />
+      </div>
+
+      {/* Identity at the top of the stage */}
+      <header className="lstage-id">
         <button
           type="button"
           className="sb-avatar-btn"
@@ -68,15 +92,22 @@ const Sidebar = memo(function Sidebar({ active, theme, toggleTheme, onAvatarClic
             decoding="async"
           />
         </button>
-        <h1 className="sb-name">{D.fullName}</h1>
-        <div className="sb-kicker">UC Berkeley · Data Science · 2027</div>
-        <p className="sb-tagline">
-          {tagline.text}
-          <span className={`sb-caret${tagline.done ? " sb-caret-done" : ""}`} aria-hidden="true" />
-        </p>
-      </div>
+        <div className="lstage-id-text">
+          <div className="sb-kicker">UC Berkeley · Data Science · 2027</div>
+          <h1 className="sb-name">{D.fullName}</h1>
+          <p className="sb-tagline">
+            {tagline.text}
+            <span
+              className={`sb-caret${tagline.done ? " sb-caret-done" : ""}`}
+              aria-hidden="true"
+            />
+          </p>
+        </div>
+      </header>
 
-      <nav className="sb-nav" aria-label="Section navigation">
+      {/* Section nav at the bottom of the stage — shows which "scene"
+         is currently playing, click to jump */}
+      <nav className="lstage-nav" aria-label="Section navigation">
         {NAV.map((n, i) => {
           const isActive = active === n;
           return (
@@ -95,7 +126,7 @@ const Sidebar = memo(function Sidebar({ active, theme, toggleTheme, onAvatarClic
         })}
       </nav>
 
-      <div className="sb-foot">
+      <div className="lstage-foot">
         <div className="sb-contacts">
           <a href={`mailto:${D.email}`} aria-label="Email" className="sb-icon">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
@@ -161,7 +192,7 @@ const Section = memo(function Section({ id, children, className = "", ...rest })
           obs.disconnect();
         }
       },
-      { threshold: 0, rootMargin: "0px 0px -45% 0px" }
+      { threshold: 0, rootMargin: "0px 0px -10% 0px" }
     );
     obs.observe(el);
     return () => obs.disconnect();
@@ -449,14 +480,6 @@ export default function Portfolio() {
   return (
     <>
       <AmbientBg />
-      {/* Layered feedforward neural network on 2D canvas. AI subject, with
-         RNA + protein bio motifs drifting in the gutters for the AI+Bio
-         research identity. 2D because it animates smoothly on every machine
-         and reads as the literal "neural network" shape (input → hidden →
-         output) — not a node cloud. */}
-      <div className="bgnet" aria-hidden="true">
-        <NeuralNetCanvas sceneRef={sceneRef} />
-      </div>
       <a className="skip" href="#about">Skip to content</a>
 
       {/* ── Scroll progress ── */}
@@ -467,15 +490,20 @@ export default function Portfolio() {
         />
       </div>
 
-      {/* ── 2-column layout: sticky identity panel + scrolling scenes ── */}
+      {/* ── Split-stage layout ───────────────────────────────────────
+         Left half is a sticky cinematic "screen": neural network canvas
+         re-frames per scroll scene, with the user's identity + nav
+         floating on top. Right half is the scrolling story column —
+         each section slides in as its matching camera waypoint arrives. */}
       <div className="layout">
-      <Sidebar
+      <LeftStage
         active={active}
         theme={theme}
         toggleTheme={toggleTheme}
         onAvatarClick={onAvatarClick}
         avatarRef={avatarRef}
         scrollTo={scrollTo}
+        sceneRef={sceneRef}
       />
 
       <main className="main">

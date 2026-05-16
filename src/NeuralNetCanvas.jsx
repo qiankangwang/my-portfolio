@@ -253,12 +253,12 @@ export default function NeuralNetCanvas({ sceneRef }) {
       ctx.fillRect(0, 0, w, h);
 
       // ── Camera transform ────────────────────────────────────────────
-      // World point (cam.x, cam.y) maps to screen anchor (w * 0.4, h * 0.5).
-      // 0.4x is left-of-centre so the focused element sits in the free
-      // space between the sidebar (≤26vw) and the floating content card
-      // on the right.
+      // World point (cam.x, cam.y) maps to the centre of the canvas's
+      // own container. The canvas now lives inside the left half of the
+      // split-stage layout, so the natural anchor is dead-centre of its
+      // pane (no left-bias needed any more).
       ctx.save();
-      ctx.translate(w * 0.40, h * 0.50);
+      ctx.translate(w * 0.50, h * 0.50);
       ctx.scale(cam.zoom, cam.zoom);
       ctx.translate(-cam.x, -cam.y);
 

@@ -171,33 +171,18 @@ body::before {
 }
 
 /* ════════════════════════════════════════════════════════════════════
-   3D backdrop (BgScene3D)
+   Neural-network canvas wrapper
 
-   Renders a Three.js / r3f scene fixed full-bleed behind the layout:
-   neural-net nodes, a rotating DNA double helix, protein helices,
-   particle field, all under a director-style camera move driven by
-   scroll progress. The scene has its own atmosphere (fog + vignette +
-   bloom + grain) so no CSS dimming is needed — it already grounds
-   itself into the page mood.
-
-   pointer-events: none lets the page's normal scroll/click pass through.
+   Now contained inside the sticky left "stage" pane (.lstage-canvas)
+   rather than being a full-bleed fixed background. The cool-gray bg is
+   applied at the pane level so the canvas's edges blend naturally with
+   the surrounding stage chrome.
    ════════════════════════════════════════════════════════════════════ */
 .bgnet {
-  position: fixed;
+  position: absolute;
   inset: 0;
   z-index: 0;
   pointer-events: none;
-  /* Cool-gray backdrop for the network to read against; the translucent
-     cards above blend with this slightly cooler tone instead of pure white. */
-  background: #D6DCE5;
-}
-:root[data-theme="dark"] .bgnet {
-  background: #0F172A;
-}
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) .bgnet {
-    background: #0F172A;
-  }
 }
 .bgnet > div,
 .bgnet canvas {
@@ -225,51 +210,124 @@ body::before {
 }
 
 /* ════════════════════════════════════════════════════════════════════
-   Two-column layout: sticky sidebar + scrolling main column
+   Split-stage layout
+   ════════════════════════════════════════════════════════════════════
 
-   Wide screens get a Brittany-Chiang-style fixed identity panel on the
-   left (avatar/name/tagline/nav/contacts) and a scrolling stage on the
-   right where each section plays out as a cinematic scene. Narrow
-   screens collapse to a single column — sidebar stacks at the top.
+   Two halves, side-by-side:
+     - .lstage  (sticky) — the cinematic "screen" with the neural net
+                          canvas + floating identity + section nav rail
+     - .main    (flow)   — the scrolling story column with section copy
+
+   While the user scrolls .main, .lstage stays put and the canvas's
+   virtual camera pans/zooms to the matching scene anchor — each section
+   slide-in on the right is synchronised with a camera move on the left.
+
+   Collapses to single-column on ≤968px (canvas fades out, identity
+   stacks above content).
    ════════════════════════════════════════════════════════════════════ */
 .layout {
   display: grid;
-  /* Sidebar column scales with viewport via clamp: 280px on small
-     desktops, up to 380px on big monitors. Main column fills the rest
-     (no max-width — the right side fills instead of leaving a gutter). */
-  grid-template-columns: clamp(280px, 26vw, 380px) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   margin: 0;
   position: relative;
   z-index: 2;
-  gap: clamp(1.5rem, 3vw, 3.5rem);
+  gap: 0;
 }
 
-/* ── Sidebar ── */
-.sidebar {
+/* ── Left stage (sticky cinematic screen) ── */
+.lstage {
   position: sticky;
   top: 0;
   height: 100svh;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  padding-block: clamp(3rem, 8vh, 6rem);
-  /* Left padding = the page's left margin. Responsive: 16px on small
-     screens, up to 40px on ≥1600px viewports. Right side is a smaller
-     consistent gap into the gutter between sidebar and main. */
-  padding-left: clamp(1rem, 2.2vw, 2.5rem);
-  padding-right: 1.25rem;
-  gap: 2rem;
-  z-index: 50;
-  /* Sidebar is no longer a separate "glass panel" — that fought the
-     cinematic single-stage feel. Text floats directly on the canvas
-     like film credits, with just a hint of bg blur for legibility
-     against animated content behind it. */
-  background: none;
-  backdrop-filter: blur(2px);
-  -webkit-backdrop-filter: blur(2px);
+  overflow: hidden;
+  z-index: 10;
+  isolation: isolate;
+  /* Cool-gray stage backdrop — gives the network something to read
+     against without committing to flat white. Switches dark in dark mode. */
+  background: #D6DCE5;
+}
+:root[data-theme="dark"] .lstage { background: #0F172A; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .lstage { background: #0F172A; }
 }
 
-.sb-top { display: flex; flex-direction: column; gap: 1rem; }
+.lstage-canvas {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+/* Soft radial vignette so identity text + nav read against the network
+   without needing card chrome — fades the corners just enough that copy
+   sits cleanly on top. */
+.lstage-vignette {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 70% 50% at 50% 50%,
+      transparent 0%,
+      transparent 40%,
+      color-mix(in srgb, #D6DCE5 60%, transparent) 100%);
+}
+:root[data-theme="dark"] .lstage-vignette {
+  background:
+    radial-gradient(ellipse 70% 50% at 50% 50%,
+      transparent 0%,
+      transparent 40%,
+      color-mix(in srgb, #0F172A 60%, transparent) 100%);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .lstage-vignette {
+    background:
+      radial-gradient(ellipse 70% 50% at 50% 50%,
+        transparent 0%,
+        transparent 40%,
+        color-mix(in srgb, #0F172A 60%, transparent) 100%);
+  }
+}
+
+/* Identity overlay at the top of the stage — avatar + name + tagline
+   floating on the network like a film slate. */
+.lstage-id {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: flex-start;
+  gap: 1.25rem;
+  padding: clamp(2rem, 4.5vh, 3rem) clamp(1.5rem, 3vw, 2.5rem) 0;
+}
+.lstage-id-text {
+  display: flex;
+  flex-direction: column;
+  gap: .4rem;
+  padding-top: .25rem;
+}
+
+/* Nav rail floats centered-bottom on the stage so each item reads as
+   "this scene". */
+.lstage-nav {
+  position: absolute;
+  bottom: clamp(4.5rem, 11vh, 7rem);
+  left: clamp(1.5rem, 3vw, 2.5rem);
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  gap: .15rem;
+}
+
+/* Foot row at the bottom: contacts on the left, theme toggle on the right. */
+.lstage-foot {
+  position: absolute;
+  bottom: clamp(1.25rem, 3vh, 2rem);
+  left: clamp(1.5rem, 3vw, 2.5rem);
+  right: clamp(1.5rem, 3vw, 2.5rem);
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
 .sb-avatar-btn {
   align-self: flex-start;
   background: none;
@@ -278,32 +336,31 @@ body::before {
   cursor: pointer;
 }
 .sb-avatar {
-  width: 84px; height: 84px;
+  width: 64px; height: 64px;
   border-radius: 50%;
   object-fit: cover;
   border: 2px solid var(--accent);
-  box-shadow: 0 0 0 5px var(--accent-soft), var(--sh);
+  box-shadow: 0 0 0 4px var(--accent-soft), var(--sh-sm);
   transition: transform .4s cubic-bezier(.22, 1, .36, 1), box-shadow .4s;
 }
 .sb-avatar-btn:hover .sb-avatar {
   transform: scale(1.05);
-  box-shadow: 0 0 0 7px var(--accent-soft), var(--sh2);
+  box-shadow: 0 0 0 6px var(--accent-soft), var(--sh);
 }
 
 .sb-name {
   font-family: var(--serif);
   font-style: italic;
   font-weight: 400;
-  /* Bigger / more confident on desktop — this is the page's hero text. */
-  font-size: clamp(2.4rem, 4.2vw, 3.6rem);
-  line-height: 1.02;
-  letter-spacing: -.025em;
+  font-size: clamp(1.65rem, 2.6vw, 2.25rem);
+  line-height: 1.05;
+  letter-spacing: -.02em;
   color: var(--fg);
-  margin-top: .4rem;
+  margin-top: .15rem;
 }
 .sb-kicker {
   font-family: var(--mono);
-  font-size: .68rem;
+  font-size: .62rem;
   letter-spacing: .14em;
   text-transform: uppercase;
   color: var(--accent);
@@ -311,10 +368,11 @@ body::before {
 }
 .sb-tagline {
   color: var(--fg2);
-  font-size: .95rem;
-  line-height: 1.6;
-  max-width: 28ch;
-  min-height: 4.5em; /* reserve space so layout doesn't jump as the typewriter fills */
+  font-size: .85rem;
+  line-height: 1.55;
+  max-width: 32ch;
+  min-height: 3.5em;
+  margin-top: .35rem;
 }
 /* Typewriter caret — slim vertical bar that blinks while typing, then
    gracefully disappears once the tagline is fully revealed. */
@@ -339,12 +397,6 @@ body::before {
 }
 
 /* ── Nav rail (animates from a 24px tick to a 64px line on hover/active) ── */
-.sb-nav {
-  display: flex;
-  flex-direction: column;
-  gap: .15rem;
-  margin-block: auto;
-}
 .sb-nav-item {
   display: flex;
   align-items: center;
@@ -389,11 +441,6 @@ body::before {
 }
 
 /* ── Foot (contacts + theme toggle) ── */
-.sb-foot {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
 .sb-contacts { display: flex; gap: .25rem; }
 .sb-icon {
   display: grid;
@@ -419,23 +466,31 @@ body::before {
 }
 .sb-theme:hover { color: var(--fg); background: var(--accent-soft); transform: translateY(-2px); }
 
-/* ── Mobile: sidebar collapses to a top header, then content flows ── */
+/* ── Mobile: split-stage collapses to a single column.
+   The sticky cinematic screen becomes a short header at the top
+   (identity only — canvas + nav rail hidden because there's no
+   room for a separate "screen" beside the content on a phone). ── */
 @media (max-width: 968px) {
   .layout {
     grid-template-columns: 1fr;
     gap: 0;
   }
-  .sidebar {
+  .lstage {
     position: static;
     height: auto;
-    padding: 3rem clamp(1rem, 4vw, 1.75rem);
-    gap: 1.5rem;
+    padding: 2rem clamp(1rem, 4vw, 1.75rem) 1.5rem;
+    background: none;
   }
-  /* (.main mobile chrome reset lives near the .main rule below, with
-     the rest of the unified-panel teardown.) */
+  .lstage-canvas,
+  .lstage-vignette,
+  .lstage-nav,
+  .lstage-foot {
+    display: none;
+  }
+  .lstage-id {
+    padding: 0;
+  }
   .sb-tagline { max-width: none; }
-  .sb-nav { display: none; }
-  .sb-foot { justify-content: flex-start; gap: 1rem; }
 }
 
 /* ════════════════════════════════════════════════════════════════════
@@ -444,23 +499,13 @@ body::before {
 .main {
   position: relative;
   z-index: 2;
-  max-width: clamp(480px, 50vw, 680px);
-  margin-left: auto;
-  padding-right: clamp(1rem, 3vw, 3rem);
-  /* Faint highlight text-shadow gives body text a halo against the
-     live canvas behind — keeps copy readable wherever a network edge
-     or node passes through. Doesn't affect the heading h2 which is
-     dark + heavy enough to read on its own. */
-  text-shadow: 0 1px 0 color-mix(in srgb, var(--bg) 70%, transparent);
-}
-.main h2,
-.main h3,
-.main .pub-card,
-.main .project-card,
-.main .skill-card {
-  /* Headings + heavier cards have enough mass not to need the halo,
-     and the halo on big italic-serif can look fuzzy. */
-  text-shadow: none;
+  width: 100%;
+  /* Comfortable reading column inside the right pane — caps at 640px so
+     long paragraphs don't sprawl, but the pane itself fills 50vw. */
+  max-width: 640px;
+  /* Editorial gutters: generous on the left so copy "starts" away from
+     the split, normal on the right. */
+  padding: 0 clamp(1rem, 3vw, 3rem) 0 clamp(2.5rem, 5vw, 4.5rem);
 }
 
 /* Each section is a tall scroll container; its inner stage pins to the
@@ -473,27 +518,40 @@ body::before {
    content seem to "disappear" mid-scroll. */
 .sect {
   position: relative;
-  /* Each section is its own cinematic scene now. Generous padding-block
-     so each card has its moment as the user scrolls between camera
-     waypoints — feels less like a tight document, more like a sequence
-     of visual beats. */
-  padding-block: clamp(4rem, 9vh, 7rem);
+  /* Each section gets ~one viewport of breathing room so the sticky
+     left canvas has time to glide between camera waypoints as the user
+     reads. min-height: 100svh means scrolling a section into view also
+     scrolls roughly one stage on the left — one scroll, one scene. */
+  min-height: 100svh;
+  padding-block: clamp(5rem, 12vh, 8rem);
+  display: flex;
+  align-items: center;
 }
+.sect:first-child { padding-top: clamp(4rem, 8vh, 6rem); }
 
 .sect-pin {
   position: relative;
+  width: 100%;
 }
 
 .sect-stage {
   position: relative;
   width: 100%;
-  /* No more card chrome — the cinematic camera is the design. Content
-     sits directly on the canvas like editorial captions on a film
-     still, with strong typography carrying the hierarchy. Sub-elements
-     that need their own contained look (project cards, skill bento)
-     still have it; the *section wrapper* doesn't. */
-  animation: stage-enter 1s cubic-bezier(.22, 1, .36, 1) both;
+  /* No card chrome — content sits directly on the bg as editorial copy.
+     Each stage starts hidden + offset; the .in class (driven by the
+     IntersectionObserver in <Section>) triggers the slide-in when the
+     section actually scrolls into the right column, syncing with the
+     camera move on the left "screen". */
+  opacity: 0;
+  transform: translateX(40px);
+  transition:
+    opacity .9s cubic-bezier(.22, 1, .36, 1),
+    transform .9s cubic-bezier(.22, 1, .36, 1);
   will-change: opacity, transform;
+}
+.sect.in .sect-stage {
+  opacity: 1;
+  transform: none;
 }
 @keyframes stage-enter {
   from { opacity: 0; transform: translateY(60px); }
@@ -536,24 +594,33 @@ body::before {
     transform: none !important;
   }
 }
-/* Mobile teardown of the cinematic layout:
-   - The canvas camera anchor (40% from left of viewport) only makes
-     sense beside a narrow-but-real sidebar. On phones the sidebar
-     stacks at the top, so .main has the full width again — drop the
-     max-width / margin-left:auto positioning.
-   - Cards (.sect-stage) keep their glass treatment but get less
-     padding so they don't feel cramped. */
+/* Mobile teardown of the split-stage:
+   - .main fills the column (canvas pane is gone on phone)
+   - Padding tightens, gutters become symmetrical
+   - .sect-stage has no chrome anywhere so no padding override needed */
 @media (max-width: 968px) {
   .main {
     max-width: none;
-    margin: 0;
     padding: 0 clamp(1rem, 4vw, 1.75rem);
   }
   .sect { padding-block: 3rem; }
-  .sect-stage {
-    padding: clamp(1.5rem, 4vw, 2rem);
-    border-radius: 16px;
+}
+
+/* Narrower-column overrides for the right-pane content — multi-column
+   grids need to collapse earlier because the right pane is only ~50vw
+   instead of the full document width. */
+@media (max-width: 1280px) {
+  .about-layout { grid-template-columns: 1fr; gap: 2.25rem; }
+  .about-stats {
+    flex-direction: row;
+    gap: 2rem;
+    padding-right: 0;
+    padding-bottom: 1.5rem;
+    border-right: none;
+    border-bottom: 1px solid var(--border);
   }
+  .about-highlights { grid-template-columns: 1fr; }
+  .projects-grid { grid-template-columns: 1fr 1fr; }
 }
 
 /* ════════════════════════════════════════════════════════════════════
@@ -598,7 +665,7 @@ body::before {
 }
 .sect h2 {
   font-family: var(--serif);
-  font-size: clamp(3rem, 6vw, 4.6rem);
+  font-size: clamp(2.6rem, 4.5vw, 3.6rem);
   font-weight: 400;
   font-style: italic;
   line-height: 0.95;

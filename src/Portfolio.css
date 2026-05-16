@@ -260,12 +260,13 @@ body::before {
   padding-right: 1.25rem;
   gap: 2rem;
   z-index: 50;
-  /* Soft glass panel — quieter than before so it doesn't compete with
-     the network animation for visual weight. */
-  background: color-mix(in srgb, var(--bg) 50%, transparent);
-  backdrop-filter: blur(14px) saturate(1.15);
-  -webkit-backdrop-filter: blur(14px) saturate(1.15);
-  border-right: 1px solid color-mix(in srgb, var(--fg) 6%, transparent);
+  /* Sidebar is no longer a separate "glass panel" — that fought the
+     cinematic single-stage feel. Text floats directly on the canvas
+     like film credits, with just a hint of bg blur for legibility
+     against animated content behind it. */
+  background: none;
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
 }
 
 .sb-top { display: flex; flex-direction: column; gap: 1rem; }
@@ -443,14 +444,23 @@ body::before {
 .main {
   position: relative;
   z-index: 2;
-  /* No unified-panel chrome on .main — each section now floats as its
-     own scene plate (see .sect-stage below). Cards are constrained in
-     width and pushed to the RIGHT of the grid cell so the camera's
-     focused element in the canvas (at ~40% of viewport from the left)
-     sits in the free space between the sidebar and the cards. */
-  max-width: clamp(440px, 46vw, 620px);
+  max-width: clamp(480px, 50vw, 680px);
   margin-left: auto;
   padding-right: clamp(1rem, 3vw, 3rem);
+  /* Faint highlight text-shadow gives body text a halo against the
+     live canvas behind — keeps copy readable wherever a network edge
+     or node passes through. Doesn't affect the heading h2 which is
+     dark + heavy enough to read on its own. */
+  text-shadow: 0 1px 0 color-mix(in srgb, var(--bg) 70%, transparent);
+}
+.main h2,
+.main h3,
+.main .pub-card,
+.main .project-card,
+.main .skill-card {
+  /* Headings + heavier cards have enough mass not to need the halo,
+     and the halo on big italic-serif can look fuzzy. */
+  text-shadow: none;
 }
 
 /* Each section is a tall scroll container; its inner stage pins to the
@@ -477,21 +487,11 @@ body::before {
 .sect-stage {
   position: relative;
   width: 100%;
-  /* Translucent glass plate. The card is small (constrained by .main's
-     max-width above), pushed to the right of the viewport so the
-     neural-net camera focus on the left side stays unobscured. */
-  background: color-mix(in srgb, var(--bg) 75%, transparent);
-  backdrop-filter: blur(8px) saturate(1.15);
-  -webkit-backdrop-filter: blur(8px) saturate(1.15);
-  border: 1px solid color-mix(in srgb, var(--fg) 9%, transparent);
-  border-radius: 22px;
-  padding: clamp(1.75rem, 3vw, 2.5rem);
-  box-shadow:
-    0 1px 0 color-mix(in srgb, #ffffff 35%, transparent) inset,
-    0 2px 10px -2px color-mix(in srgb, var(--fg) 10%, transparent),
-    0 20px 56px -26px color-mix(in srgb, var(--fg) 28%, transparent);
-
-  /* Fly-in entrance: self-triggering on mount, independent of any IO. */
+  /* No more card chrome — the cinematic camera is the design. Content
+     sits directly on the canvas like editorial captions on a film
+     still, with strong typography carrying the hierarchy. Sub-elements
+     that need their own contained look (project cards, skill bento)
+     still have it; the *section wrapper* doesn't. */
   animation: stage-enter 1s cubic-bezier(.22, 1, .36, 1) both;
   will-change: opacity, transform;
 }
@@ -561,36 +561,49 @@ body::before {
    ════════════════════════════════════════════════════════════════════ */
 
 .section-head {
-  display: flex; align-items: baseline; gap: 1.2rem;
-  margin-bottom: 3.5rem;
-  padding-bottom: 1.5rem;
-  border-bottom: 1px solid var(--border);
+  /* Editorial-cinematic header: small mono eyebrow ("01" film-slate
+     style) sits *above* a big italic-serif title. Vertical stack, no
+     bordered underline, no pill chrome — strong visual hierarchy
+     carries the section identity. */
+  display: block;
+  margin-bottom: clamp(1.75rem, 3.5vh, 2.75rem);
   position: relative;
 }
-.section-head::after {
-  content: '';
-  position: absolute;
-  bottom: -1.5px; left: 0;
-  width: 60px; height: 3px;
-  background: linear-gradient(90deg, var(--accent), var(--accent2));
-  border-radius: 2px;
-}
 .sect-n {
+  display: inline-block;
   font-family: var(--mono);
-  font-size: .65rem; font-weight: 600;
-  letter-spacing: .12em;
-  color: var(--accent); flex-shrink: 0;
+  font-size: .68rem;
+  font-weight: 600;
+  letter-spacing: .22em;
+  text-transform: uppercase;
+  color: var(--accent);
   user-select: none;
-  padding: .3rem .6rem;
-  background: var(--accent-soft);
-  border-radius: 6px;
+  /* No pill bg / no border — just the small mono label, like a film
+     slate slug under the section title. */
+  background: none;
+  padding: 0;
+  margin-bottom: .9rem;
+}
+.sect-n::after {
+  /* Thin accent rule trailing the slug so the eyebrow has visual
+     weight without a heavy underline under the whole header. */
+  content: '';
+  display: inline-block;
+  width: 2.5rem;
+  height: 1px;
+  background: color-mix(in srgb, var(--accent) 55%, transparent);
+  vertical-align: middle;
+  margin-left: .75rem;
+  transform: translateY(-1px);
 }
 .sect h2 {
   font-family: var(--serif);
-  font-size: clamp(2.4rem, 5vw, 3.6rem);
-  font-weight: 400; font-style: italic;
-  line-height: 1; color: var(--fg);
-  letter-spacing: -.02em;
+  font-size: clamp(3rem, 6vw, 4.6rem);
+  font-weight: 400;
+  font-style: italic;
+  line-height: 0.95;
+  letter-spacing: -.03em;
+  color: var(--fg);
 }
 
 /* ════════════════════════════════════════════════════════════════════

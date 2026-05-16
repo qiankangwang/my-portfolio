@@ -417,19 +417,16 @@ body::before {
    viewport so the visible content stays at the central anchor while the user
    scrolls. The pin engages until the parent's bottom catches up with it,
    giving each section a held "scene" before the next one slides in. */
+/* Natural-flow layout: sections take only the space their content needs,
+   plus comfortable padding. Dropped the 150svh height + 100svh sticky pin
+   because it left ~100svh of empty scroll between every section, making
+   content seem to "disappear" mid-scroll. */
 .sect {
   position: relative;
-  height: 150svh;
+  padding-block: clamp(5rem, 12vh, 9rem);
 }
 .sect-pin {
-  position: sticky;
-  top: 0;
-  height: 100svh;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  /* Pin spans the section's content column; ambient background bleeds in
-     from outside .content. */
+  position: relative;
 }
 .sect-stage {
   position: relative;
@@ -517,12 +514,7 @@ body::before {
 }
 
 @media (max-width: 968px) {
-  .sect { height: auto; }
-  .sect-pin {
-    position: static;
-    height: auto;
-    padding-block: 5rem;
-  }
+  .sect { padding-block: 4rem; }
 }
 @media (prefers-reduced-motion: reduce) {
   .stag-item, .project-card {

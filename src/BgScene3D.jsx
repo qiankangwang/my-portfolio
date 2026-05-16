@@ -215,21 +215,23 @@ function NetworkEdges({ edges }) {
 /* ─── Data packets streaming along edges (the "tech-thinking" feel) ──── */
 function DataPackets({ edges, count = 80, pulseSpeedRef }) {
   const meshRef = useRef();
-  const packets = useRef([]);
-
-  useEffect(() => {
-    packets.current = Array.from({ length: count }, () => ({
+  // useMemo guarantees packets exists before the first useFrame tick;
+  // useRef + useEffect raced the r3f render loop in StrictMode (first
+  // frame fired before the effect committed → undefined.t crash).
+  const packets = useMemo(
+    () => Array.from({ length: count }, () => ({
       edgeIdx: Math.floor(Math.random() * edges.length),
       t: Math.random(),
       speed: 0.5 + Math.random() * 0.7,
-    }));
-  }, [edges, count]);
+    })),
+    [edges, count]
+  );
 
   useFrame((_, dt) => {
     if (!meshRef.current) return;
     const speed = pulseSpeedRef?.current ?? 1;
     for (let i = 0; i < count; i++) {
-      const p = packets.current[i];
+      const p = packets[i];
       p.t += p.speed * dt * 0.55 * speed;
       if (p.t > 1) {
         p.t = 0;
@@ -620,14 +622,13 @@ function Nebula() {
      half of the canvas, leaving breathing room for the glass card on the
      right.
    ════════════════════════════════════════════════════════════════════════ */
-function CameraRig({ phaseRef, pulseSpeedRef, bloomRef }) {
+function CameraRig({ phaseRef, pulseSpeedRef }) {
   const { camera } = useThree();
   const desiredPos = useRef(new THREE.Vector3(0, 0.8, 12));
   const desiredLook = useRef(new THREE.Vector3(-0.5, 0, 0));
   const currentLook = useRef(new THREE.Vector3(-0.5, 0, 0));
   const lastPhase = useRef(0);
   const lastActiveIdx = useRef(-1);
-  const bloomBoost = useRef(0);
   const burstSpike = useRef(0);
 
   const waypoints = useMemo(
@@ -661,18 +662,13 @@ function CameraRig({ phaseRef, pulseSpeedRef, bloomRef }) {
     const activeIdx = Math.min(Math.floor(p * segCount), segCount - 1);
     if (activeIdx !== lastActiveIdx.current && lastActiveIdx.current >= 0) {
       burstSpike.current = 1;
-      bloomBoost.current = 1;
     }
     lastActiveIdx.current = activeIdx;
 
-    // Decay the spikes
+    // Decay the spike
     burstSpike.current *= Math.exp(-3.2 * dt);
-    bloomBoost.current *= Math.exp(-2.4 * dt);
 
     pulseSpeedRef.current = 1 + scrollVel * 2.5 + burstSpike.current * 4;
-    if (bloomRef.current) {
-      bloomRef.current.intensity = 1.55 + bloomBoost.current * 1.8;
-    }
 
     // Waypoint interpolation
     const idx = p * (waypoints.length - 1);
@@ -744,7 +740,6 @@ function Theme() {
    ════════════════════════════════════════════════════════════════════════ */
 export default function BgScene3D({ phaseRef }) {
   const pulseSpeedRef = useRef(1);
-  const bloomRef = useRef();
 
   return (
     <Canvas
@@ -767,7 +762,7 @@ export default function BgScene3D({ phaseRef }) {
         <pointLight position={[3, -2, 5]} intensity={1.8} color={COL.amber} distance={16} />
         <pointLight position={[0, 0, 0]} intensity={1.0} color={COL.violet} distance={7} />
 
-        <CameraRig phaseRef={phaseRef} pulseSpeedRef={pulseSpeedRef} bloomRef={bloomRef} />
+        <CameraRig phaseRef={phaseRef} pulseSpeedRef={pulseSpeedRef} />
 
         {/* Distant starfield */}
         <Stars radius={60} depth={35} count={2200} factor={3.5} fade speed={0.5} />
@@ -834,11 +829,14 @@ export default function BgScene3D({ phaseRef }) {
         <OrbitingTracer radius={3.4} axisTilt={-0.3} speed={-0.55} color={COL.bluePale} />
         <OrbitingTracer radius={4.0} axisTilt={0.7} speed={0.32} color={COL.violet} />
 
-        {/* Filmic post chain */}
+        {/* Filmic post chain — no ref on <Bloom>: React 19 puts refs into the
+           props bag, which @react-three/postprocessing then JSON.stringifies
+           in a useMemo dep. Three.js Object3D has circular parent↔children
+           refs, so the stringify throws on every scroll-driven re-render and
+           tears down the React tree. Constant intensity here, no ref needed. */}
         <EffectComposer multisampling={0} disableNormalPass>
           <Bloom
-            ref={bloomRef}
-            intensity={1.55}
+            intensity={1.7}
             luminanceThreshold={0.2}
             luminanceSmoothing={0.3}
             mipmapBlur

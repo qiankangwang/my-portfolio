@@ -217,7 +217,7 @@ export default function NeuralNetCanvas({ sceneRef }) {
     //   Skills (tl) → labels lower-right
     const computeWaypoints = () => {
       return [
-        { x: 0,    y: 0,    zoom: 1.0, roll: 0    }, // 0 — Hero
+        { x: 0,    y: 0,    zoom: 1.2, roll: 0    }, // 0 — Hero
         { x: -290, y: -160, zoom: 2.3, roll: -3   }, // 1 — About
         { x: -290, y: 50,   zoom: 1.85, roll: 2.5 }, // 2 — Research (left)
         { x: 295,  y: -160, zoom: 2.4, roll: -3   }, // 3 — Publication (right) ← swing across
@@ -745,12 +745,14 @@ export default function NeuralNetCanvas({ sceneRef }) {
       nodes.forEach((n) => {
         n.x = n.baseX + Math.sin(t + n.phase) * 2.2;
         n.y = n.baseY + Math.cos(t * 0.7 + n.phase * 1.3) * 2.2;
-        n.activation *= 0.93;
-        // Wave injection: bump activation when the wave is on n's
-        // layer. Narrow window so the burst is per-layer, not global.
+        // Slightly slower activation decay so edges fade smoothly
+        // instead of strobing. Wave injection peak softened on Hero
+        // (researchBoost = 0) and back to full on Research.
+        n.activation *= 0.955;
         const layerDist = Math.abs(waveLayer - n.layer);
         if (layerDist < 0.45) {
-          n.activation = Math.max(n.activation, 0.6 * (1 - layerDist / 0.45));
+          const peak = 0.38 + 0.32 * researchBoost;
+          n.activation = Math.max(n.activation, peak * (1 - layerDist / 0.45));
         }
       });
 
@@ -774,8 +776,9 @@ export default function NeuralNetCanvas({ sceneRef }) {
       });
 
       // ── Pulses travelling along edges ─────────────────────────────
-      // Spawn cadence tightens on Research — every ~6 frames instead of 14.
-      const pulseEvery = reducedMotion ? 42 : Math.max(5, Math.round(14 - 8 * researchBoost));
+      // Calmer cadence on Hero (every ~22 frames so pulses don't strobe
+      // behind the text), tightens to ~6 frames on Research.
+      const pulseEvery = reducedMotion ? 48 : Math.max(5, Math.round(22 - 16 * researchBoost));
       if (frame % pulseEvery === 0) spawnPulse();
 
       for (let i = pulses.length - 1; i >= 0; i--) {
@@ -812,10 +815,13 @@ export default function NeuralNetCanvas({ sceneRef }) {
         ctx.arc(px, py, 2.4 + glow * 1.3, 0, Math.PI * 2);
         ctx.fillStyle = rgba(accent, Math.min(1, p.alpha + 0.18) * visNetwork);
         ctx.fill();
-        // Outer halo — slightly bigger and warmer
+        // Outer halo — softened on Hero so pulses don't bloom into the
+        // hero text. Restores to full intensity on Research.
+        const haloAlpha = 0.045 + 0.04 * researchBoost;
+        const haloR = 9 + glow * (4.5 + 1.5 * researchBoost);
         ctx.beginPath();
-        ctx.arc(px, py, 11 + glow * 6, 0, Math.PI * 2);
-        ctx.fillStyle = rgba(accent, 0.075 * glow * visNetwork);
+        ctx.arc(px, py, haloR, 0, Math.PI * 2);
+        ctx.fillStyle = rgba(accent, haloAlpha * glow * visNetwork);
         ctx.fill();
       }
 

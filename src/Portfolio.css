@@ -857,49 +857,28 @@ body::after {
   font-family: var(--serif);
   font-style: italic;
   font-weight: 400;
-  /* Tuned so 'Qiankang (Kant) Wang.' lands on one line at desktop
-     widths and wraps gracefully on narrower viewports. */
   font-size: clamp(2.6rem, 7.5vw, 6rem);
-  line-height: 0.98;
+  line-height: 1.02;
   letter-spacing: -.035em;
   color: var(--fg);
   margin-bottom: clamp(1.5rem, 3vh, 2.5rem);
   max-width: 18ch;
-}
-.hero-name-line {
-  display: block;
-  /* Per-char animation handles entry now — line-level hero-rise is
-     gone so the chars cascade individually. The gradient breath on
-     line 2 is moved to its own selector below. */
-}
-/* Each character in the hero name enters with its own delay: scale
-   the cascade by --i (set per-letter in the JSX). Line 1 chars run
-   --i = 0..7, line 2 chars run --i = 9..13 so there's a beat of pause
-   between the lines before "Wang." starts cascading. */
-.hero-name-char {
-  display: inline-block;
+  /* Whole name fades in slowly on load — no per-letter jump. */
   opacity: 0;
-  transform: translateY(60px);
-  animation: hero-char-rise .72s cubic-bezier(.22, 1, .36, 1) forwards;
-  animation-delay: calc(.14s + var(--i, 0) * .045s);
-  /* Once the entry animation completes (it has `forwards` so the final
-     keyframe sticks), transition takes over for the hover lift. */
-  transition: transform .35s cubic-bezier(.22, 1, .36, 1);
-  cursor: default;
+  animation: hero-name-fade 1.8s cubic-bezier(.22, 1, .36, 1) .25s forwards;
 }
-/* Hover lifts the letter slightly and rocks it with an alternating
-   tilt (calculated from --i so adjacent letters lean opposite ways
-   for a hand-typeset feel). Line 2's gradient stays intact because
-   we only touch transform. */
-.hero-name-char:hover {
-  transform: translateY(-10px) rotateZ(calc((var(--i, 0) - 6) * 0.6deg));
+/* Each word is an atomic inline-block so the browser wraps only at
+   the spaces between words — never inside 'Wang' or '(Kant)'. */
+.hero-name-word {
+  display: inline-block;
+  white-space: nowrap;
 }
-@keyframes hero-char-rise {
-  0%   { opacity: 0; transform: translateY(60px); }
-  100% { opacity: 1; transform: translateY(0); }
+@keyframes hero-name-fade {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 @media (prefers-reduced-motion: reduce) {
-  .hero-name-char {
+  .hero-name {
     opacity: 1 !important;
     transform: none !important;
     animation: none !important;

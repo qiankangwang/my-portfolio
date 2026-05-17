@@ -373,9 +373,11 @@ export default function NeuralNetCanvas({ sceneRef }) {
       // Network is the headlining element at Hero (0) AND Research (2)
       // — visible at full alpha on either, faded between.
       const visNetwork   = Math.max(motifVis(0), motifVis(2));
-      // Bio motifs are atmospheric background; keep them low so they
-      // don't fight whichever scene-motif is currently in focus.
-      const visBio       = 0.22;
+      // Bio motifs are atmospheric background — bumped up so they're
+      // genuinely visible (the previous 0.22 made them ghosts). Adds an
+      // extra boost on the Hero scene so they read clearly during the
+      // wide overview, fades back as scene motifs take over.
+      const visBio       = 0.5 + 0.35 * motifVis(0);
 
       // Soft radial wash drawn in SCREEN coords (no transform yet).
       const grad = ctx.createRadialGradient(
@@ -415,47 +417,48 @@ export default function NeuralNetCanvas({ sceneRef }) {
       bioMotifs.forEach((m, mi) => {
         const drift = Math.sin(frame * 0.008 + m.phase) * 8;
         if (m.type === "rna") {
-          const step = 14;
+          const step = 22;
           const dx = Math.cos(m.angle) * step;
           const dy = Math.sin(m.angle) * step;
           for (let i = 0; i < m.len; i++) {
             const wave = Math.sin(frame * 0.014 + i * 0.75 + m.phase);
-            const arc  = Math.sin((i / Math.max(1, m.len - 1)) * Math.PI) * (m.bend || 0);
-            const x    = m.x + dx * i + Math.sin(m.angle + Math.PI / 2) * (wave * 5 + arc);
-            const y    = m.y + dy * i + drift + Math.cos(m.angle + Math.PI / 2) * (wave * 5 + arc);
+            const arc  = Math.sin((i / Math.max(1, m.len - 1)) * Math.PI) * (m.bend || 0) * 1.4;
+            const x    = m.x + dx * i + Math.sin(m.angle + Math.PI / 2) * (wave * 9 + arc);
+            const y    = m.y + dy * i + drift + Math.cos(m.angle + Math.PI / 2) * (wave * 9 + arc);
             const hot  = (i / Math.max(1, m.len - 1) + frame * 0.0045 + mi * 0.17) % 1;
             const active = hot > 0.42 && hot < 0.58;
-            const alpha  = (active ? (dark ? 0.82 : 0.66) : (dark ? 0.4 : 0.32)) * visBio;
+            const alpha  = (active ? (dark ? 0.88 : 0.78) : (dark ? 0.5 : 0.45)) * visBio;
             if (i > 0) {
               ctx.beginPath();
               ctx.moveTo(x - dx * 0.72, y - dy * 0.72);
               ctx.lineTo(x - dx * 0.25, y - dy * 0.25);
-              ctx.strokeStyle = rgba(dim, (dark ? 0.3 : 0.22) * visBio);
-              ctx.lineWidth = active ? 1 : 0.7;
+              ctx.strokeStyle = rgba(dim, (dark ? 0.42 : 0.34) * visBio);
+              ctx.lineWidth = active ? 1.5 : 1.1;
               ctx.stroke();
             }
             ctx.beginPath();
-            ctx.arc(x, y, active ? 2.3 : 1.55, 0, Math.PI * 2);
+            ctx.arc(x, y, active ? 3.6 : 2.4, 0, Math.PI * 2);
             ctx.fillStyle = rgba(i % 2 ? warm : accent, alpha);
             ctx.fill();
           }
         } else if (m.type === "protein") {
+          const s = m.scale * 1.55;
           const pts = [];
           for (let i = 0; i < m.len; i++) {
             pts.push({
-              x: m.x + Math.cos(i * 0.88 + frame * 0.012 + m.phase) * (12 + i * 2.4) * m.scale,
-              y: m.y + drift + i * 10 * m.scale + Math.sin(i * 1.2 + frame * 0.01 + m.phase) * 9 * m.scale,
+              x: m.x + Math.cos(i * 0.88 + frame * 0.012 + m.phase) * (12 + i * 2.4) * s,
+              y: m.y + drift + i * 10 * s + Math.sin(i * 1.2 + frame * 0.01 + m.phase) * 9 * s,
             });
           }
           ctx.beginPath();
           pts.forEach((pt, i) => { if (i === 0) ctx.moveTo(pt.x, pt.y); else ctx.lineTo(pt.x, pt.y); });
-          ctx.strokeStyle = rgba(warm, (dark ? 0.34 : 0.26) * visBio);
-          ctx.lineWidth = 0.85;
+          ctx.strokeStyle = rgba(warm, (dark ? 0.46 : 0.4) * visBio);
+          ctx.lineWidth = 1.4;
           ctx.stroke();
           pts.forEach((pt, i) => {
             ctx.beginPath();
-            ctx.arc(pt.x, pt.y, i % 3 === 0 ? 2 : 1.45, 0, Math.PI * 2);
-            ctx.fillStyle = rgba(i % 2 ? warm : accent, (dark ? 0.44 : 0.32) * visBio);
+            ctx.arc(pt.x, pt.y, i % 3 === 0 ? 3.2 : 2.3, 0, Math.PI * 2);
+            ctx.fillStyle = rgba(i % 2 ? warm : accent, (dark ? 0.58 : 0.5) * visBio);
             ctx.fill();
           });
         }

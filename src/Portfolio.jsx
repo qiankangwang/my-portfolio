@@ -507,13 +507,9 @@ const HeroScene = memo(function HeroScene({ onAvatarClick, avatarRef, scrolled }
       </button>
       <DecodeText className="hero-kicker" text="Qiankang (Kant) Wang · 2026" duration={820} delay={140} />
       <h1 className="hero-name">
-        <span className="hero-name-line">
-          {Array.from("Qiankang (Kant) Wang.").map((c, i) => (
-            <span key={i} className="hero-name-char" style={{ "--i": i }}>
-              {c === " " ? " " : c}
-            </span>
-          ))}
-        </span>
+        <span className="hero-name-word">Qiankang</span>{" "}
+        <span className="hero-name-word">(Kant)</span>{" "}
+        <span className="hero-name-word">Wang.</span>
       </h1>
       <p className="hero-tagline">
         {tagline.text}

@@ -1,39 +1,17 @@
 import { useEffect, useRef } from "react";
 
-/* Layered feedforward neural network on a 2D canvas with a virtual
-   camera that pans + zooms across the scene driven by scroll. Each
-   section anchors to a specific element in the world:
-
-     About       → input layer            (leftmost dots, close-up)
-     Research    → middle hidden layer    (mid-shot)
-     Publication → output layer           (rightmost, close-up)
-     Projects    → a protein α-helix      (bio motif)
-     Skills      → an RNA strand          (bio motif)
-
-   As the user scrolls, the camera glides between these anchors —
-   it's the same "cinematic camera move" that the 3D r3f version had,
-   but on a 2D canvas (smooth on every machine, no shader cost).
-
-   Implementation notes
-   - World coords: the network and bio motifs are positioned in a fixed
-     virtual world (no viewport-dependent geometry). The draw loop
-     applies translate + scale so a chosen world point appears at the
-     screen anchor (offset to the left so the cards on the right of
-     the viewport don't cover the focused element).
-   - Two-stage low-pass: scroll progress is smoothed first (~0.12s),
-     then the camera position follows the smoothed target (~0.30s).
-     Same trick the 3D camera used — discrete wheel ticks become a
-     glide, not a jolt.
-   - pointer-events: none on .bgnet means scroll passes through, so
-     this is non-interactive — animation runs autonomously. */
-
-const WORLD_W = 1400; // network total width in world coords
-const WORLD_H = 720;  // network total height
-const WORLD_LAYERS = [5, 7, 9, 7, 5, 3];
-
-export default function NeuralNetCanvas({ sceneRef }) {
+/* ── NeuralNetCanvas ──
+   A standalone 2D layered neural network animation, restored from
+   the earlier design pass and re-skinned for the cream paper / deep
+   ink palette. Six layers (5/7/9/7/5/3), explicit edges, signal
+   pulses travelling between layers, sparse RNA + protein "bio motif"
+   drifters off to the sides, and mouse-reactive node pull. Locked
+   palette — no dark-mode swap, just the navy/rust ink-on-paper
+   colours the rest of the page uses. */
+export default function NeuralNetCanvas({ sceneRef, fpsRef }) {
   const canvasRef = useRef(null);
   const raf = useRef(null);
+  const mouse = useRef({ x: -9999, y: -9999 });
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -42,65 +20,51 @@ export default function NeuralNetCanvas({ sceneRef }) {
     let h = 0;
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const layers = WORLD_LAYERS;
+    const layers = [5, 7, 9, 7, 5, 3];
     let nodes = [];
     let edges = [];
     let pulses = [];
     let bioMotifs = [];
-    // Scene motifs — distinct visual elements per scroll scene:
-    //   "dna"       : DNA double helix      (About waypoint)
-    //   "equations" : math glyph cluster    (Publication waypoint)
-    //   "grid"      : contribution grid     (Projects waypoint)
-    //   "labels"    : floating skill labels (Skills waypoint)
-    // Each is its own camera anchor — the scene that focuses on it sees it
-    // big and centred while the rest of the world falls into background.
-    let sceneMotifs = [];
-    // Ambient particle field — small dots drifting across the whole world,
-    // very faint, just for atmospheric depth behind everything else.
-    let ambient = [];
     let edgeCursor = 0;
     let frame = 0;
 
-    // Theme detection — data-theme attr on <html>, fall back to system pref.
-    const readDark = () => {
-      const attr = document.documentElement.getAttribute("data-theme");
-      if (attr === "dark") return true;
-      if (attr === "light") return false;
-      return window.matchMedia("(prefers-color-scheme: dark)").matches;
-    };
-    let dark = readDark();
-    const themeObs = new MutationObserver(() => { dark = readDark(); });
-    themeObs.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
-    const darkMq = window.matchMedia("(prefers-color-scheme: dark)");
-    const onDarkMq = () => { dark = readDark(); };
-    darkMq.addEventListener("change", onDarkMq);
+    // sceneRef is reserved for future per-scene accent shifts; kept
+    // in the signature so wiring from Atmosphere doesn't churn when
+    // it's hooked up. Discarded silently for now.
+    void sceneRef;
+
+    // Locked cream-paper palette — matches the rest of the page so
+    // text + canvas read as one document.
+    const accent = [30, 58, 138];     // deep journal navy
+    const cool   = [99, 119, 145];    // muted ink for nodes at rest
+    const dim    = [197, 198, 188];   // subtle paper-tone edges
+    const warm   = [180, 83, 9];      // warm rust for live pulses
     const rgba = (rgb, a) => `rgba(${rgb[0]},${rgb[1]},${rgb[2]},${a})`;
 
-    // Build the network + bio motifs in WORLD coordinates (centred at the
-    // world origin). The camera transform in draw() places these onto
-    // screen at the right place / scale for the current scroll position.
     const buildNetwork = () => {
       nodes = [];
       edges = [];
       pulses = [];
       bioMotifs = [];
-      const netW = WORLD_W;
-      const netH = WORLD_H;
+      const cx = w * 0.5;
+      const cy = h * 0.5;
+      const netW = Math.min(w * 0.92, 1400);
+      const netH = Math.min(h * 0.82, 760);
+      const startX = cx - netW / 2;
       const layerGap = netW / (layers.length - 1);
-      const startX = -netW / 2;
 
       layers.forEach((count, layer) => {
         const x = startX + layerGap * layer;
         const usableH = netH * (0.76 + layer * 0.018);
-        const layerStartY = -usableH / 2;
+        const startY = cy - usableH / 2;
         for (let i = 0; i < count; i++) {
           const ratio = count === 1 ? 0.5 : i / (count - 1);
           const curve = Math.sin((ratio - 0.5) * Math.PI) * 14;
           nodes.push({
             x,
-            y: layerStartY + ratio * usableH + curve,
+            y: startY + ratio * usableH + curve,
             baseX: x,
-            baseY: layerStartY + ratio * usableH + curve,
+            baseY: startY + ratio * usableH + curve,
             layer,
             r: 3.2 + (layer === 0 || layer === layers.length - 1 ? 0.4 : 0.9),
             phase: Math.random() * Math.PI * 2,
@@ -133,132 +97,24 @@ export default function NeuralNetCanvas({ sceneRef }) {
         }
       }
 
-      // Atmospheric bio motifs (RNA + protein helices) scattered around
-      // the network. These are the "always-on" texture that gives the
-      // world its biology flavour.
-      const left = -netW / 2;
-      const top = -netH * 0.34;
-      const bottom = netH * 0.34;
-      bioMotifs = [
-        { type: "rna",     x: left + netW * 0.10, y: top + netH * 0.12,    len: 13, angle: 0.15,  phase: 0.2, bend: 10 },
-        { type: "rna",     x: left + netW * 0.50, y: top + netH * 0.74,    len: 10, angle: -0.20, phase: 3.1, bend: -7 },
-        { type: "rna",     x: left + netW * 0.08, y: top + netH * 0.58,    len: 9,  angle: 0.32,  phase: 6.0, bend: 6 },
-        { type: "protein", x: left + netW * 0.18, y: bottom - netH * 0.16, len: 8,  scale: 0.92, phase: 2.4 },
-        { type: "protein", x: left + netW * 0.42, y: top + netH * 0.06,    len: 7,  scale: 0.70, phase: 5.4 },
-        { type: "protein", x: left + netW * 0.88, y: bottom - netH * 0.28, len: 6,  scale: 0.65, phase: 6.8 },
-        { type: "protein", x: left + netW * 0.30, y: top + netH * 0.48,    len: 7,  scale: 0.78, phase: 1.3 },
-      ];
-
-      // Scene motifs — each becomes one section's camera anchor.
-      // Spaced into the four world corners so each is fully isolated
-      // when the camera frames it at zoom ~2.4-2.7:
-      //   upper-left  : DNA (About)
-      //   upper-right : Equations (Publication)
-      //   lower-left  : Contribution grid (Projects)
-      //   lower-right : Skill labels orbit (Skills)
-      // The network's hidden layer at (0, 0) serves as Research anchor.
-      sceneMotifs = [
-        // DNA double helix — vertical, About anchor (upper-left).
-        { type: "dna", x: -480, y: -160, len: 16, amp: 38, phase: 0 },
-
-        // Equation glyph cluster — Publication anchor (upper-right).
-        {
-          type: "equations",
-          x: 480,
-          y: -160,
-          glyphs: [
-            { ch: "∇",   ox: -70, oy: -32, size: 38, phase: 0.0 },
-            { ch: "∂",   ox:  10, oy: -50, size: 32, phase: 1.2 },
-            { ch: "Σ",   ox:  80, oy: -10, size: 44, phase: 2.4 },
-            { ch: "∫",   ox: -40, oy:  30, size: 42, phase: 3.1 },
-            { ch: "π",   ox:  60, oy:  46, size: 28, phase: 4.0 },
-            { ch: "ψ",   ox: -90, oy:  10, size: 30, phase: 5.2 },
-            { ch: "⟨ψ⟩", ox:   0, oy:  -2, size: 24, phase: 0.7 },
-            { ch: "∞",   ox:  35, oy: -36, size: 26, phase: 6.0 },
-          ],
-        },
-
-        // GitHub-style contribution grid — Projects anchor (lower-left).
-        { type: "grid", x: -480, y: 230, cols: 14, rows: 7, cell: 14, gap: 6 },
-
-        // Floating skill labels orbiting a central anchor — Skills anchor.
-        {
-          type: "labels",
-          x: 480,
-          y: 230,
-          items: [
-            { text: "PyTorch", r: 100, speed: 0.18, phase: 0.0 },
-            { text: "CUDA",    r: 75,  speed: -0.22, phase: 1.2 },
-            { text: "C++",     r: 125, speed: 0.14, phase: 2.5 },
-            { text: "Slurm",   r: 60,  speed: 0.28, phase: 3.8 },
-            { text: "GPU",     r: 110, speed: -0.16, phase: 5.0 },
-            { text: "Linux",   r: 85,  speed: 0.20, phase: 0.4 },
-            { text: "PBSA",    r: 120, speed: -0.18, phase: 4.4 },
-            { text: "SSL",     r: 55,  speed: 0.30, phase: 2.0 },
-          ],
-        },
-      ];
-
-      // Ambient particle field — slow drifting dots across the whole
-      // world. Faint, just adds depth so the bg never feels empty.
-      ambient = [];
-      const ambientCount = reducedMotion ? 0 : 70;
-      for (let i = 0; i < ambientCount; i++) {
-        ambient.push({
-          x: -netW * 0.6 + Math.random() * netW * 1.2,
-          y: -netH * 0.6 + Math.random() * netH * 1.2,
-          r: 0.6 + Math.random() * 1.3,
-          alpha: 0.18 + Math.random() * 0.32,
-          drift: 0.08 + Math.random() * 0.14,
-          phase: Math.random() * Math.PI * 2,
-        });
+      if (w >= 480) {
+        const left = startX;
+        const top = cy - netH * 0.34;
+        const bottom = cy + netH * 0.34;
+        bioMotifs = [
+          { type: "rna", x: left + netW * 0.1,  y: top + netH * 0.12, len: 13, angle: 0.15,  phase: 0.2, bend: 10 },
+          { type: "rna", x: left + netW * 0.22, y: top + netH * 0.34, len: 11, angle: -0.22, phase: 1.1, bend: -8 },
+          { type: "rna", x: left + netW * 0.5,  y: top + netH * 0.74, len: 10, angle: -0.2,  phase: 3.1, bend: -7 },
+          { type: "rna", x: left + netW * 0.08, y: top + netH * 0.58, len: 9,  angle: 0.32,  phase: 6.0, bend: 6 },
+          { type: "rna", x: left + netW * 0.7,  y: top + netH * 0.42, len: 9,  angle: -0.28, phase: 5.1, bend: -7 },
+          { type: "rna", x: left + netW * 0.82, y: top + netH * 0.34, len: 9,  angle: -0.3,  phase: 8.4, bend: -6 },
+          { type: "rna", x: left + netW * 0.72, y: top + netH * 0.78, len: 9,  angle: 0.28,  phase: 9.8, bend: 7 },
+          { type: "protein", x: left + netW * 0.76, y: top + netH * 0.18, len: 10, scale: 1.05, phase: 0.5 },
+          { type: "protein", x: left + netW * 0.18, y: bottom - netH * 0.16, len: 8, scale: 0.92, phase: 2.4 },
+          { type: "protein", x: left + netW * 0.42, y: top + netH * 0.06, len: 7, scale: 0.7, phase: 5.4 },
+        ];
       }
     };
-
-    // Six camera waypoints — one per portfolio scene (incl. hero). Each is
-    // a target (worldX, worldY, zoom, roll) in world coords; the draw loop
-    // interpolates between them along an arc path (not a straight line) and
-    // adds a zoom-dolly pull-back at the midpoint of every transition. This
-    // gives the camera a cinematic "fly-through 3D space" feel even though
-    // the canvas is 2D.
-    //
-    //   roll : per-scene camera bank angle in degrees. Mostly small; the
-    //          banks between scenes are what create the 3D feel.
-    const computeWaypoints = () => {
-      // The page's centred content card sits over the viewport's middle.
-      // To keep each scene's motif visible, the camera anchors slightly
-      // OFFSET from the motif so the motif lands in the gutter beside
-      // the card rather than directly behind it. Computed so the motif's
-      // screen position falls ~280px from a viewport edge at ~1440px wide
-      // (with the per-waypoint zoom).
-      return [
-        // 0 — Hero: wide overview — sees all four corners + the network
-        { x: 0, y: 0, zoom: 1.0, roll: 0 },
-        // 1 — About: DNA helix sits in the LEFT gutter beside the card
-        { x: -290, y: -160, zoom: 2.3, roll: -3 },
-        // 2 — Research: network hidden layer centred behind the card
-        { x: 0, y: 0, zoom: 1.75, roll: 2.5 },
-        // 3 — Publication: equation cluster in the RIGHT gutter
-        { x: 295, y: -160, zoom: 2.4, roll: -3 },
-        // 4 — Projects: contribution grid in the LEFT gutter
-        { x: -310, y: 230, zoom: 2.6, roll: 4 },
-        // 5 — Skills: skill-label orbit in the RIGHT gutter
-        { x: 290, y: 230, zoom: 2.3, roll: -2.5 },
-      ];
-    };
-
-    const waypoints = computeWaypoints();
-
-    // Camera state — initialised to the first waypoint so the page opens
-    // already framed on the hero wide shot (no jarring initial fly-in).
-    const cam = {
-      x: waypoints[0].x,
-      y: waypoints[0].y,
-      zoom: waypoints[0].zoom,
-      roll: waypoints[0].roll,
-    };
-    let smoothedScene = 0;
-    let lastTime = performance.now();
 
     const resize = () => {
       w = canvas.clientWidth || window.innerWidth;
@@ -272,147 +128,73 @@ export default function NeuralNetCanvas({ sceneRef }) {
     window.addEventListener("resize", resize);
 
     const spawnPulse = () => {
-      if (!edges.length || pulses.length > 18) return;
+      if (!edges.length || pulses.length > 16) return;
       const edge = edges[edgeCursor % edges.length];
       edgeCursor += 7;
       pulses.push({
         edge,
         t: 0,
-        speed: reducedMotion ? 0.012 : 0.005 + Math.random() * 0.004,
-        alpha: 0.40 + Math.random() * 0.28,
+        speed: reducedMotion ? 0.012 : 0.006 + Math.random() * 0.004,
+        alpha: 0.42 + Math.random() * 0.26,
       });
     };
 
     let running = true;
+    let lastTs = performance.now();
+    const fpsBuf = new Float32Array(60);
+    let fpsIdx = 0;
+    let fpsFilled = 0;
 
     const draw = () => {
       if (!running) return;
-      const now = performance.now();
-      const dt = Math.min(0.05, (now - lastTime) / 1000);
-      lastTime = now;
       frame++;
-      ctx.clearRect(0, 0, w, h);
-
-      // Two-stage low-pass smoothing on the scene index → camera path,
-      // so wheel-tick scroll doesn't transmit as a visible camera kick.
-      const segCount = waypoints.length - 1;
-      const targetScene = Math.max(0, Math.min(segCount, sceneRef?.current ?? 0));
-      const kS = 1 - Math.exp(-dt / 0.12);
-      smoothedScene += (targetScene - smoothedScene) * kS;
-
-      // Interpolate the target waypoint from the smoothed scene index —
-      // sceneRef places the camera at the actual section in view, so the
-      // transition fires when the user crosses the section boundary.
-      const lo = Math.floor(smoothedScene);
-      const hi = Math.min(lo + 1, segCount);
-      const u = smoothedScene - lo;
-      const eased = u * u * (3 - 2 * u); // smoothstep
-      const a = waypoints[lo];
-      const b = waypoints[hi];
-
-      // 1) Linear interpolation between the two waypoints
-      const linX = a.x + (b.x - a.x) * eased;
-      const linY = a.y + (b.y - a.y) * eased;
-      const linZoom = a.zoom + (b.zoom - a.zoom) * eased;
-      const linRoll = a.roll + (b.roll - a.roll) * eased;
-
-      // 2) Arc path — push the midpoint perpendicular to the straight line
-      //    so the camera *swings* from A to B instead of going dead-straight.
-      //    Arc magnitude scales with segment length, capped. Direction
-      //    alternates by segment index so consecutive arcs swing opposite
-      //    ways (avoids a monotonous "always curves up" feel).
-      const dx = b.x - a.x;
-      const dy = b.y - a.y;
-      const segLen = Math.hypot(dx, dy);
-      let arcDX = 0, arcDY = 0;
-      if (segLen > 5) {
-        const nx = -dy / segLen;
-        const ny = dx / segLen;
-        const arcMag = Math.min(segLen * 0.18, 180);
-        const arcCurve = Math.sin(eased * Math.PI);
-        const arcSign = lo % 2 === 0 ? 1 : -1;
-        arcDX = nx * arcMag * arcCurve * arcSign;
-        arcDY = ny * arcMag * arcCurve * arcSign;
+      // Smoothed FPS sample (60-frame rolling window). Writes to
+      // fpsRef every 8 frames so the HUD has live data to read.
+      const ts = performance.now();
+      const dt = (ts - lastTs) / 1000;
+      lastTs = ts;
+      if (dt > 0.0005) {
+        fpsBuf[fpsIdx] = 1 / dt;
+        fpsIdx = (fpsIdx + 1) % fpsBuf.length;
+        if (fpsFilled < fpsBuf.length) fpsFilled++;
+        if (fpsRef && (frame & 7) === 0) {
+          let sum = 0;
+          for (let k = 0; k < fpsFilled; k++) sum += fpsBuf[k];
+          fpsRef.current = sum / fpsFilled;
+        }
       }
+      ctx.clearRect(0, 0, w, h);
+      const mx = mouse.current.x;
+      const my = mouse.current.y;
+      const t = frame * (reducedMotion ? 0.012 : 0.035);
 
-      // 3) Zoom dolly — briefly pull back at the midpoint of every
-      //    transition, like a director using an establishing shot
-      //    between two close-ups. Creates depth motion that flat panning
-      //    can't produce.
-      const dollyMag = 0.45;
-      const dollyOffset = Math.sin(eased * Math.PI) * dollyMag;
-
-      const targetX = linX + arcDX;
-      const targetY = linY + arcDY;
-      const targetZoom = Math.max(0.7, linZoom - dollyOffset);
-      const targetRoll = linRoll;
-
-      // 4) Camera follow — critically-damped lerp so the move feels like a
-      //    cinematic glide settling into place, not a snap.
-      const kC = 1 - Math.exp(-dt / 0.30);
-      cam.x += (targetX - cam.x) * kC;
-      cam.y += (targetY - cam.y) * kC;
-      cam.zoom += (targetZoom - cam.zoom) * kC;
-      cam.roll += (targetRoll - cam.roll) * kC;
-
-      // Palette tuned to read against the cool-gray .bgnet backdrop.
-      const accent = dark ? [120, 165, 235] : [40, 95, 215];
-      const cool   = dark ? [80, 105, 140]  : [70, 95, 130];
-      const dim    = dark ? [48, 60, 80]    : [115, 130, 150];
-      const warm   = dark ? [220, 158, 115] : [200, 105, 55];
-      const t = frame * (reducedMotion ? 0.012 : 0.025);
-
-      // Soft radial wash drawn in SCREEN coords (no transform yet).
-      const grad = ctx.createRadialGradient(
-        w * 0.5, h * 0.45, 0,
-        w * 0.5, h * 0.45, Math.max(w, h) * 0.55
-      );
-      grad.addColorStop(0, rgba(accent, dark ? 0.055 : 0.045));
+      // Subtle accent wash centred slightly off-axis so the page
+      // doesn't read as a perfect symmetric diagram.
+      const grad = ctx.createRadialGradient(w * 0.58, h * 0.44, 0, w * 0.58, h * 0.44, Math.max(w, h) * 0.55);
+      grad.addColorStop(0, rgba(accent, 0.045));
       grad.addColorStop(1, rgba(accent, 0));
       ctx.fillStyle = grad;
       ctx.fillRect(0, 0, w, h);
 
-      // ── Camera transform ────────────────────────────────────────────
-      // World point (cam.x, cam.y) maps to dead-centre of the canvas.
-      // Order matters: translate-to-anchor, rotate by roll, scale by zoom,
-      // then shift the world so the target lands on the anchor.
-      ctx.save();
-      ctx.translate(w * 0.50, h * 0.50);
-      ctx.rotate(cam.roll * Math.PI / 180);
-      ctx.scale(cam.zoom, cam.zoom);
-      ctx.translate(-cam.x, -cam.y);
-
-      // ── Ambient particle field — slow drifting dust behind everything,
-      // gives the world ambient depth so corners never feel empty. ─────
-      ambient.forEach((p) => {
-        const px = p.x + Math.sin(frame * 0.005 + p.phase) * (12 * p.drift);
-        const py = p.y + Math.cos(frame * 0.004 + p.phase * 1.3) * (10 * p.drift);
-        ctx.beginPath();
-        ctx.arc(px, py, p.r, 0, Math.PI * 2);
-        ctx.fillStyle = rgba(dim, p.alpha * 0.5);
-        ctx.fill();
-      });
-
-      // ── Bio motifs (drawn after ambient, before network) ────────────
       bioMotifs.forEach((m, mi) => {
-        const drift = Math.sin(frame * 0.008 + m.phase) * 8;
+        const drift = Math.sin(frame * 0.01 + m.phase) * 9;
         if (m.type === "rna") {
           const step = 14;
           const dx = Math.cos(m.angle) * step;
           const dy = Math.sin(m.angle) * step;
           for (let i = 0; i < m.len; i++) {
-            const wave = Math.sin(frame * 0.014 + i * 0.75 + m.phase);
+            const wave = Math.sin(frame * 0.018 + i * 0.75 + m.phase);
             const arc  = Math.sin((i / Math.max(1, m.len - 1)) * Math.PI) * (m.bend || 0);
             const x    = m.x + dx * i + Math.sin(m.angle + Math.PI / 2) * (wave * 5 + arc);
             const y    = m.y + dy * i + drift + Math.cos(m.angle + Math.PI / 2) * (wave * 5 + arc);
-            const hot  = (i / Math.max(1, m.len - 1) + frame * 0.0045 + mi * 0.17) % 1;
+            const hot  = (i / Math.max(1, m.len - 1) + frame * 0.006 + mi * 0.17) % 1;
             const active = hot > 0.42 && hot < 0.58;
-            const alpha  = active ? (dark ? 0.82 : 0.66) : (dark ? 0.4 : 0.32);
+            const alpha  = active ? 0.66 : 0.32;
             if (i > 0) {
               ctx.beginPath();
               ctx.moveTo(x - dx * 0.72, y - dy * 0.72);
               ctx.lineTo(x - dx * 0.25, y - dy * 0.25);
-              ctx.strokeStyle = rgba(dim, dark ? 0.3 : 0.22);
+              ctx.strokeStyle = rgba(dim, 0.22);
               ctx.lineWidth = active ? 1 : 0.7;
               ctx.stroke();
             }
@@ -420,6 +202,14 @@ export default function NeuralNetCanvas({ sceneRef }) {
             ctx.arc(x, y, active ? 2.3 : 1.55, 0, Math.PI * 2);
             ctx.fillStyle = rgba(i % 2 ? warm : accent, alpha);
             ctx.fill();
+            if (i % 3 === 1) {
+              ctx.beginPath();
+              ctx.moveTo(x, y);
+              ctx.lineTo(x + Math.sin(m.angle + Math.PI / 2) * 8, y + Math.cos(m.angle + Math.PI / 2) * 8);
+              ctx.strokeStyle = rgba(i % 2 ? warm : accent, active ? 0.36 : 0.2);
+              ctx.lineWidth = 0.7;
+              ctx.stroke();
+            }
           }
         } else if (m.type === "protein") {
           const pts = [];
@@ -431,175 +221,33 @@ export default function NeuralNetCanvas({ sceneRef }) {
           }
           ctx.beginPath();
           pts.forEach((pt, i) => { if (i === 0) ctx.moveTo(pt.x, pt.y); else ctx.lineTo(pt.x, pt.y); });
-          ctx.strokeStyle = rgba(warm, dark ? 0.34 : 0.26);
+          ctx.strokeStyle = rgba(warm, 0.26);
           ctx.lineWidth = 0.85;
           ctx.stroke();
           pts.forEach((pt, i) => {
             ctx.beginPath();
             ctx.arc(pt.x, pt.y, i % 3 === 0 ? 2 : 1.45, 0, Math.PI * 2);
-            ctx.fillStyle = rgba(i % 2 ? warm : accent, dark ? 0.44 : 0.32);
+            ctx.fillStyle = rgba(i % 2 ? warm : accent, 0.32);
             ctx.fill();
           });
         }
       });
 
-      // ── Scene motifs (DNA / equations / grid / labels) ──────────────
-      // Drawn after bio motifs but before the network nodes, so the
-      // network's bright nodes/pulses still pop over everything.
-      sceneMotifs.forEach((m) => {
-        if (m.type === "dna") {
-          // Two intertwined sine strands with horizontal rungs every step.
-          // Phase advances slowly so the helix appears to spin around its
-          // vertical axis (in 2D — the crossings shift but the strands
-          // don't move sideways much).
-          const step = 18;
-          const cx = m.x;
-          for (let i = 0; i < m.len; i++) {
-            const py = m.y - (m.len * step) / 2 + i * step;
-            const theta = (i / m.len) * Math.PI * 4 + frame * 0.025 + m.phase;
-            const xA = cx + Math.cos(theta) * m.amp;
-            const xB = cx + Math.cos(theta + Math.PI) * m.amp;
-            // Rung between the two strands (depth-cue: dim when strands
-            // are close together / behind each other)
-            const sep = Math.abs(xA - xB) / (m.amp * 2);
-            ctx.beginPath();
-            ctx.moveTo(xA, py);
-            ctx.lineTo(xB, py);
-            ctx.strokeStyle = rgba(warm, (dark ? 0.32 : 0.24) * (0.3 + sep * 0.7));
-            ctx.lineWidth = 1.1;
-            ctx.stroke();
-            // Strand dots
-            ctx.beginPath();
-            ctx.arc(xA, py, 2.4, 0, Math.PI * 2);
-            ctx.fillStyle = rgba(accent, (dark ? 0.85 : 0.7) * (0.4 + sep * 0.6));
-            ctx.fill();
-            ctx.beginPath();
-            ctx.arc(xB, py, 2.4, 0, Math.PI * 2);
-            ctx.fillStyle = rgba(warm, (dark ? 0.75 : 0.6) * (0.4 + sep * 0.6));
-            ctx.fill();
-            // Connecting backbone lines down the strand
-            if (i > 0) {
-              const prevTheta = ((i - 1) / m.len) * Math.PI * 4 + frame * 0.025 + m.phase;
-              const prevXA = cx + Math.cos(prevTheta) * m.amp;
-              const prevXB = cx + Math.cos(prevTheta + Math.PI) * m.amp;
-              ctx.beginPath();
-              ctx.moveTo(prevXA, py - step);
-              ctx.lineTo(xA, py);
-              ctx.strokeStyle = rgba(accent, dark ? 0.55 : 0.42);
-              ctx.lineWidth = 1.4;
-              ctx.stroke();
-              ctx.beginPath();
-              ctx.moveTo(prevXB, py - step);
-              ctx.lineTo(xB, py);
-              ctx.strokeStyle = rgba(warm, dark ? 0.5 : 0.38);
-              ctx.lineWidth = 1.4;
-              ctx.stroke();
-            }
-          }
-        } else if (m.type === "equations") {
-          // Math glyphs floating in a loose cluster. Each glyph has its own
-          // drift + a slow scale pulse so the cluster feels alive.
-          m.glyphs.forEach((g) => {
-            const dx = Math.sin(frame * 0.008 + g.phase) * 6;
-            const dy = Math.cos(frame * 0.006 + g.phase * 1.3) * 5;
-            const pulse = 1 + Math.sin(frame * 0.018 + g.phase) * 0.07;
-            const px = m.x + g.ox + dx;
-            const py = m.y + g.oy + dy;
-            ctx.save();
-            ctx.translate(px, py);
-            ctx.scale(pulse, pulse);
-            ctx.fillStyle = rgba(accent, dark ? 0.75 : 0.62);
-            ctx.font = `italic ${g.size}px Georgia, 'Times New Roman', serif`;
-            ctx.textAlign = "center";
-            ctx.textBaseline = "middle";
-            ctx.fillText(g.ch, 0, 0);
-            ctx.restore();
-          });
-          // Subtle linking lines between adjacent glyphs to suggest a
-          // single derivation / system
-          for (let i = 0; i < m.glyphs.length - 1; i++) {
-            const a = m.glyphs[i];
-            const b = m.glyphs[i + 1];
-            const ax = m.x + a.ox + Math.sin(frame * 0.008 + a.phase) * 6;
-            const ay = m.y + a.oy + Math.cos(frame * 0.006 + a.phase * 1.3) * 5;
-            const bx = m.x + b.ox + Math.sin(frame * 0.008 + b.phase) * 6;
-            const by = m.y + b.oy + Math.cos(frame * 0.006 + b.phase * 1.3) * 5;
-            ctx.beginPath();
-            ctx.moveTo(ax, ay);
-            ctx.lineTo(bx, by);
-            ctx.strokeStyle = rgba(accent, dark ? 0.16 : 0.12);
-            ctx.lineWidth = 0.6;
-            ctx.stroke();
-          }
-        } else if (m.type === "grid") {
-          // GitHub-style contribution grid. Each cell has a base intensity
-          // from a seeded function + an extra "wave" that sweeps diagonally
-          // across to add liveness.
-          const totalW = m.cols * (m.cell + m.gap) - m.gap;
-          const totalH = m.rows * (m.cell + m.gap) - m.gap;
-          const x0 = m.x - totalW / 2;
-          const y0 = m.y - totalH / 2;
-          for (let c = 0; c < m.cols; c++) {
-            for (let r = 0; r < m.rows; r++) {
-              // Deterministic baseline 0..1 from cell coords
-              const base = ((c * 31 + r * 17) % 7) / 6;
-              // Diagonal wave that sweeps over time
-              const waveT = (c * 0.35 + r * 0.45 + frame * 0.018) % 6.28;
-              const wave = Math.max(0, Math.sin(waveT)) * 0.6;
-              const intensity = Math.min(1, base * 0.6 + wave);
-              const x = x0 + c * (m.cell + m.gap);
-              const y = y0 + r * (m.cell + m.gap);
-              // Cell — fade between cool (dim) and accent (bright)
-              const ar = Math.round(cool[0] + (accent[0] - cool[0]) * intensity);
-              const ag = Math.round(cool[1] + (accent[1] - cool[1]) * intensity);
-              const ab = Math.round(cool[2] + (accent[2] - cool[2]) * intensity);
-              ctx.fillStyle = rgba([ar, ag, ab], dark ? 0.45 + intensity * 0.45 : 0.32 + intensity * 0.5);
-              ctx.fillRect(x, y, m.cell, m.cell);
-              if (intensity > 0.7) {
-                // Bright cell gets a soft halo
-                ctx.fillStyle = rgba(accent, (intensity - 0.7) * 0.18);
-                ctx.fillRect(x - 2, y - 2, m.cell + 4, m.cell + 4);
-              }
-            }
-          }
-        } else if (m.type === "labels") {
-          // Floating mono-style skill text orbiting a central anchor at
-          // varying radii + speeds. Each label drops a soft trailing dot.
-          m.items.forEach((it) => {
-            const theta = frame * 0.006 * it.speed + it.phase;
-            const px = m.x + Math.cos(theta) * it.r;
-            const py = m.y + Math.sin(theta) * it.r * 0.6; // squashed orbit
-            ctx.font = `600 ${dark ? 13 : 12}px ui-monospace, Menlo, monospace`;
-            ctx.textAlign = "center";
-            ctx.textBaseline = "middle";
-            // Subtle "halo" pass for legibility
-            ctx.fillStyle = rgba(accent, 0.10);
-            ctx.fillText(it.text, px, py);
-            ctx.fillStyle = rgba(accent, dark ? 0.82 : 0.7);
-            ctx.fillText(it.text, px, py);
-            // Anchor dot at orbit centre
-          });
-          // Central anchor — small ring + dot
-          ctx.beginPath();
-          ctx.arc(m.x, m.y, 4, 0, Math.PI * 2);
-          ctx.fillStyle = rgba(accent, dark ? 0.85 : 0.7);
-          ctx.fill();
-          ctx.beginPath();
-          ctx.arc(m.x, m.y, 14, 0, Math.PI * 2);
-          ctx.strokeStyle = rgba(accent, 0.25);
-          ctx.lineWidth = 1;
-          ctx.stroke();
-        }
-      });
-
-      // ── Node positions: Lissajous drift around base point ─────────
       nodes.forEach((n) => {
         n.x = n.baseX + Math.sin(t + n.phase) * 2.2;
         n.y = n.baseY + Math.cos(t * 0.7 + n.phase * 1.3) * 2.2;
+        const dx = n.x - mx;
+        const dy = n.y - my;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist > 0 && dist < 130) {
+          const pull = (130 - dist) / 130;
+          n.x += (dx / dist) * pull * 8;
+          n.y += (dy / dist) * pull * 8;
+          n.activation = Math.max(n.activation, pull * 0.7);
+        }
         n.activation *= 0.93;
       });
 
-      // ── Edges ──────────────────────────────────────────────────────
       edges.forEach((e) => {
         const a = nodes[e.from];
         const b = nodes[e.to];
@@ -608,14 +256,13 @@ export default function NeuralNetCanvas({ sceneRef }) {
         ctx.moveTo(a.x, a.y);
         ctx.lineTo(b.x, b.y);
         ctx.strokeStyle = act > 0.08
-          ? rgba(accent, 0.18 + act * 0.32)
-          : rgba(dim, (dark ? 0.22 : 0.42) * e.weight);
-        ctx.lineWidth = act > 0.08 ? 0.9 + act * 0.9 : 0.65;
+          ? rgba(accent, 0.08 + act * 0.22)
+          : rgba(dim, 0.18 * e.weight);
+        ctx.lineWidth = act > 0.08 ? 0.75 + act * 0.8 : 0.55;
         ctx.stroke();
       });
 
-      // ── Pulses travelling along edges ─────────────────────────────
-      if (frame % (reducedMotion ? 42 : 14) === 0) spawnPulse();
+      if (frame % (reducedMotion ? 42 : 16) === 0) spawnPulse();
 
       for (let i = pulses.length - 1; i >= 0; i--) {
         const p = pulses[i];
@@ -630,35 +277,16 @@ export default function NeuralNetCanvas({ sceneRef }) {
         const px = a.x + (b.x - a.x) * p.t;
         const py = a.y + (b.y - a.y) * p.t;
         const glow = Math.sin(p.t * Math.PI);
-        // Soft trailing tail — line from the source node to the current
-        // pulse position, fading out behind it. Gives motion direction.
-        const tailLen = 0.22;
-        const tailStartT = Math.max(0, p.t - tailLen);
-        const tailX = a.x + (b.x - a.x) * tailStartT;
-        const tailY = a.y + (b.y - a.y) * tailStartT;
-        const tailGrad = ctx.createLinearGradient(tailX, tailY, px, py);
-        tailGrad.addColorStop(0, rgba(accent, 0));
-        tailGrad.addColorStop(1, rgba(accent, p.alpha * 0.6));
         ctx.beginPath();
-        ctx.moveTo(tailX, tailY);
-        ctx.lineTo(px, py);
-        ctx.strokeStyle = tailGrad;
-        ctx.lineWidth = 1.4 + glow * 0.8;
-        ctx.lineCap = "round";
-        ctx.stroke();
-        // Inner bright dot
-        ctx.beginPath();
-        ctx.arc(px, py, 2.4 + glow * 1.3, 0, Math.PI * 2);
-        ctx.fillStyle = rgba(accent, Math.min(1, p.alpha + 0.18));
+        ctx.arc(px, py, 2.1 + glow * 1.2, 0, Math.PI * 2);
+        ctx.fillStyle = rgba(accent, p.alpha);
         ctx.fill();
-        // Outer halo — slightly bigger and warmer
         ctx.beginPath();
-        ctx.arc(px, py, 11 + glow * 6, 0, Math.PI * 2);
-        ctx.fillStyle = rgba(accent, 0.075 * glow);
+        ctx.arc(px, py, 9 + glow * 5, 0, Math.PI * 2);
+        ctx.fillStyle = rgba(accent, 0.055 * glow);
         ctx.fill();
       }
 
-      // ── Nodes ──────────────────────────────────────────────────────
       nodes.forEach((n) => {
         const mix = Math.min(1, n.activation);
         if (mix > 0.08) {
@@ -672,22 +300,21 @@ export default function NeuralNetCanvas({ sceneRef }) {
         const cr = Math.round(cool[0] + (accent[0] - cool[0]) * mix);
         const cg = Math.round(cool[1] + (accent[1] - cool[1]) * mix);
         const cb = Math.round(cool[2] + (accent[2] - cool[2]) * mix);
-        ctx.fillStyle = rgba([cr, cg, cb], dark ? 0.78 : 0.88);
+        ctx.fillStyle = rgba([cr, cg, cb], 0.64);
         ctx.fill();
-        ctx.strokeStyle = rgba(accent, 0.32 + mix * 0.32);
-        ctx.lineWidth = 0.9;
+        ctx.strokeStyle = rgba(accent, 0.16 + mix * 0.25);
+        ctx.lineWidth = 0.75;
         ctx.stroke();
       });
 
-      ctx.restore();
       raf.current = requestAnimationFrame(draw);
     };
     draw();
 
+    /* Pause when tab hidden */
     const onVisibility = () => {
       running = !document.hidden;
       if (running) {
-        lastTime = performance.now();
         raf.current = requestAnimationFrame(draw);
       } else if (raf.current) {
         cancelAnimationFrame(raf.current);
@@ -695,15 +322,35 @@ export default function NeuralNetCanvas({ sceneRef }) {
     };
     document.addEventListener("visibilitychange", onVisibility);
 
+    const onMove = (e) => {
+      const rect = canvas.getBoundingClientRect();
+      mouse.current = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+    };
+    const onLeave = () => { mouse.current = { x: -9999, y: -9999 }; };
+    const onTouchMove = (e) => {
+      const touch = e.touches[0];
+      if (!touch) return;
+      const rect = canvas.getBoundingClientRect();
+      mouse.current = { x: touch.clientX - rect.left, y: touch.clientY - rect.top };
+    };
+    canvas.addEventListener("mousemove", onMove);
+    canvas.addEventListener("mouseleave", onLeave);
+    canvas.addEventListener("touchmove", onTouchMove, { passive: true });
+    canvas.addEventListener("touchend", onLeave);
+    canvas.addEventListener("touchcancel", onLeave);
+
     return () => {
       running = false;
       cancelAnimationFrame(raf.current);
       window.removeEventListener("resize", resize);
-      darkMq.removeEventListener("change", onDarkMq);
-      themeObs.disconnect();
+      canvas.removeEventListener("mousemove", onMove);
+      canvas.removeEventListener("mouseleave", onLeave);
+      canvas.removeEventListener("touchmove", onTouchMove);
+      canvas.removeEventListener("touchend", onLeave);
+      canvas.removeEventListener("touchcancel", onLeave);
       document.removeEventListener("visibilitychange", onVisibility);
     };
-  }, [sceneRef]);
+  }, []);
 
   return (
     <canvas

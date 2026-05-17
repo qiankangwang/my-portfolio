@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback, memo } from "react";
 import D from "./data";
-import ParticleScene from "./ParticleScene";
+import NeuralNetCanvas from "./NeuralNetCanvas";
 import "./Portfolio.css";
 
 /* ── Ambient background orbs ── */
@@ -182,42 +182,15 @@ function useTrace(sceneRef, typeSpeed = 48, eraseSpeed = 24, holdMs = 1500) {
   return text;
 }
 
-// Typewriter — character-by-character reveal at 28ms / char.
-// Cursor blinks while typing and disappears once fully revealed.
-function useTypewriter(text, speed = 28) {
-  const [out, setOut] = useState("");
-  const [done, setDone] = useState(false);
-  useEffect(() => {
-    setOut("");
-    setDone(false);
-    let i = 0;
-    const id = setInterval(() => {
-      i++;
-      setOut(text.slice(0, i));
-      if (i >= text.length) {
-        clearInterval(id);
-        setDone(true);
-      }
-    }, speed);
-    return () => clearInterval(id);
-  }, [text, speed]);
-  return { text: out, done };
-}
-
 /* ── Atmosphere ──
-   Full-bleed Three.js particle scene that morphs between formations
-   as the user scrolls — one continuous animation, not six swapped
-   ones. Receives the continuous sceneRef so the morph is smooth
-   between sections, not stepped on scene boundaries. */
-const Atmosphere = memo(function Atmosphere({ sceneRef, scrollVelRef, lastInteractRef, fpsRef }) {
+   2D layered neural-net canvas as the page's living atmosphere.
+   Replaces the earlier morphing 3D particle field — same z-index
+   role, same multiply blend with the cream paper, but now an
+   explicit network diagram with signal pulses and bio motifs. */
+const Atmosphere = memo(function Atmosphere({ sceneRef, fpsRef }) {
   return (
     <div className="atmos" aria-hidden="true">
-      <ParticleScene
-        sceneRef={sceneRef}
-        scrollVelRef={scrollVelRef}
-        lastInteractRef={lastInteractRef}
-        fpsRef={fpsRef}
-      />
+      <NeuralNetCanvas sceneRef={sceneRef} fpsRef={fpsRef} />
       <div className="atmos-vignette" />
     </div>
   );
@@ -685,14 +658,6 @@ const WARM_HUE = "#B45309";
 // Actual particle-formation parameters (matches ParticleScene's
 // buildFormations). Reads as a real technical spec line in the HUD,
 // not invented marketing text.
-const SCENE_SHAPES = [
-  "CLOUD · r=80-170",
-  "HELIX · r=75 turns=6",
-  "DENSE_NET · 6 LAYERS",
-  "SPHERE · r=140 fib",
-  "MATRIX · 12×10×N",
-  "RINGS · 7 r=70-154",
-];
 const SystemHUD = memo(function SystemHUD({ sceneRef, fpsRef }) {
   const [scene, setScene] = useState(0);
   const [tick, setTick] = useState(0);
@@ -781,10 +746,6 @@ const SystemHUD = memo(function SystemHUD({ sceneRef, fpsRef }) {
       <div className="sys-hud-row">
         <span className="sys-hud-k">QUAD</span>
         <span className="sys-hud-v">{SCENE_QUADS[scene]}</span>
-      </div>
-      <div className="sys-hud-row">
-        <span className="sys-hud-k">SHAPE</span>
-        <span className="sys-hud-v">{SCENE_SHAPES[scene]}</span>
       </div>
       <div className="sys-hud-row">
         <span className="sys-hud-k">ATTN</span>
@@ -1399,7 +1360,7 @@ export default function Portfolio() {
          page's living atmosphere. Identity badge, nav rail, and theme
          controls float in the viewport corners. Content scrolls in a
          single centred column on top — no split panes anywhere. */}
-      <Atmosphere sceneRef={sceneRef} scrollVelRef={scrollVelRef} lastInteractRef={lastInteractRef} fpsRef={fpsRef} />
+      <Atmosphere sceneRef={sceneRef} fpsRef={fpsRef} />
       <div className="edge-glow" aria-hidden="true" />
       {/* Screen-reader-only live region — announces the active section
          when it changes so AT users hear what the canvas is showing

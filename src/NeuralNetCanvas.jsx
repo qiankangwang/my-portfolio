@@ -47,8 +47,15 @@ export default function NeuralNetCanvas({ sceneRef }) {
     const ctx = canvas.getContext("2d");
     let w = 0;
     let h = 0;
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    // Low-spec detection — coarse pointer (mobile), small CPU, or
+    // reduced-motion preference. Used below to dial down DPR, particle
+    // counts, halos, and other per-frame work so weaker machines stay
+    // smooth instead of dropping frames.
+    const coarse = window.matchMedia("(pointer: coarse)").matches;
+    const fewCores = (navigator.hardwareConcurrency || 8) <= 4;
+    const lowPerf = reducedMotion || coarse || fewCores;
+    const dpr = Math.min(window.devicePixelRatio || 1, lowPerf ? 1 : 2);
     // Per-network state — Hero uses the familiar feed-forward layout,
     // Research uses a tight hourglass with the bottleneck nodes clustered
     // at the visual centre. Each network has its own nodes/edges/pulses.
@@ -215,7 +222,7 @@ export default function NeuralNetCanvas({ sceneRef }) {
       // Ambient particle field — slow drifting dots across the whole
       // world. Faint, just adds depth so the bg never feels empty.
       ambient = [];
-      const ambientCount = reducedMotion ? 0 : 70;
+      const ambientCount = reducedMotion ? 0 : (lowPerf ? 26 : 70);
       for (let i = 0; i < ambientCount; i++) {
         ambient.push({
           x: -netW * 0.6 + Math.random() * netW * 1.2,
@@ -406,22 +413,29 @@ export default function NeuralNetCanvas({ sceneRef }) {
         pulseEvery: 22, edgeBoost: 1.0, lineBoost: 1.0,
         wavePeriod: 180, wavePeak: 0.38,
         haloAlpha: 0.045, haloRBoost: 0,
+        bottleneckBoost: 1.0,
       };
       const RES_INTENSITY = {
-        pulseEvery: 12, edgeBoost: 1.22, lineBoost: 1.08,
-        wavePeriod: 135, wavePeak: 0.56,
-        haloAlpha: 0.063, haloRBoost: 0.6,
+        pulseEvery: 16, edgeBoost: 1.18, lineBoost: 1.06,
+        wavePeriod: 200, wavePeak: 0.5,
+        haloAlpha: 0.06, haloRBoost: 0.5,
+        // Hourglass-specific: when the wave hits a bottleneck layer (<=2
+        // nodes), nodes pulse harder so the compression beat is felt.
+        bottleneckBoost: 1.55,
       };
 
-      // Soft radial wash drawn in SCREEN coords (no transform yet).
-      const grad = ctx.createRadialGradient(
-        w * 0.5, h * 0.45, 0,
-        w * 0.5, h * 0.45, Math.max(w, h) * 0.55
-      );
-      grad.addColorStop(0, rgba(accent, dark ? 0.055 : 0.045));
-      grad.addColorStop(1, rgba(accent, 0));
-      ctx.fillStyle = grad;
-      ctx.fillRect(0, 0, w, h);
+      // Soft radial wash drawn in SCREEN coords. Skipped on low-spec
+      // machines — it's a full-screen gradient fill every frame.
+      if (!lowPerf) {
+        const grad = ctx.createRadialGradient(
+          w * 0.5, h * 0.45, 0,
+          w * 0.5, h * 0.45, Math.max(w, h) * 0.55
+        );
+        grad.addColorStop(0, rgba(accent, dark ? 0.055 : 0.045));
+        grad.addColorStop(1, rgba(accent, 0));
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, w, h);
+      }
 
       // ── Camera transform ────────────────────────────────────────────
       // World point (cam.x, cam.y) maps to dead-centre of the canvas.
@@ -633,15 +647,17 @@ export default function NeuralNetCanvas({ sceneRef }) {
           // Each glyph: soft accent halo + the glyph itself in italic
           // serif. The halo gives the cluster "live ink" energy.
           glyphPos.forEach(({ g, x, y, pulse }) => {
-            // Halo
-            const haloR = g.size * 0.7;
-            const haloG = ctx.createRadialGradient(x, y, 0, x, y, haloR);
-            haloG.addColorStop(0, rgba(accent, 0.18 * vM));
-            haloG.addColorStop(1, rgba(accent, 0));
-            ctx.fillStyle = haloG;
-            ctx.beginPath();
-            ctx.arc(x, y, haloR, 0, Math.PI * 2);
-            ctx.fill();
+            // Halo — skip on low-spec (one gradient per glyph per frame).
+            if (!lowPerf) {
+              const haloR = g.size * 0.7;
+              const haloG = ctx.createRadialGradient(x, y, 0, x, y, haloR);
+              haloG.addColorStop(0, rgba(accent, 0.18 * vM));
+              haloG.addColorStop(1, rgba(accent, 0));
+              ctx.fillStyle = haloG;
+              ctx.beginPath();
+              ctx.arc(x, y, haloR, 0, Math.PI * 2);
+              ctx.fill();
+            }
             // Glyph
             ctx.save();
             ctx.translate(x, y);
@@ -746,13 +762,15 @@ export default function NeuralNetCanvas({ sceneRef }) {
           ctx.textAlign = "center";
           ctx.textBaseline = "middle";
           pos.forEach(({ it, x, y }) => {
-            const haloG = ctx.createRadialGradient(x, y, 0, x, y, 26);
-            haloG.addColorStop(0, rgba(accent, 0.18 * vM));
-            haloG.addColorStop(1, rgba(accent, 0));
-            ctx.fillStyle = haloG;
-            ctx.beginPath();
-            ctx.arc(x, y, 26, 0, Math.PI * 2);
-            ctx.fill();
+            if (!lowPerf) {
+              const haloG = ctx.createRadialGradient(x, y, 0, x, y, 26);
+              haloG.addColorStop(0, rgba(accent, 0.18 * vM));
+              haloG.addColorStop(1, rgba(accent, 0));
+              ctx.fillStyle = haloG;
+              ctx.beginPath();
+              ctx.arc(x, y, 26, 0, Math.PI * 2);
+              ctx.fill();
+            }
             ctx.fillStyle = rgba(accent, 0.76 * vM);
             ctx.fillText(it.text, x, y);
           });
@@ -779,14 +797,18 @@ export default function NeuralNetCanvas({ sceneRef }) {
         const waveT = (frame % params.wavePeriod) / params.wavePeriod;
         const waveLayer = waveT * (ls.length + 0.5);
 
-        // Node drift + forward-pass wave activation injection
+        // Node drift + forward-pass wave activation injection. Bottleneck
+        // layers (<=2 nodes) get an extra activation boost so the latent
+        // compression in the hourglass reads as a clear visual beat.
         net.nodes.forEach((n) => {
           n.x = n.baseX + Math.sin(t + n.phase) * 2.2;
           n.y = n.baseY + Math.cos(t * 0.7 + n.phase * 1.3) * 2.2;
           n.activation *= 0.955;
           const layerDist = Math.abs(waveLayer - n.layer);
           if (layerDist < 0.45) {
-            n.activation = Math.max(n.activation, params.wavePeak * (1 - layerDist / 0.45));
+            const isBottleneck = ls[n.layer] <= 2;
+            const peak = params.wavePeak * (isBottleneck ? params.bottleneckBoost : 1);
+            n.activation = Math.max(n.activation, peak * (1 - layerDist / 0.45));
           }
         });
 
@@ -839,17 +861,21 @@ export default function NeuralNetCanvas({ sceneRef }) {
           ctx.arc(px, py, 2.4 + glow * 1.3, 0, Math.PI * 2);
           ctx.fillStyle = rgba(accent, Math.min(1, p.alpha + 0.18) * alphaScale);
           ctx.fill();
-          const haloR = 9 + glow * (4.5 + params.haloRBoost);
-          ctx.beginPath();
-          ctx.arc(px, py, haloR, 0, Math.PI * 2);
-          ctx.fillStyle = rgba(accent, params.haloAlpha * glow * alphaScale);
-          ctx.fill();
+          // Outer halo skipped on low-spec — it's the most expensive
+          // per-pulse fill, and the inner dot already conveys the pulse.
+          if (!lowPerf) {
+            const haloR = 9 + glow * (4.5 + params.haloRBoost);
+            ctx.beginPath();
+            ctx.arc(px, py, haloR, 0, Math.PI * 2);
+            ctx.fillStyle = rgba(accent, params.haloAlpha * glow * alphaScale);
+            ctx.fill();
+          }
         }
 
         // Nodes
         net.nodes.forEach((n) => {
           const mix = Math.min(1, n.activation);
-          if (mix > 0.08) {
+          if (!lowPerf && mix > 0.08) {
             ctx.beginPath();
             ctx.arc(n.x, n.y, n.r + 8 * mix, 0, Math.PI * 2);
             ctx.fillStyle = rgba(accent, mix * 0.08 * alphaScale);

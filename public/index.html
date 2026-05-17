@@ -75,12 +75,72 @@
 </head>
 <body>
     <noscript>
-        <h1>Qiankang (Kant) Wang</h1>
-        <p>
-            Data Science student at the University of California, Berkeley.
-            Interests include machine learning, AI for biology, and scientific computing.
-            Please enable JavaScript to view the full site.
-        </p>
+        <style>
+            .nojs-fallback {
+                max-width: 720px;
+                margin: 3rem auto;
+                padding: 0 1.25rem;
+                font-family: Georgia, 'Times New Roman', serif;
+                color: #1B1F26;
+                line-height: 1.6;
+            }
+            .nojs-fallback h1 { font-size: 2.2rem; margin-bottom: .25rem; }
+            .nojs-fallback h2 {
+                font-family: ui-monospace, Menlo, monospace;
+                font-size: .8rem;
+                letter-spacing: .18em;
+                text-transform: uppercase;
+                color: #1E3A8A;
+                margin-top: 2rem;
+                margin-bottom: .65rem;
+            }
+            .nojs-fallback p { margin: .4rem 0; }
+            .nojs-fallback ul { margin: .4rem 0 0 1.25rem; padding: 0; }
+            .nojs-fallback li { margin-bottom: .55rem; }
+            .nojs-fallback a { color: #1E3A8A; }
+            .nojs-fallback small { color: #6B7280; }
+        </style>
+        <div class="nojs-fallback">
+            <h1>Qiankang (Kant) Wang</h1>
+            <p><em>Machine learning for biology — representation learning, generative modeling, and scientific computing.</em></p>
+            <p>
+                <a href="mailto:qkwang@berkeley.edu">qkwang@berkeley.edu</a> ·
+                <a href="https://github.com/qiankangwang">GitHub</a> ·
+                <a href="https://linkedin.com/in/qiankang-wang-737b97279">LinkedIn</a>
+            </p>
+
+            <h2>Education</h2>
+            <p>B.A. Data Science, University of California, Berkeley — Class of 2027.</p>
+
+            <h2>Research</h2>
+            <ul>
+                <li><strong>Berkeley AI Research (BAIR)</strong> — Research Assistant, Mar 2026 – Present. Self-supervised representation learning on scientific data; SimCLR-style contrastive frameworks.</li>
+                <li><strong>AMBER pGM Collaboration</strong> — Research Assistant, Nov 2025 – Mar 2026. Acceleration of the AMBER / PMEMD codebase: integration, regression testing, numerical-consistency analysis.</li>
+                <li><strong>Computational Biophysics Lab, UC Irvine</strong> — Research Assistant, Jul 2024 – Nov 2025. GPU-accelerated solvers and Slurm workflow infrastructure for PBSA-style biomolecular simulations.</li>
+            </ul>
+
+            <h2>Publication</h2>
+            <p>
+                Wu, Y., <strong>Wang, Q.</strong>, et al. (2026).
+                <em>AmberTorchPB: A Unified Framework for Poisson–Boltzmann-Based Reaction Field Energy Calculation via Tensor Computation.</em>
+                <a href="https://pubs.acs.org/doi/pdf/10.1021/acs.jctc.6c00085">Journal of Chemical Theory and Computation</a>.
+            </p>
+
+            <h2>Selected projects</h2>
+            <ul>
+                <li><a href="https://github.com/qiankangwang/simclr-cifar10-pytorch">simclr-cifar10-pytorch</a> — SimCLR self-supervised learning on CIFAR-10 with ResNet-18 + k-NN eval.</li>
+                <li><a href="https://github.com/qiankangwang/regal">regal</a> — AI legal-ops platform with real-time deposition transcription.</li>
+                <li><a href="https://github.com/qiankangwang/Decision-Tree">Decision-Tree</a> — from-scratch C++ decision-tree classifier (Gini impurity, Titanic dataset).</li>
+            </ul>
+
+            <h2>Skills</h2>
+            <p><strong>ML:</strong> PyTorch, LibTorch, contrastive / SSL, diffusion models, transformers.</p>
+            <p><strong>Scientific computing:</strong> GPU optimization, CG / BiCG solvers, Poisson–Boltzmann / PBSA, molecular simulation.</p>
+            <p><strong>Languages:</strong> Python, C++, Bash, SQL.</p>
+            <p><strong>Tools:</strong> Linux, Git, Slurm, CMake, LaTeX.</p>
+
+            <p><small>This is a text-only fallback. The interactive site requires JavaScript.</small></p>
+        </div>
     </noscript>
     <div id="root"></div>
 </body>

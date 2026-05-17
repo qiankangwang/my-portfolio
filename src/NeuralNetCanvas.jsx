@@ -159,7 +159,10 @@ export default function NeuralNetCanvas({ sceneRef }) {
       // The network's hidden layer at (0, 0) serves as Research anchor.
       sceneMotifs = [
         // DNA double helix — vertical, About anchor (upper-left).
-        { type: "dna", x: -480, y: -160, len: 16, amp: 38, phase: 0 },
+        // amp bumped from 38 → 56 so the helix reads with more 3D
+        // separation and the strands genuinely cross in front of each
+        // other rather than just wiggling close together.
+        { type: "dna", x: -480, y: -160, len: 17, amp: 56, phase: 0 },
 
         // Equation glyph cluster — Publication anchor (upper-right).
         {
@@ -335,6 +338,15 @@ export default function NeuralNetCanvas({ sceneRef }) {
         arcDY = ny * arcMag * arcCurve * arcSign;
       }
 
+      // Mobile/portrait compensation: world is ~1400 wide so a narrow
+      // viewport sees the motifs cramped against the edges. Scale the
+      // entire zoom path down when aspect drops below 1.0 so the
+      // composition fits.
+      const aspect = w / Math.max(1, h);
+      const portraitScale = aspect < 1.0
+        ? Math.max(0.55, 0.55 + aspect * 0.35)
+        : 1.0;
+
       // 3) Zoom dolly — briefly pull back at the midpoint of every
       //    transition, like a director using an establishing shot
       //    between two close-ups. Creates depth motion that flat panning
@@ -344,7 +356,7 @@ export default function NeuralNetCanvas({ sceneRef }) {
 
       const targetX = linX + arcDX;
       const targetY = linY + arcDY;
-      const targetZoom = Math.max(0.7, linZoom - dollyOffset);
+      const targetZoom = Math.max(0.5, (linZoom - dollyOffset) * portraitScale);
       const targetRoll = linRoll;
 
       // 4) Camera follow — critically-damped lerp so the move feels like a
@@ -483,155 +495,277 @@ export default function NeuralNetCanvas({ sceneRef }) {
         else if (m.type === "labels") vM = visLabels;
         if (vM < 0.02) return; // fully off — skip the work
         if (m.type === "dna") {
-          // Two intertwined sine strands with horizontal rungs every step.
-          // Phase advances slowly so the helix appears to spin around its
-          // vertical axis (in 2D — the crossings shift but the strands
-          // don't move sideways much).
-          const step = 18;
+          // Double helix with explicit 3D depth ordering. At each
+          // segment we know which strand is "in front" (higher cos
+          // value = closer to camera). We draw the BACK strand
+          // smaller / dimmer first, then the rung, then the FRONT
+          // strand bigger / brighter on top. The result reads as
+          // actual depth in 2D, not just two sine curves.
+          const step = 20;
           const cx = m.x;
+          // Pre-compute strand positions for backbone connections
+          const strandA = [];
+          const strandB = [];
           for (let i = 0; i < m.len; i++) {
             const py = m.y - (m.len * step) / 2 + i * step;
             const theta = (i / m.len) * Math.PI * 4 + frame * 0.025 + m.phase;
-            const xA = cx + Math.cos(theta) * m.amp;
-            const xB = cx + Math.cos(theta + Math.PI) * m.amp;
-            // Rung between the two strands (depth-cue: dim when strands
-            // are close together / behind each other)
-            const sep = Math.abs(xA - xB) / (m.amp * 2);
+            const zA = Math.cos(theta);
+            strandA.push({ x: cx + zA * m.amp, y: py, z: zA });
+            strandB.push({ x: cx - zA * m.amp, y: py, z: -zA });
+          }
+          // Backbone lines first (under everything)
+          for (let i = 1; i < m.len; i++) {
+            const a0 = strandA[i - 1], a1 = strandA[i];
+            const b0 = strandB[i - 1], b1 = strandB[i];
+            // Front backbone gets full alpha, back is half
+            const aDepth = (a0.z + a1.z) / 2; // -1..1
+            const bDepth = (b0.z + b1.z) / 2;
+            const aFront = aDepth > bDepth;
             ctx.beginPath();
-            ctx.moveTo(xA, py);
-            ctx.lineTo(xB, py);
-            ctx.strokeStyle = rgba(warm, (dark ? 0.32 : 0.24) * (0.3 + sep * 0.7) * vM);
+            ctx.moveTo(b0.x, b0.y);
+            ctx.lineTo(b1.x, b1.y);
+            ctx.strokeStyle = rgba(warm, (aFront ? 0.22 : 0.55) * vM);
+            ctx.lineWidth = aFront ? 1.0 : 1.6;
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(a0.x, a0.y);
+            ctx.lineTo(a1.x, a1.y);
+            ctx.strokeStyle = rgba(accent, (aFront ? 0.55 : 0.22) * vM);
+            ctx.lineWidth = aFront ? 1.6 : 1.0;
+            ctx.stroke();
+          }
+          // Rungs + strand dots, depth-ordered per segment
+          for (let i = 0; i < m.len; i++) {
+            const A = strandA[i];
+            const B = strandB[i];
+            const aFront = A.z > B.z;
+            const backStrand  = aFront ? B : A;
+            const frontStrand = aFront ? A : B;
+            const backColor  = aFront ? warm : accent;
+            const frontColor = aFront ? accent : warm;
+            const backDepth01  = (backStrand.z + 1) / 2;   // 0..1
+            const frontDepth01 = (frontStrand.z + 1) / 2;
+            // Rung between strands — alpha scales with how spread they
+            // are (so close-crossing rungs look thin like edge-on)
+            const sep = Math.abs(A.x - B.x) / (m.amp * 2);
+            ctx.beginPath();
+            ctx.moveTo(backStrand.x, backStrand.y);
+            ctx.lineTo(frontStrand.x, frontStrand.y);
+            ctx.strokeStyle = rgba(dim, (0.16 + sep * 0.28) * vM);
             ctx.lineWidth = 1.1;
             ctx.stroke();
-            // Strand dots
+            // Back strand dot — small + dim
             ctx.beginPath();
-            ctx.arc(xA, py, 2.4, 0, Math.PI * 2);
-            ctx.fillStyle = rgba(accent, (dark ? 0.85 : 0.7) * (0.4 + sep * 0.6) * vM);
+            ctx.arc(backStrand.x, backStrand.y, 1.6 + backDepth01 * 0.6, 0, Math.PI * 2);
+            ctx.fillStyle = rgba(backColor, (0.35 + backDepth01 * 0.25) * vM);
+            ctx.fill();
+            // Front strand dot — bigger + glow halo
+            ctx.beginPath();
+            ctx.arc(frontStrand.x, frontStrand.y, 8 + frontDepth01 * 3, 0, Math.PI * 2);
+            ctx.fillStyle = rgba(frontColor, 0.08 * frontDepth01 * vM);
             ctx.fill();
             ctx.beginPath();
-            ctx.arc(xB, py, 2.4, 0, Math.PI * 2);
-            ctx.fillStyle = rgba(warm, (dark ? 0.75 : 0.6) * (0.4 + sep * 0.6) * vM);
+            ctx.arc(frontStrand.x, frontStrand.y, 3.2 + frontDepth01 * 0.6, 0, Math.PI * 2);
+            ctx.fillStyle = rgba(frontColor, (0.8 + frontDepth01 * 0.15) * vM);
             ctx.fill();
-            // Connecting backbone lines down the strand
-            if (i > 0) {
-              const prevTheta = ((i - 1) / m.len) * Math.PI * 4 + frame * 0.025 + m.phase;
-              const prevXA = cx + Math.cos(prevTheta) * m.amp;
-              const prevXB = cx + Math.cos(prevTheta + Math.PI) * m.amp;
-              ctx.beginPath();
-              ctx.moveTo(prevXA, py - step);
-              ctx.lineTo(xA, py);
-              ctx.strokeStyle = rgba(accent, (dark ? 0.55 : 0.42) * vM);
-              ctx.lineWidth = 1.4;
-              ctx.stroke();
-              ctx.beginPath();
-              ctx.moveTo(prevXB, py - step);
-              ctx.lineTo(xB, py);
-              ctx.strokeStyle = rgba(warm, (dark ? 0.5 : 0.38) * vM);
-              ctx.lineWidth = 1.4;
-              ctx.stroke();
-            }
           }
         } else if (m.type === "equations") {
-          // Math glyphs floating in a loose cluster. Each glyph has its own
-          // drift + a slow scale pulse so the cluster feels alive.
-          m.glyphs.forEach((g) => {
-            const dx = Math.sin(frame * 0.008 + g.phase) * 6;
-            const dy = Math.cos(frame * 0.006 + g.phase * 1.3) * 5;
-            const pulse = 1 + Math.sin(frame * 0.018 + g.phase) * 0.07;
-            const px = m.x + g.ox + dx;
-            const py = m.y + g.oy + dy;
+          // Academic angle-bracket frame around the cluster — calligraphy
+          // detail that says "this is a quoted equation" rather than
+          // just floating glyphs.
+          {
+            const bw = 130, bh = 95; // bracket reach in world coords
+            const tip = 10;
+            ctx.strokeStyle = rgba(accent, 0.35 * vM);
+            ctx.lineWidth = 1.6;
+            ctx.lineCap = "round";
+            // Left bracket  ⟨
+            ctx.beginPath();
+            ctx.moveTo(m.x - bw + tip, m.y - bh);
+            ctx.lineTo(m.x - bw,      m.y);
+            ctx.lineTo(m.x - bw + tip, m.y + bh);
+            ctx.stroke();
+            // Right bracket ⟩
+            ctx.beginPath();
+            ctx.moveTo(m.x + bw - tip, m.y - bh);
+            ctx.lineTo(m.x + bw,      m.y);
+            ctx.lineTo(m.x + bw - tip, m.y + bh);
+            ctx.stroke();
+          }
+          // Compute each glyph's animated position once so we can use
+          // it both for the linking lines and for the glyph render.
+          const glyphPos = m.glyphs.map((g) => ({
+            g,
+            x: m.x + g.ox + Math.sin(frame * 0.008 + g.phase) * 6,
+            y: m.y + g.oy + Math.cos(frame * 0.006 + g.phase * 1.3) * 5,
+            pulse: 1 + Math.sin(frame * 0.018 + g.phase) * 0.07,
+          }));
+          // Subtle linking lines first (drawn under the glyphs)
+          for (let i = 0; i < glyphPos.length - 1; i++) {
+            const a = glyphPos[i], b = glyphPos[i + 1];
+            ctx.beginPath();
+            ctx.moveTo(a.x, a.y);
+            ctx.lineTo(b.x, b.y);
+            ctx.strokeStyle = rgba(accent, 0.14 * vM);
+            ctx.lineWidth = 0.6;
+            ctx.stroke();
+          }
+          // Each glyph: soft accent halo + the glyph itself in italic
+          // serif. The halo gives the cluster "live ink" energy.
+          glyphPos.forEach(({ g, x, y, pulse }) => {
+            // Halo
+            const haloR = g.size * 0.7;
+            const haloG = ctx.createRadialGradient(x, y, 0, x, y, haloR);
+            haloG.addColorStop(0, rgba(accent, 0.18 * vM));
+            haloG.addColorStop(1, rgba(accent, 0));
+            ctx.fillStyle = haloG;
+            ctx.beginPath();
+            ctx.arc(x, y, haloR, 0, Math.PI * 2);
+            ctx.fill();
+            // Glyph
             ctx.save();
-            ctx.translate(px, py);
+            ctx.translate(x, y);
             ctx.scale(pulse, pulse);
-            ctx.fillStyle = rgba(accent, (dark ? 0.75 : 0.62) * vM);
+            ctx.fillStyle = rgba(accent, 0.78 * vM);
             ctx.font = `italic ${g.size}px Georgia, 'Times New Roman', serif`;
             ctx.textAlign = "center";
             ctx.textBaseline = "middle";
             ctx.fillText(g.ch, 0, 0);
             ctx.restore();
           });
-          // Subtle linking lines between adjacent glyphs to suggest a
-          // single derivation / system
-          for (let i = 0; i < m.glyphs.length - 1; i++) {
-            const a = m.glyphs[i];
-            const b = m.glyphs[i + 1];
-            const ax = m.x + a.ox + Math.sin(frame * 0.008 + a.phase) * 6;
-            const ay = m.y + a.oy + Math.cos(frame * 0.006 + a.phase * 1.3) * 5;
-            const bx = m.x + b.ox + Math.sin(frame * 0.008 + b.phase) * 6;
-            const by = m.y + b.oy + Math.cos(frame * 0.006 + b.phase * 1.3) * 5;
-            ctx.beginPath();
-            ctx.moveTo(ax, ay);
-            ctx.lineTo(bx, by);
-            ctx.strokeStyle = rgba(accent, (dark ? 0.16 : 0.12) * vM);
-            ctx.lineWidth = 0.6;
-            ctx.stroke();
-          }
         } else if (m.type === "grid") {
-          // GitHub-style contribution grid. Each cell has a base intensity
-          // from a seeded function + an extra "wave" that sweeps diagonally
-          // across to add liveness.
+          // GitHub-style contribution grid with two overlaid diagonal
+          // waves (different angles + phases) so the surface reads as
+          // a richer interference pattern, not a single repeating
+          // marquee. Bright cells get extruded with a fake light-from-
+          // top-left shadow so they look raised off the grid.
           const totalW = m.cols * (m.cell + m.gap) - m.gap;
           const totalH = m.rows * (m.cell + m.gap) - m.gap;
           const x0 = m.x - totalW / 2;
           const y0 = m.y - totalH / 2;
           for (let c = 0; c < m.cols; c++) {
             for (let r = 0; r < m.rows; r++) {
-              // Deterministic baseline 0..1 from cell coords
               const base = ((c * 31 + r * 17) % 7) / 6;
-              // Diagonal wave that sweeps over time
-              const waveT = (c * 0.35 + r * 0.45 + frame * 0.018) % 6.28;
-              const wave = Math.max(0, Math.sin(waveT)) * 0.6;
-              const intensity = Math.min(1, base * 0.6 + wave);
+              // Two waves: one sweeps SE, one sweeps NE, different
+              // speeds, so cells light up in moving interference fronts.
+              const w1 = Math.sin(c * 0.35 + r * 0.45 + frame * 0.020);
+              const w2 = Math.sin(c * 0.30 - r * 0.42 + frame * 0.013 + 1.7);
+              const wave = Math.max(0, w1 * 0.45 + w2 * 0.35);
+              const intensity = Math.min(1, base * 0.5 + wave);
               const x = x0 + c * (m.cell + m.gap);
               const y = y0 + r * (m.cell + m.gap);
-              // Cell — fade between cool (dim) and accent (bright)
+              // Drop shadow under bright cells (extrude illusion).
+              // Light from top-left → shadow falls bottom-right.
+              if (intensity > 0.55) {
+                const lift = (intensity - 0.55) * 2.4; // 0..1
+                ctx.fillStyle = rgba([20, 25, 35], 0.18 * lift * vM);
+                ctx.fillRect(x + 1.5 * lift, y + 1.5 * lift, m.cell, m.cell);
+              }
+              // Main cell
               const ar = Math.round(cool[0] + (accent[0] - cool[0]) * intensity);
               const ag = Math.round(cool[1] + (accent[1] - cool[1]) * intensity);
               const ab = Math.round(cool[2] + (accent[2] - cool[2]) * intensity);
-              ctx.fillStyle = rgba([ar, ag, ab], ((dark ? 0.45 + intensity * 0.45 : 0.32 + intensity * 0.5)) * vM);
+              ctx.fillStyle = rgba([ar, ag, ab], (0.32 + intensity * 0.55) * vM);
               ctx.fillRect(x, y, m.cell, m.cell);
+              // Bright cells get a top-left highlight + soft glow halo
               if (intensity > 0.7) {
-                // Bright cell gets a soft halo
-                ctx.fillStyle = rgba(accent, (intensity - 0.7) * 0.18 * vM);
+                ctx.fillStyle = rgba([255, 255, 255], (intensity - 0.7) * 0.6 * vM);
+                ctx.fillRect(x, y, m.cell, 1.2);
+                ctx.fillRect(x, y, 1.2, m.cell);
+                ctx.fillStyle = rgba(accent, (intensity - 0.7) * 0.22 * vM);
                 ctx.fillRect(x - 2, y - 2, m.cell + 4, m.cell + 4);
               }
             }
           }
         } else if (m.type === "labels") {
-          // Floating mono-style skill text orbiting a central anchor at
-          // varying radii + speeds. Each label drops a soft trailing dot.
-          m.items.forEach((it) => {
+          // Compute every label's current position first, so we can
+          // draw orbit rings, connecting lines (knowledge graph),
+          // halos and labels in the right z-order.
+          const pos = m.items.map((it) => {
             const theta = frame * 0.006 * it.speed + it.phase;
-            const px = m.x + Math.cos(theta) * it.r;
-            const py = m.y + Math.sin(theta) * it.r * 0.6; // squashed orbit
-            ctx.font = `600 ${dark ? 13 : 12}px ui-monospace, Menlo, monospace`;
-            ctx.textAlign = "center";
-            ctx.textBaseline = "middle";
-            // Subtle "halo" pass for legibility
-            ctx.fillStyle = rgba(accent, 0.10 * vM);
-            ctx.fillText(it.text, px, py);
-            ctx.fillStyle = rgba(accent, (dark ? 0.82 : 0.7) * vM);
-            ctx.fillText(it.text, px, py);
-            // Anchor dot at orbit centre
+            return {
+              it,
+              x: m.x + Math.cos(theta) * it.r,
+              y: m.y + Math.sin(theta) * it.r * 0.6, // squashed orbit
+            };
           });
-          // Central anchor — small ring + dot
+          // Orbit rings — three faint elliptical guides at the
+          // distinct radii used by the labels, so the "orbit"
+          // metaphor reads visually instead of just from motion.
+          const radii = Array.from(new Set(m.items.map((it) => it.r)))
+            .sort((a, b) => a - b);
+          radii.forEach((r) => {
+            ctx.beginPath();
+            ctx.ellipse(m.x, m.y, r, r * 0.6, 0, 0, Math.PI * 2);
+            ctx.strokeStyle = rgba(accent, 0.10 * vM);
+            ctx.lineWidth = 0.6;
+            ctx.stroke();
+          });
+          // Knowledge-graph lines — connect each label to its two
+          // nearest neighbours. Recomputed each frame so the graph
+          // breathes with the orbits.
+          for (let i = 0; i < pos.length; i++) {
+            const p = pos[i];
+            // Find two closest
+            const dists = pos.map((q, j) => ({ j, d: j === i ? Infinity : Math.hypot(q.x - p.x, q.y - p.y) }))
+              .sort((a, b) => a.d - b.d).slice(0, 2);
+            dists.forEach(({ j, d }) => {
+              if (j <= i) return; // avoid duplicate (i,j)+(j,i)
+              const fade = Math.max(0, 1 - d / 180);
+              if (fade <= 0) return;
+              ctx.beginPath();
+              ctx.moveTo(p.x, p.y);
+              ctx.lineTo(pos[j].x, pos[j].y);
+              ctx.strokeStyle = rgba(accent, 0.14 * fade * vM);
+              ctx.lineWidth = 0.6;
+              ctx.stroke();
+            });
+          }
+          // Labels themselves with a soft glow halo under each
+          ctx.font = `600 13px ui-monospace, Menlo, monospace`;
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          pos.forEach(({ it, x, y }) => {
+            const haloG = ctx.createRadialGradient(x, y, 0, x, y, 26);
+            haloG.addColorStop(0, rgba(accent, 0.18 * vM));
+            haloG.addColorStop(1, rgba(accent, 0));
+            ctx.fillStyle = haloG;
+            ctx.beginPath();
+            ctx.arc(x, y, 26, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = rgba(accent, 0.76 * vM);
+            ctx.fillText(it.text, x, y);
+          });
+          // Central anchor — bright dot + outer ring
           ctx.beginPath();
           ctx.arc(m.x, m.y, 4, 0, Math.PI * 2);
-          ctx.fillStyle = rgba(accent, (dark ? 0.85 : 0.7) * vM);
+          ctx.fillStyle = rgba(accent, 0.85 * vM);
           ctx.fill();
           ctx.beginPath();
           ctx.arc(m.x, m.y, 14, 0, Math.PI * 2);
-          ctx.strokeStyle = rgba(accent, 0.25 * vM);
+          ctx.strokeStyle = rgba(accent, 0.32 * vM);
           ctx.lineWidth = 1;
           ctx.stroke();
         }
       });
 
       // ── Node positions: Lissajous drift around base point ─────────
+      // Forward-pass wave: every ~3 seconds a wave sweeps left-to-right
+      // through the layers, briefly lighting up each layer's nodes in
+      // sequence. Reads as a real inference pass through the net.
+      const WAVE_PERIOD = 180;   // frames per full sweep
+      const waveT = (frame % WAVE_PERIOD) / WAVE_PERIOD;   // 0..1
+      const waveLayer = waveT * (layers.length + 0.5);     // walks 0..N
       nodes.forEach((n) => {
         n.x = n.baseX + Math.sin(t + n.phase) * 2.2;
         n.y = n.baseY + Math.cos(t * 0.7 + n.phase * 1.3) * 2.2;
         n.activation *= 0.93;
+        // Wave injection: bump activation when the wave is on n's
+        // layer. Narrow window so the burst is per-layer, not global.
+        const layerDist = Math.abs(waveLayer - n.layer);
+        if (layerDist < 0.45) {
+          n.activation = Math.max(n.activation, 0.6 * (1 - layerDist / 0.45));
+        }
       });
 
       // ── Edges ──────────────────────────────────────────────────────

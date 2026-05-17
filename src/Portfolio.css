@@ -827,11 +827,16 @@ body::after {
     0 1px 0  color-mix(in srgb, var(--bg) 80%, transparent);
 }
 .hero-name {
+  /* Layered cream halos so the name punches through the canvas. The
+     widest layer (60px) acts like a soft spotlight; the tighter ones
+     prevent network edges from cutting into the letters themselves. */
   text-shadow:
+    0 0 60px var(--bg),
     0 0 40px var(--bg),
-    0 0 22px var(--bg),
-    0 0 10px var(--bg),
-    0 0 4px  color-mix(in srgb, var(--bg) 90%, transparent);
+    0 0 24px var(--bg),
+    0 0 12px var(--bg),
+    0 0 6px  var(--bg),
+    0 0 2px  var(--bg);
 }
 /* Hero avatar — bigger, prominent, grouped with the name + tagline.
    Same headpat easter egg as the old hero. */

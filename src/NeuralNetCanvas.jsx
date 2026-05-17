@@ -399,9 +399,9 @@ export default function NeuralNetCanvas({ sceneRef }) {
       const visEquations = motifVis(3);
       const visGrid      = motifVis(4);
       const visLabels    = motifVis(5);
-      // Per-network alpha — Hero net dimmed slightly so it blends behind
-      // the hero text; Research net stays at full punch.
-      const visHeroNet     = 0.75 * motifVis(0);
+      // Per-network alpha — Hero net dimmed so the giant name stays
+      // legible behind it; Research net keeps full punch.
+      const visHeroNet     = 0.55 * motifVis(0);
       const visResearchNet = motifVis(2);
       // Bio motifs: prominent on Hero, clearly visible-but-smaller on
       // sub-sections so they read as atmosphere instead of disappearing.

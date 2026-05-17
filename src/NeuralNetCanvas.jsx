@@ -29,10 +29,14 @@ import { useEffect, useRef } from "react";
 
 const WORLD_W = 1400; // network total width in world coords
 const WORLD_H = 720;  // network total height
-// Hourglass network — wide input, narrow latent middle, wide output.
-// Reads as a classic encoder→bottleneck→decoder when the forward-pass
-// wave walks through it.
-const WORLD_LAYERS = [7, 4, 2, 4, 7];
+// Two distinct network architectures:
+//   Hero    — the familiar feed-forward shape, widens then narrows.
+//   Research — symmetric hourglass with a 2-node latent bottleneck.
+// They share world center; only one is visible at a time (alpha tied
+// to its scene's motifVis), so the user sees two different networks
+// without them ever overlapping on screen.
+const HERO_LAYERS = [5, 7, 9, 7, 5, 3];
+const RES_LAYERS  = [7, 4, 2, 4, 7];
 
 export default function NeuralNetCanvas({ sceneRef }) {
   const canvasRef = useRef(null);
@@ -45,23 +49,22 @@ export default function NeuralNetCanvas({ sceneRef }) {
     let h = 0;
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const layers = WORLD_LAYERS;
-    let nodes = [];
-    let edges = [];
-    let pulses = [];
+    // Per-network state — Hero uses the familiar feed-forward layout,
+    // Research uses a tight hourglass with the bottleneck nodes clustered
+    // at the visual centre. Each network has its own nodes/edges/pulses.
+    const heroNet = {
+      layers: HERO_LAYERS,
+      layout: "spread",        // node placement strategy
+      nodes: [], edges: [], pulses: [], edgeCursor: 0,
+    };
+    const researchNet = {
+      layers: RES_LAYERS,
+      layout: "centered",      // narrow layers compress toward y=0
+      nodes: [], edges: [], pulses: [], edgeCursor: 0,
+    };
     let bioMotifs = [];
-    // Scene motifs — distinct visual elements per scroll scene:
-    //   "dna"       : DNA double helix      (About waypoint)
-    //   "equations" : math glyph cluster    (Publication waypoint)
-    //   "grid"      : contribution grid     (Projects waypoint)
-    //   "labels"    : floating skill labels (Skills waypoint)
-    // Each is its own camera anchor — the scene that focuses on it sees it
-    // big and centred while the rest of the world falls into background.
     let sceneMotifs = [];
-    // Ambient particle field — small dots drifting across the whole world,
-    // very faint, just for atmospheric depth behind everything else.
     let ambient = [];
-    let edgeCursor = 0;
     let frame = 0;
 
     const darkMq = window.matchMedia("(prefers-color-scheme: dark)");
@@ -70,54 +73,61 @@ export default function NeuralNetCanvas({ sceneRef }) {
     darkMq.addEventListener("change", onDarkMq);
     const rgba = (rgb, a) => `rgba(${rgb[0]},${rgb[1]},${rgb[2]},${a})`;
 
-    // Build the network + bio motifs in WORLD coordinates (centred at the
-    // world origin). The camera transform in draw() places these onto
-    // screen at the right place / scale for the current scroll position.
-    const buildNetwork = () => {
-      nodes = [];
-      edges = [];
-      pulses = [];
-      bioMotifs = [];
+    // Build one network into the given container. layout=="centered"
+    // makes narrow layers compress toward y=0 — required for the
+    // hourglass shape so the bottleneck reads as a centred pinch.
+    const buildOneNetwork = (net) => {
+      net.nodes = [];
+      net.edges = [];
+      net.pulses = [];
+      net.edgeCursor = 0;
       const netW = WORLD_W;
       const netH = WORLD_H;
-      const layerGap = netW / (layers.length - 1);
+      const ls = net.layers;
+      const layerGap = netW / (ls.length - 1);
       const startX = -netW / 2;
+      const maxCount = Math.max(...ls);
 
-      layers.forEach((count, layer) => {
+      ls.forEach((count, layer) => {
         const x = startX + layerGap * layer;
-        const usableH = netH * (0.76 + layer * 0.018);
+        // For the hourglass, narrow layers occupy proportionally less
+        // vertical space so the 2-node bottleneck sits near y=0.
+        const heightFactor = net.layout === "centered"
+          ? Math.pow(count / maxCount, 1.6)
+          : (0.76 + layer * 0.018);
+        const usableH = netH * (net.layout === "centered" ? 0.78 * heightFactor : heightFactor);
         const layerStartY = -usableH / 2;
         for (let i = 0; i < count; i++) {
           const ratio = count === 1 ? 0.5 : i / (count - 1);
           const curve = Math.sin((ratio - 0.5) * Math.PI) * 14;
-          nodes.push({
+          net.nodes.push({
             x,
             y: layerStartY + ratio * usableH + curve,
             baseX: x,
             baseY: layerStartY + ratio * usableH + curve,
             layer,
-            r: 3.2 + (layer === 0 || layer === layers.length - 1 ? 0.4 : 0.9),
+            r: 3.2 + (layer === 0 || layer === ls.length - 1 ? 0.4 : 0.9),
             phase: Math.random() * Math.PI * 2,
             activation: layer === 0 ? 0.4 : 0,
           });
         }
       });
 
-      const layerStarts = layers.reduce((acc, count, i) => {
-        acc.push(i === 0 ? 0 : acc[i - 1] + layers[i - 1]);
+      const layerStarts = ls.reduce((acc, count, i) => {
+        acc.push(i === 0 ? 0 : acc[i - 1] + ls[i - 1]);
         return acc;
       }, []);
 
-      for (let layer = 0; layer < layers.length - 1; layer++) {
+      for (let layer = 0; layer < ls.length - 1; layer++) {
         const aStart = layerStarts[layer];
         const bStart = layerStarts[layer + 1];
-        for (let a = 0; a < layers[layer]; a++) {
-          for (let b = 0; b < layers[layer + 1]; b++) {
+        for (let a = 0; a < ls[layer]; a++) {
+          for (let b = 0; b < ls[layer + 1]; b++) {
             const distance = Math.abs(
-              (a + 0.5) / layers[layer] - (b + 0.5) / layers[layer + 1]
+              (a + 0.5) / ls[layer] - (b + 0.5) / ls[layer + 1]
             );
             if (distance < 0.38 || (a + b + layer) % 5 === 0) {
-              edges.push({
+              net.edges.push({
                 from: aStart + a,
                 to: bStart + b,
                 weight: 1 - Math.min(distance, 0.45),
@@ -126,6 +136,15 @@ export default function NeuralNetCanvas({ sceneRef }) {
           }
         }
       }
+    };
+
+    // Build both networks + ambient world decoration.
+    const buildNetwork = () => {
+      buildOneNetwork(heroNet);
+      buildOneNetwork(researchNet);
+      bioMotifs = [];
+      const netW = WORLD_W;
+      const netH = WORLD_H;
 
       // Atmospheric bio motifs (RNA + protein helices) scattered around
       // the network. These are the "always-on" texture that gives the
@@ -253,11 +272,11 @@ export default function NeuralNetCanvas({ sceneRef }) {
     resize();
     window.addEventListener("resize", resize);
 
-    const spawnPulse = () => {
-      if (!edges.length || pulses.length > 18) return;
-      const edge = edges[edgeCursor % edges.length];
-      edgeCursor += 7;
-      pulses.push({
+    const spawnPulse = (net) => {
+      if (!net.edges.length || net.pulses.length > 18) return;
+      const edge = net.edges[net.edgeCursor % net.edges.length];
+      net.edgeCursor += 7;
+      net.pulses.push({
         edge,
         t: 0,
         speed: reducedMotion ? 0.012 : 0.005 + Math.random() * 0.004,
@@ -370,11 +389,10 @@ export default function NeuralNetCanvas({ sceneRef }) {
       const visEquations = motifVis(3);
       const visGrid      = motifVis(4);
       const visLabels    = motifVis(5);
-      // Network is the headlining element at Hero (0) AND Research (2)
-      // — visible at full alpha on either, faded between.
-      // Hero dims to 0.75 so the network sits behind the text gracefully
-      // (instead of darkening it); Research keeps full punch.
-      const visNetwork   = Math.max(0.75 * motifVis(0), motifVis(2));
+      // Per-network alpha — Hero net dimmed slightly so it blends behind
+      // the hero text; Research net stays at full punch.
+      const visHeroNet     = 0.75 * motifVis(0);
+      const visResearchNet = motifVis(2);
       // Bio motifs: prominent on Hero, clearly visible-but-smaller on
       // sub-sections so they read as atmosphere instead of disappearing.
       // Fully suppressed on Research where the user wants network alone.
@@ -382,10 +400,18 @@ export default function NeuralNetCanvas({ sceneRef }) {
       // Physical scale — Hero full, sub-sections at 60% so the close-up
       // camera zoom doesn't blow them up over the text.
       const sizeBio      = 0.6 + 0.4 * motifVis(0);
-      // Research-scene amplifier — same network as Hero but faster
-      // pulses, brighter edges, tighter forward-pass sweep so the
-      // Research view feels like a working model, not a wide overview.
-      const researchBoost = motifVis(2);
+      // Network intensity presets — Hero is calm + sparse pulses; Research
+      // is more active. Passed into drawNetwork below.
+      const HERO_INTENSITY = {
+        pulseEvery: 22, edgeBoost: 1.0, lineBoost: 1.0,
+        wavePeriod: 180, wavePeak: 0.38,
+        haloAlpha: 0.045, haloRBoost: 0,
+      };
+      const RES_INTENSITY = {
+        pulseEvery: 12, edgeBoost: 1.22, lineBoost: 1.08,
+        wavePeriod: 135, wavePeak: 0.56,
+        haloAlpha: 0.063, haloRBoost: 0.6,
+      };
 
       // Soft radial wash drawn in SCREEN coords (no transform yet).
       const grad = ctx.createRadialGradient(
@@ -743,115 +769,107 @@ export default function NeuralNetCanvas({ sceneRef }) {
         }
       });
 
-      // ── Node positions: Lissajous drift around base point ─────────
-      // Forward-pass wave sweeps left-to-right through the layers.
-      // Slightly tighter period on Research so it feels more active.
-      const WAVE_PERIOD = Math.round(180 - 45 * researchBoost);
-      const waveT = (frame % WAVE_PERIOD) / WAVE_PERIOD;   // 0..1
-      const waveLayer = waveT * (layers.length + 0.5);     // walks 0..N
-      nodes.forEach((n) => {
-        n.x = n.baseX + Math.sin(t + n.phase) * 2.2;
-        n.y = n.baseY + Math.cos(t * 0.7 + n.phase * 1.3) * 2.2;
-        // Slightly slower activation decay so edges fade smoothly
-        // instead of strobing. Wave injection peak softened on Hero
-        // (researchBoost = 0) and back to full on Research.
-        n.activation *= 0.955;
-        const layerDist = Math.abs(waveLayer - n.layer);
-        if (layerDist < 0.45) {
-          const peak = 0.38 + 0.18 * researchBoost;
-          n.activation = Math.max(n.activation, peak * (1 - layerDist / 0.45));
-        }
-      });
+      // ── Render one network ─────────────────────────────────────────
+      // Drift nodes, draw edges, advance + draw pulses, draw node halos.
+      // alphaScale is the visibility multiplier (0 = fully off); params
+      // controls intensity (pulse cadence, edge boost, wave behaviour).
+      const drawOneNetwork = (net, alphaScale, params) => {
+        if (alphaScale < 0.02) return;
+        const ls = net.layers;
+        const waveT = (frame % params.wavePeriod) / params.wavePeriod;
+        const waveLayer = waveT * (ls.length + 0.5);
 
-      // ── Edges ──────────────────────────────────────────────────────
-      // Network as a whole is multiplied by visNetwork (full on Hero +
-      // Research, faint on other scenes where another motif takes the
-      // spotlight). Per-edge `act` activation still modulates within.
-      edges.forEach((e) => {
-        const a = nodes[e.from];
-        const b = nodes[e.to];
-        const act = Math.max(a.activation, b.activation);
-        ctx.beginPath();
-        ctx.moveTo(a.x, a.y);
-        ctx.lineTo(b.x, b.y);
-        const edgeBoost = 1 + 0.22 * researchBoost;
-        ctx.strokeStyle = act > 0.08
-          ? rgba(accent, (0.18 + act * 0.32) * edgeBoost * visNetwork)
-          : rgba(dim, (dark ? 0.22 : 0.42) * e.weight * edgeBoost * visNetwork);
-        ctx.lineWidth = (act > 0.08 ? 0.9 + act * 0.9 : 0.65) * (1 + 0.08 * researchBoost);
-        ctx.stroke();
-      });
+        // Node drift + forward-pass wave activation injection
+        net.nodes.forEach((n) => {
+          n.x = n.baseX + Math.sin(t + n.phase) * 2.2;
+          n.y = n.baseY + Math.cos(t * 0.7 + n.phase * 1.3) * 2.2;
+          n.activation *= 0.955;
+          const layerDist = Math.abs(waveLayer - n.layer);
+          if (layerDist < 0.45) {
+            n.activation = Math.max(n.activation, params.wavePeak * (1 - layerDist / 0.45));
+          }
+        });
 
-      // ── Pulses travelling along edges ─────────────────────────────
-      // Calm on Hero (every ~22 frames), modestly faster on Research
-      // (~12 frames) — enough to feel different without strobing.
-      const pulseEvery = reducedMotion ? 48 : Math.max(7, Math.round(22 - 10 * researchBoost));
-      if (frame % pulseEvery === 0) spawnPulse();
-
-      for (let i = pulses.length - 1; i >= 0; i--) {
-        const p = pulses[i];
-        p.t += p.speed;
-        if (p.t > 1) {
-          nodes[p.edge.to].activation = 1;
-          pulses.splice(i, 1);
-          continue;
-        }
-        const a = nodes[p.edge.from];
-        const b = nodes[p.edge.to];
-        const px = a.x + (b.x - a.x) * p.t;
-        const py = a.y + (b.y - a.y) * p.t;
-        const glow = Math.sin(p.t * Math.PI);
-        // Soft trailing tail — line from the source node to the current
-        // pulse position, fading out behind it. Gives motion direction.
-        const tailLen = 0.22;
-        const tailStartT = Math.max(0, p.t - tailLen);
-        const tailX = a.x + (b.x - a.x) * tailStartT;
-        const tailY = a.y + (b.y - a.y) * tailStartT;
-        const tailGrad = ctx.createLinearGradient(tailX, tailY, px, py);
-        tailGrad.addColorStop(0, rgba(accent, 0));
-        tailGrad.addColorStop(1, rgba(accent, p.alpha * 0.6 * visNetwork));
-        ctx.beginPath();
-        ctx.moveTo(tailX, tailY);
-        ctx.lineTo(px, py);
-        ctx.strokeStyle = tailGrad;
-        ctx.lineWidth = 1.4 + glow * 0.8;
-        ctx.lineCap = "round";
-        ctx.stroke();
-        // Inner bright dot
-        ctx.beginPath();
-        ctx.arc(px, py, 2.4 + glow * 1.3, 0, Math.PI * 2);
-        ctx.fillStyle = rgba(accent, Math.min(1, p.alpha + 0.18) * visNetwork);
-        ctx.fill();
-        // Outer halo — soft on both Hero (no text bloom) and Research
-        // (no flicker at higher zoom). Subtle boost on Research only.
-        const haloAlpha = 0.045 + 0.018 * researchBoost;
-        const haloR = 9 + glow * (4.5 + 0.6 * researchBoost);
-        ctx.beginPath();
-        ctx.arc(px, py, haloR, 0, Math.PI * 2);
-        ctx.fillStyle = rgba(accent, haloAlpha * glow * visNetwork);
-        ctx.fill();
-      }
-
-      // ── Nodes ──────────────────────────────────────────────────────
-      nodes.forEach((n) => {
-        const mix = Math.min(1, n.activation);
-        if (mix > 0.08) {
+        // Edges
+        net.edges.forEach((e) => {
+          const a = net.nodes[e.from];
+          const b = net.nodes[e.to];
+          const act = Math.max(a.activation, b.activation);
           ctx.beginPath();
-          ctx.arc(n.x, n.y, n.r + 8 * mix, 0, Math.PI * 2);
-          ctx.fillStyle = rgba(accent, mix * 0.08 * visNetwork);
+          ctx.moveTo(a.x, a.y);
+          ctx.lineTo(b.x, b.y);
+          ctx.strokeStyle = act > 0.08
+            ? rgba(accent, (0.18 + act * 0.32) * params.edgeBoost * alphaScale)
+            : rgba(dim, (dark ? 0.22 : 0.42) * e.weight * params.edgeBoost * alphaScale);
+          ctx.lineWidth = (act > 0.08 ? 0.9 + act * 0.9 : 0.65) * params.lineBoost;
+          ctx.stroke();
+        });
+
+        // Pulses
+        const pulseEvery = reducedMotion ? 48 : params.pulseEvery;
+        if (frame % pulseEvery === 0) spawnPulse(net);
+        for (let i = net.pulses.length - 1; i >= 0; i--) {
+          const p = net.pulses[i];
+          p.t += p.speed;
+          if (p.t > 1) {
+            net.nodes[p.edge.to].activation = 1;
+            net.pulses.splice(i, 1);
+            continue;
+          }
+          const a = net.nodes[p.edge.from];
+          const b = net.nodes[p.edge.to];
+          const px = a.x + (b.x - a.x) * p.t;
+          const py = a.y + (b.y - a.y) * p.t;
+          const glow = Math.sin(p.t * Math.PI);
+          const tailLen = 0.22;
+          const tailStartT = Math.max(0, p.t - tailLen);
+          const tailX = a.x + (b.x - a.x) * tailStartT;
+          const tailY = a.y + (b.y - a.y) * tailStartT;
+          const tailGrad = ctx.createLinearGradient(tailX, tailY, px, py);
+          tailGrad.addColorStop(0, rgba(accent, 0));
+          tailGrad.addColorStop(1, rgba(accent, p.alpha * 0.6 * alphaScale));
+          ctx.beginPath();
+          ctx.moveTo(tailX, tailY);
+          ctx.lineTo(px, py);
+          ctx.strokeStyle = tailGrad;
+          ctx.lineWidth = 1.4 + glow * 0.8;
+          ctx.lineCap = "round";
+          ctx.stroke();
+          ctx.beginPath();
+          ctx.arc(px, py, 2.4 + glow * 1.3, 0, Math.PI * 2);
+          ctx.fillStyle = rgba(accent, Math.min(1, p.alpha + 0.18) * alphaScale);
+          ctx.fill();
+          const haloR = 9 + glow * (4.5 + params.haloRBoost);
+          ctx.beginPath();
+          ctx.arc(px, py, haloR, 0, Math.PI * 2);
+          ctx.fillStyle = rgba(accent, params.haloAlpha * glow * alphaScale);
           ctx.fill();
         }
-        ctx.beginPath();
-        ctx.arc(n.x, n.y, n.r, 0, Math.PI * 2);
-        const cr = Math.round(cool[0] + (accent[0] - cool[0]) * mix);
-        const cg = Math.round(cool[1] + (accent[1] - cool[1]) * mix);
-        const cb = Math.round(cool[2] + (accent[2] - cool[2]) * mix);
-        ctx.fillStyle = rgba([cr, cg, cb], (dark ? 0.78 : 0.88) * visNetwork);
-        ctx.fill();
-        ctx.strokeStyle = rgba(accent, (0.32 + mix * 0.32) * visNetwork);
-        ctx.lineWidth = 0.9;
-        ctx.stroke();
-      });
+
+        // Nodes
+        net.nodes.forEach((n) => {
+          const mix = Math.min(1, n.activation);
+          if (mix > 0.08) {
+            ctx.beginPath();
+            ctx.arc(n.x, n.y, n.r + 8 * mix, 0, Math.PI * 2);
+            ctx.fillStyle = rgba(accent, mix * 0.08 * alphaScale);
+            ctx.fill();
+          }
+          ctx.beginPath();
+          ctx.arc(n.x, n.y, n.r, 0, Math.PI * 2);
+          const cr = Math.round(cool[0] + (accent[0] - cool[0]) * mix);
+          const cg = Math.round(cool[1] + (accent[1] - cool[1]) * mix);
+          const cb = Math.round(cool[2] + (accent[2] - cool[2]) * mix);
+          ctx.fillStyle = rgba([cr, cg, cb], (dark ? 0.78 : 0.88) * alphaScale);
+          ctx.fill();
+          ctx.strokeStyle = rgba(accent, (0.32 + mix * 0.32) * alphaScale);
+          ctx.lineWidth = 0.9;
+          ctx.stroke();
+        });
+      };
+
+      drawOneNetwork(heroNet,     visHeroNet,     HERO_INTENSITY);
+      drawOneNetwork(researchNet, visResearchNet, RES_INTENSITY);
 
       ctx.restore();
       raf.current = requestAnimationFrame(draw);

@@ -17,9 +17,13 @@
   --accent2:     #2754C2;
   --accent3:     #1E2A5E;
   --warm:        #B45309;             /* warm rust for hand-noted accents */
-  --accent-soft:  rgba(30, 58, 138, .08);
-  --accent-soft2: rgba(30, 58, 138, .14);
-  --warm-soft:    rgba(180, 83, 9, .10);
+  /* Derived from --accent so per-section overrides actually propagate
+     (the old hardcoded rgba values stayed pinned to the base navy
+     regardless of --accent). color-mix with transparent gives the
+     same alpha behaviour with the live accent hue. */
+  --accent-soft:  color-mix(in srgb, var(--accent) 8%, transparent);
+  --accent-soft2: color-mix(in srgb, var(--accent) 14%, transparent);
+  --warm-soft:    color-mix(in srgb, var(--warm)  10%, transparent);
   --border:        rgba(27, 31, 38, .08);
   --border-strong: rgba(27, 31, 38, .16);
   --card:        rgba(244, 241, 234, .80);
@@ -50,6 +54,18 @@
 html {
   scroll-behavior: smooth;
   scroll-padding-top: 4rem;
+  /* Gentle scroll-snap so deliberate scrolling near a section
+     boundary lands on it cleanly, without forcing every flick to
+     snap (mandatory would fight with mouse-wheel exploration). */
+  scroll-snap-type: y proximity;
+}
+.hero-scene,
+.sect {
+  scroll-snap-align: start;
+  scroll-snap-stop: normal;
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-snap-type: none; }
 }
 
 /* Custom scrollbar — thin, accent-tinted, matches the page palette.
@@ -86,10 +102,56 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   overflow-x: hidden;
-  cursor: default;
+  /* Inline SVG precision-target cursor — warm rust centre dot + thin
+     navy ring + 4 short ticks. Hot-spot is centred (11, 11) so clicks
+     land on the dot. Falls back to the default arrow on platforms
+     that don't render custom cursors. */
+  cursor: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='22' height='22' viewBox='0 0 22 22'><circle cx='11' cy='11' r='1.6' fill='%23B45309'/><circle cx='11' cy='11' r='6' fill='none' stroke='%231E3A8A' stroke-width='.8' opacity='.65'/><line x1='11' y1='1' x2='11' y2='4' stroke='%231E3A8A' stroke-width='1'/><line x1='11' y1='18' x2='11' y2='21' stroke='%231E3A8A' stroke-width='1'/><line x1='1' y1='11' x2='4' y2='11' stroke='%231E3A8A' stroke-width='1'/><line x1='18' y1='11' x2='21' y2='11' stroke='%231E3A8A' stroke-width='1'/></svg>") 11 11, default;
 }
 input, textarea, [contenteditable] { cursor: text; }
+a, button, [role="button"], [data-clickable] { cursor: pointer; }
 ::selection { background: var(--accent); color: #fff; }
+
+/* Custom focus rings for keyboard nav — dashed accent outline that
+   matches the rest of the page's typography rather than the default
+   blue browser ring. :focus-visible so it only appears for keyboard
+   users, not on every mouse click. */
+:focus { outline: none; }
+:focus-visible {
+  outline: 2px dashed var(--accent);
+  outline-offset: 4px;
+  border-radius: 4px;
+}
+a:focus-visible,
+button:focus-visible {
+  outline-offset: 3px;
+}
+/* Tighter on the side rail since the rail items already have lots of
+   their own visual chrome (tick + number + glyph + label). */
+.sb-nav-item:focus-visible {
+  outline-offset: 6px;
+}
+
+/* Faint research-paper grid behind everything else — two-tier:
+   major lines every 250px, minor lines every 50px, both very low
+   opacity so the page reads as cream paper with the lab-notebook
+   gridding only just visible on close inspection. Sits at z 0 so
+   the glyph rain (z 1), content (z 2), and atmos canvas (z 4) all
+   layer over it. */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  display: block;
+  background-image:
+    linear-gradient(to right,  color-mix(in srgb, var(--fg) 6%, transparent) 1px, transparent 1px),
+    linear-gradient(to bottom, color-mix(in srgb, var(--fg) 6%, transparent) 1px, transparent 1px),
+    linear-gradient(to right,  color-mix(in srgb, var(--fg) 3%, transparent) 1px, transparent 1px),
+    linear-gradient(to bottom, color-mix(in srgb, var(--fg) 3%, transparent) 1px, transparent 1px);
+  background-size: 250px 250px, 250px 250px, 50px 50px, 50px 50px;
+}
 
 /* Subtle paper-fibre noise for that "research notebook" texture. */
 body::after {
@@ -101,7 +163,8 @@ body::after {
   background-size: 256px 256px;
   mix-blend-mode: multiply;
 }
-body::before { display: none; }
+/* (legacy body::before reset removed — the new grid rule above now
+   owns this pseudo-element.) */
 
 /* ════════════════════════════════════════════════════════════════════
    Ambient Orbs
@@ -233,6 +296,52 @@ body::before { display: none; }
   color: var(--fg3);
 }
 
+/* ── Keyboard hint chip — top-right ──
+   Discoverability for the j/k/g/G nav. Hidden on touch and narrow
+   viewports where the keys can't be pressed anyway. */
+.kbd-hint {
+  position: fixed;
+  top: clamp(1rem, 2.5vh, 1.75rem);
+  right: clamp(1rem, 2.5vw, 1.75rem);
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  gap: .25rem;
+  padding: .4rem .7rem;
+  border-radius: 9999px;
+  background: color-mix(in srgb, var(--bg) 55%, transparent);
+  backdrop-filter: blur(14px) saturate(1.2);
+  -webkit-backdrop-filter: blur(14px) saturate(1.2);
+  border: 1px solid var(--border);
+  font-family: var(--mono);
+  font-size: .54rem;
+  letter-spacing: .14em;
+  color: var(--fg3);
+  text-transform: uppercase;
+  pointer-events: none;
+}
+.kbd-hint kbd {
+  font-family: var(--mono);
+  font-size: .54rem;
+  font-weight: 600;
+  background: color-mix(in srgb, var(--fg) 10%, transparent);
+  color: var(--fg);
+  padding: 1px .35rem 0;
+  border-radius: 3px;
+  border: 1px solid var(--border);
+  line-height: 1.4;
+  letter-spacing: 0;
+}
+.kbd-hint kbd + kbd { margin-left: 2px; }
+.kbd-hint-sep {
+  margin: 0 .35rem 0 .25rem;
+  color: var(--fg4);
+}
+.kbd-hint-sep:last-child { margin-right: 0; }
+@media (max-width: 968px), (pointer: coarse) {
+  .kbd-hint { display: none; }
+}
+
 /* Side rail — vertical nav, fixed to left edge, mid-viewport.
    Hidden on hero (visible class toggled when user has scrolled). */
 .side-rail {
@@ -259,6 +368,655 @@ body::before { display: none; }
   opacity: 1;
   pointer-events: auto;
   transform: translate(0, -50%);
+}
+
+/* ── Section watermark ──
+   Big italic serif word in the bottom-right corner naming the
+   current scene. Sits at z 1 (under content, above the grid). Each
+   render re-mounts via the key={label} on the parent so a fade-in
+   animation re-plays on every section change. */
+.section-watermark {
+  position: fixed;
+  bottom: clamp(2rem, 6vh, 5rem);
+  right: clamp(-3rem, -2vw, -1.5rem);
+  z-index: 1;
+  font-family: var(--serif);
+  font-style: italic;
+  font-weight: 400;
+  font-size: clamp(7rem, 17vw, 13rem);
+  line-height: .85;
+  letter-spacing: -.045em;
+  color: color-mix(in srgb, var(--accent) 5%, transparent);
+  pointer-events: none;
+  user-select: none;
+  white-space: nowrap;
+  animation: section-watermark-fade .9s cubic-bezier(.22, 1, .36, 1);
+}
+@keyframes section-watermark-fade {
+  from { opacity: 0; transform: translateX(20px); }
+  to   { opacity: 1; transform: none; }
+}
+@media (max-width: 968px) {
+  .section-watermark { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .section-watermark { animation: none; }
+}
+
+/* ── Glyph rain ──
+   Ambient math glyphs (∇ ∂ Σ λ π θ ...) drift top-to-bottom behind
+   the content column. z-index 1 puts them under .main (z 2) — the
+   atmos canvas (z 4) sits above with mix-blend-mode: multiply so
+   the glyphs get cohesively darkened where particles overlap, which
+   ties the whole layer stack together. Very low opacity. */
+.glyph-rain {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  overflow: hidden;
+}
+.glyph-rain-item {
+  position: absolute;
+  top: -120px;
+  font-family: var(--mono);
+  color: var(--fg);
+  font-variant-numeric: tabular-nums;
+  opacity: 0;
+  animation: glyph-rain-drift linear infinite;
+  will-change: transform, opacity;
+}
+@keyframes glyph-rain-drift {
+  0%   { transform: translateY(0);                   opacity: 0; }
+  8%   { opacity: 0.075; }
+  92%  { opacity: 0.075; }
+  100% { transform: translateY(calc(100vh + 140px)); opacity: 0; }
+}
+@media (max-width: 768px), (prefers-reduced-motion: reduce) {
+  .glyph-rain-item { display: none; }
+}
+
+/* ── Intro splash ──
+   First-visit-only boot screen. Solid cream over everything, mono
+   header + staged status + progress bar + percent readout. Fades to
+   transparent at end, then unmounts. Subsequent visits skip the
+   splash entirely (localStorage). */
+.intro-splash {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: var(--bg);
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+  transition: opacity .48s cubic-bezier(.22, 1, .36, 1);
+}
+.intro-splash-fade { opacity: 0; }
+.intro-splash-inner {
+  display: flex;
+  flex-direction: column;
+  gap: 1.05rem;
+  align-items: stretch;
+  font-family: var(--mono);
+  width: clamp(360px, 50vw, 480px);
+}
+.intro-splash-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: .65rem;
+  margin-bottom: .25rem;
+}
+.intro-splash-led {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--accent) 30%, transparent),
+    0 0 14px color-mix(in srgb, var(--accent) 70%, transparent);
+  animation: sys-hud-pulse 1.4s ease-in-out infinite;
+}
+.intro-splash-title {
+  font-size: .8rem;
+  letter-spacing: .26em;
+  text-transform: uppercase;
+  color: var(--fg);
+  font-weight: 600;
+}
+.intro-splash-log {
+  display: flex;
+  flex-direction: column;
+  gap: .2rem;
+  min-height: 6.2em;
+  font-size: .58rem;
+  letter-spacing: .04em;
+  color: var(--fg3);
+  font-variant-numeric: tabular-nums;
+  text-transform: uppercase;
+  padding-left: 1px;
+}
+.intro-splash-log-line {
+  white-space: pre;
+  animation: intro-log-fade .28s cubic-bezier(.22, 1, .36, 1);
+}
+.intro-splash-log-line.ok {
+  color: var(--accent);
+  font-weight: 600;
+}
+@keyframes intro-log-fade {
+  from { opacity: 0; transform: translateX(-4px); }
+  to   { opacity: 1; transform: none; }
+}
+.intro-splash-caret {
+  align-self: flex-start;
+  color: var(--warm);
+  animation: sys-hud-caret-blink 1s steps(2, end) infinite;
+}
+.intro-splash-bar {
+  width: 280px;
+  height: 2px;
+  background: color-mix(in srgb, var(--fg) 14%, transparent);
+  position: relative;
+  overflow: hidden;
+}
+.intro-splash-bar-fill {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, var(--accent), var(--accent2));
+  transform-origin: left center;
+  transform: scaleX(0);
+  will-change: transform;
+}
+.intro-splash-meta {
+  font-size: .55rem;
+  letter-spacing: .22em;
+  color: var(--fg3);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+.intro-splash-meta-dim {
+  color: var(--fg4);
+}
+@media (prefers-reduced-motion: reduce) {
+  .intro-splash-led { animation: none; }
+}
+
+/* ── Edge glow ──
+   Faint inset accent shadow framing the viewport — reads as the
+   bezel of a lab monitor. Pulses on a 6s breath in sync with
+   nothing else, intentionally — slow enough to read as ambient
+   atmosphere rather than 'something is happening'. */
+.edge-glow {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 7;
+  /* --scene-accent is published on <body> by Portfolio so the rim
+     tints to whichever section is currently active. Fallback to
+     :root --accent for the brief window before the body var is set. */
+  box-shadow:
+    inset 0 0 60px color-mix(in srgb, var(--scene-accent, var(--accent)) 8%, transparent),
+    inset 0 0 0 1px color-mix(in srgb, var(--scene-accent, var(--accent)) 6%, transparent);
+  animation: edge-glow-pulse 6s ease-in-out infinite;
+  transition: box-shadow .8s ease;
+}
+@keyframes edge-glow-pulse {
+  0%, 100% { opacity: .55; }
+  50%      { opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .edge-glow { animation: none; opacity: .7; }
+}
+
+/* ── Help overlay ──
+   Modal showing every keyboard shortcut + interactive feature.
+   Backdrop blurs the page behind, dialog is a serif/mono document
+   styled like a quick-reference card. */
+.help-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9000;
+  background: color-mix(in srgb, var(--bg) 80%, transparent);
+  backdrop-filter: blur(14px) saturate(1.1);
+  -webkit-backdrop-filter: blur(14px) saturate(1.1);
+  display: grid;
+  place-items: center;
+  padding: clamp(1rem, 4vw, 2rem);
+  animation: help-overlay-in .35s cubic-bezier(.22, 1, .36, 1);
+}
+@keyframes help-overlay-in {
+  from { opacity: 0; backdrop-filter: blur(0); }
+  to   { opacity: 1; }
+}
+.help-inner {
+  width: min(540px, 100%);
+  background: var(--bg);
+  border: 1px solid var(--border-strong);
+  border-radius: 14px;
+  padding: 1.5rem 1.75rem 1.75rem;
+  box-shadow: 0 24px 70px color-mix(in srgb, var(--accent) 12%, transparent);
+  animation: help-inner-rise .45s cubic-bezier(.22, 1, .36, 1);
+}
+@keyframes help-inner-rise {
+  from { opacity: 0; transform: translateY(20px) scale(.98); }
+  to   { opacity: 1; transform: none; }
+}
+.help-head {
+  display: flex;
+  align-items: center;
+  gap: .65rem;
+  padding-bottom: 1rem;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid var(--border);
+}
+.help-led {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 10px color-mix(in srgb, var(--accent) 70%, transparent);
+  animation: sys-hud-pulse 1.6s ease-in-out infinite;
+}
+.help-head h3 {
+  font-family: var(--mono);
+  font-size: .8rem;
+  letter-spacing: .26em;
+  text-transform: uppercase;
+  font-weight: 600;
+  color: var(--fg);
+}
+.help-close {
+  margin-left: auto;
+  appearance: none;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--fg3);
+  font-family: var(--mono);
+  font-size: 1.1rem;
+  width: 28px; height: 28px;
+  border-radius: 6px;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  line-height: 1;
+  transition: color .2s, border-color .2s, background .2s;
+}
+.help-close:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+}
+.help-sub {
+  font-family: var(--mono);
+  font-size: .56rem;
+  font-weight: 600;
+  letter-spacing: .26em;
+  text-transform: uppercase;
+  color: var(--fg4);
+  margin-top: 1.1rem;
+  margin-bottom: .55rem;
+}
+.help-sub:first-of-type { margin-top: 0; }
+.help-list {
+  display: flex;
+  flex-direction: column;
+  gap: .35rem;
+}
+.help-list > div {
+  display: grid;
+  grid-template-columns: 9rem 1fr;
+  gap: 1rem;
+  align-items: baseline;
+  padding: .15rem 0;
+}
+.help-list dt {
+  font-family: var(--mono);
+  font-size: .65rem;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--fg3);
+  display: flex;
+  align-items: center;
+  gap: .25rem;
+}
+.help-list dt kbd {
+  font-family: var(--mono);
+  font-size: .6rem;
+  font-weight: 600;
+  background: color-mix(in srgb, var(--fg) 10%, transparent);
+  color: var(--fg);
+  padding: 1px .35rem;
+  border-radius: 3px;
+  border: 1px solid var(--border);
+}
+.help-list dt kbd + kbd { margin-left: 2px; }
+.help-list dd {
+  font-size: .82rem;
+  color: var(--fg2);
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* ── Easter-egg toast ──
+   Brief celebratory label that pops in dead-centre whenever the qk
+   sequence fires. Mono + warm rust to match the existing scene
+   flash punctuation. Bigger / louder than ambient HUD text — this
+   is an active event, not a status readout. */
+.egg-toast {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 100;
+  font-family: var(--mono);
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: .28em;
+  text-transform: uppercase;
+  color: var(--warm);
+  text-shadow:
+    0 0 18px color-mix(in srgb, var(--warm) 60%, transparent),
+    0 0 32px color-mix(in srgb, var(--warm) 30%, transparent);
+  pointer-events: none;
+  opacity: 0;
+  animation: egg-toast-pop 1.8s cubic-bezier(.22, 1, .36, 1) forwards;
+}
+@keyframes egg-toast-pop {
+  0%   { opacity: 0; transform: translate(-50%, -50%) scale(.6); letter-spacing: .12em; }
+  15%  { opacity: 1; transform: translate(-50%, -50%) scale(1);  letter-spacing: .28em; }
+  80%  { opacity: 1; }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(1.06); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .egg-toast {
+    animation: none;
+    opacity: 0;
+  }
+}
+
+/* ── Scene flash ──
+   Horizontal scan band that sweeps top-to-bottom whenever the camera
+   crosses a scene boundary. Reads as a film-projector frame change /
+   shutter punctuation between cuts. Sits at z 6 (above atmos canvas
+   and cursor spot, below all UI chrome). */
+.scene-flash {
+  position: fixed;
+  inset: 0;
+  z-index: 6;
+  pointer-events: none;
+  background: linear-gradient(180deg,
+    transparent 0%,
+    transparent 42%,
+    color-mix(in srgb, var(--warm) 26%, transparent) 49%,
+    color-mix(in srgb, var(--accent) 16%, transparent) 51%,
+    color-mix(in srgb, var(--warm) 22%, transparent) 53%,
+    transparent 60%,
+    transparent 100%);
+  mix-blend-mode: lighten;
+  opacity: 0;
+  animation: scene-flash 720ms cubic-bezier(.22, 1, .36, 1) forwards;
+}
+@keyframes scene-flash {
+  0%   { opacity: 0;   transform: translateY(-110%); }
+  18%  { opacity: 1; }
+  82%  { opacity: 1; }
+  100% { opacity: 0;   transform: translateY(110%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .scene-flash { display: none; }
+}
+
+/* ── Click ripple ──
+   Expanding warm ring at the click point. mix-blend-mode: multiply
+   so the ring darkens the paper like ink, instead of glowing on top
+   of it. Lives between the cursor spot and the UI chrome. */
+.click-ripple-layer {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 7;
+}
+.click-ripple-ring {
+  position: absolute;
+  width: 60px;
+  height: 60px;
+  margin: -30px 0 0 -30px;
+  border-radius: 50%;
+  border: 1.5px solid var(--warm);
+  opacity: 0;
+  pointer-events: none;
+  mix-blend-mode: multiply;
+  animation: click-ripple 950ms cubic-bezier(.22, 1, .36, 1) forwards;
+}
+@keyframes click-ripple {
+  0%   { transform: scale(.15); opacity: .75; border-width: 2px; }
+  15%  { opacity: .8; }
+  100% { transform: scale(8);  opacity: 0;   border-width: .4px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .click-ripple-layer { display: none; }
+}
+
+/* ── Cursor spotlight ──
+   Soft warm halo that drifts under the cursor — sits above the
+   particle canvas (z 4) and below all UI chrome (z 60+), blended
+   with soft-light so it warms the rendered scene without painting
+   over anything. Hidden on touch / narrow / reduced-motion. */
+.cursor-spot {
+  position: fixed;
+  top: 0; left: 0;
+  width: 520px;
+  height: 520px;
+  margin: -260px 0 0 -260px;
+  transform: translate3d(-9999px, -9999px, 0);
+  pointer-events: none;
+  z-index: 5;
+  background: radial-gradient(circle,
+    color-mix(in srgb, var(--warm) 38%, transparent) 0%,
+    color-mix(in srgb, var(--warm) 16%, transparent) 28%,
+    color-mix(in srgb, var(--accent) 10%, transparent) 52%,
+    transparent 72%);
+  mix-blend-mode: soft-light;
+  will-change: transform;
+}
+@media (max-width: 768px), (pointer: coarse), (prefers-reduced-motion: reduce) {
+  .cursor-spot { display: none; }
+}
+
+/* ── System HUD — fixed bottom-left ──
+   AI-lab dashboard readout: scene type, quadrant, attention count,
+   sweeping signal meter. Reinforces the "you're inside a running
+   model" feel without competing with the content column. */
+.sys-hud {
+  position: fixed;
+  bottom: clamp(1rem, 2.5vh, 1.75rem);
+  left: clamp(1rem, 2.5vw, 1.75rem);
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  gap: .35rem;
+  padding: .7rem .9rem;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--bg) 55%, transparent);
+  backdrop-filter: blur(14px) saturate(1.2);
+  -webkit-backdrop-filter: blur(14px) saturate(1.2);
+  border: 1px solid var(--border);
+  font-family: var(--mono);
+  font-size: .55rem;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  /* Panel itself is click-transparent so cursor effects beneath still
+     fire when the cursor passes over the HUD area. Only the collapse
+     button overrides this with pointer-events: auto below. */
+  pointer-events: none;
+  min-width: 14.5rem;
+}
+/* Collapsed state — hide every body row, keep only the avatar +
+   NEURAL_FIELD header row visible. The reader still sees the
+   identity + version + per-scene ring tint, but the panel takes
+   the absolute minimum vertical real estate. */
+.sys-hud.collapsed .sys-hud-row:not(.sys-hud-head) {
+  display: none;
+}
+.sys-hud.collapsed { min-width: 11rem; }
+.sys-hud-collapse {
+  margin-left: auto;
+  appearance: none;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--fg3);
+  font-family: var(--mono);
+  font-weight: 600;
+  font-size: .8rem;
+  line-height: 1;
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  padding: 0;
+  pointer-events: auto;
+  transition: color .2s, border-color .2s, background .2s;
+}
+.sys-hud-collapse:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+}
+.sys-hud-row {
+  display: flex;
+  align-items: center;
+  gap: .65rem;
+  white-space: nowrap;
+}
+.sys-hud-head { margin-bottom: .15rem; }
+.sys-hud-k {
+  color: var(--fg4);
+  min-width: 3.4rem;
+  font-weight: 500;
+}
+.sys-hud-v {
+  color: var(--fg);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+}
+.sys-hud-ver {
+  color: var(--fg3);
+  margin-left: auto;
+  font-weight: 500;
+}
+.sys-hud-led {
+  display: inline-block;
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--accent) 30%, transparent),
+    0 0 10px color-mix(in srgb, var(--accent) 80%, transparent);
+  animation: sys-hud-pulse 1.6s ease-in-out infinite;
+}
+/* Mini avatar in the HUD header — the user's photo as the system
+   identity, wrapped in a pulsing accent ring so it still reads as a
+   'live' indicator like the LED it replaces. */
+.sys-hud-avatar-wrap {
+  position: relative;
+  display: inline-block;
+  width: 18px; height: 18px;
+  flex-shrink: 0;
+}
+.sys-hud-avatar {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  object-fit: cover;
+  display: block;
+  margin: 2px;
+  border: none;
+}
+.sys-hud-avatar-wrap::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  /* --ring is injected inline per-scene from SCENE_HUES so the
+     pulsing avatar ring shifts hue as the reader scrolls between
+     sections, matching the HUE swatch row in the panel body. */
+  border: 1px solid var(--ring, var(--accent));
+  box-shadow: 0 0 8px color-mix(in srgb, var(--ring, var(--accent)) 60%, transparent);
+  animation: sys-hud-pulse 1.6s ease-in-out infinite;
+  pointer-events: none;
+  transition: border-color .35s ease, box-shadow .35s ease;
+}
+@media (prefers-reduced-motion: reduce) {
+  .sys-hud-avatar-wrap::after { animation: none; }
+}
+@keyframes sys-hud-pulse {
+  0%, 100% { opacity: 1;    transform: scale(1); }
+  50%      { opacity: .35;  transform: scale(.82); }
+}
+.sys-hud-meter {
+  display: flex;
+  gap: 2px;
+  align-items: flex-end;
+  height: 10px;
+}
+.sys-hud-tick {
+  width: 4px;
+  height: 8px;
+  background: color-mix(in srgb, var(--fg) 12%, transparent);
+  /* Height transitions smoothly between sin-wave samples so the bars
+     undulate instead of stepping; background still snaps. */
+  transition: background .15s linear, height .25s cubic-bezier(.22, 1, .36, 1);
+  align-self: flex-end;
+}
+.sys-hud-tick.on {
+  background: var(--accent);
+  box-shadow: 0 0 4px color-mix(in srgb, var(--accent) 50%, transparent);
+}
+.sys-hud-hue {
+  display: flex;
+  gap: 3px;
+  align-items: center;
+}
+.sys-hud-hue span {
+  display: inline-block;
+  width: 14px;
+  height: 8px;
+  border-radius: 1px;
+  border: 1px solid color-mix(in srgb, var(--fg) 8%, transparent);
+}
+/* TRACE row — streaming model output. Reserve min-width so the panel
+   doesn't reflow on every character keystroke. */
+.sys-hud-trace { margin-top: .15rem; }
+.sys-hud-trace-v {
+  color: var(--warm);
+  font-weight: 600;
+  display: inline-block;
+  min-width: 9.5rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: clip;
+}
+.sys-hud-caret {
+  display: inline-block;
+  margin-left: 1px;
+  color: var(--warm);
+  font-weight: 700;
+  animation: sys-hud-caret-blink 1s steps(2, end) infinite;
+}
+@keyframes sys-hud-caret-blink {
+  0%, 50%      { opacity: 1; }
+  50.01%, 100% { opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sys-hud-caret { animation: none; }
+}
+@media (max-width: 968px) {
+  .sys-hud { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sys-hud-led { animation: none; }
 }
 
 /* Corner controls (contacts + theme toggle) — bottom-right */
@@ -350,6 +1108,18 @@ body::before { display: none; }
   min-width: 1.4rem;
   transition: color .3s;
 }
+.sb-nav-glyph {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  color: var(--fg4);
+  transition: color .3s cubic-bezier(.22, 1, .36, 1), transform .35s cubic-bezier(.22, 1, .36, 1);
+}
+.sb-nav-item:hover .sb-nav-glyph,
+.sb-nav-item.active .sb-nav-glyph {
+  color: var(--accent);
+  transform: scale(1.1);
+}
 .sb-nav-item:hover,
 .sb-nav-item.active {
   color: var(--fg);
@@ -362,6 +1132,24 @@ body::before { display: none; }
 .sb-nav-item:hover .sb-nav-i,
 .sb-nav-item.active .sb-nav-i {
   color: var(--accent);
+}
+/* Sections the reader has scrolled past tint accent at lower
+   opacity — so the rail reads as a real three-state progress
+   indicator: pending (gray) → active (full accent + 64px tick) →
+   passed (accent-tinted, slightly faded). */
+.sb-nav-item.passed { color: var(--fg2); }
+.sb-nav-item.passed .sb-nav-rail {
+  width: 40px;
+  background: var(--accent);
+  opacity: .55;
+}
+.sb-nav-item.passed .sb-nav-i {
+  color: var(--accent);
+  opacity: .8;
+}
+.sb-nav-item.passed .sb-nav-glyph {
+  color: var(--accent);
+  opacity: .65;
 }
 
 /* ── Foot (contacts + theme toggle) ── */
@@ -477,6 +1265,40 @@ body::before { display: none; }
     0 0 16px color-mix(in srgb, var(--bg) 92%, transparent),
     0 0 6px  color-mix(in srgb, var(--bg) 80%, transparent),
     0 1px 0  color-mix(in srgb, var(--bg) 70%, transparent);
+}
+
+/* ── Per-section accent palette ──
+   Each section's local --accent shifts a few degrees in the navy /
+   indigo / graphite family. All --accent-soft, --accent-soft2, and
+   anything derived via color-mix(... var(--accent) ...) recomputes
+   automatically, so the section number, title underline, pub-link
+   hover, exp-year, focus-item hover, etc. all retint together.
+   Mirrors the canvas SCENE_PALETTE shifts so text + particles share
+   a per-section colour identity. */
+.sect[data-pos="tr"] {
+  --accent:  #1E3A8A;    /* About — base journal navy */
+  --accent2: #2754C2;
+  --accent3: #1E2A5E;
+}
+.sect[data-pos="mr"] {
+  --accent:  #1E40AF;    /* Research — slightly brighter navy */
+  --accent2: #2563EB;
+  --accent3: #1D3491;
+}
+.sect[data-pos="br"] {
+  --accent:  #334155;    /* Publication — graphite for the manuscript */
+  --accent2: #475569;
+  --accent3: #1F2937;
+}
+.sect[data-pos="bl"] {
+  --accent:  #4338CA;    /* Projects — engineer indigo */
+  --accent2: #4F46E5;
+  --accent3: #3730A3;
+}
+.sect[data-pos="tl"] {
+  --accent:  #1F3D8E;    /* Skills — warm steel navy */
+  --accent2: #3B5BDB;
+  --accent3: #1E2D6B;
 }
 
 /* ── Quadrant variants ──
@@ -673,13 +1495,47 @@ body::before { display: none; }
 }
 .hero-name-line {
   display: block;
-  animation: hero-rise .9s cubic-bezier(.22,1,.36,1) both;
-  animation-delay: .12s;
+  /* Per-char animation handles entry now — line-level hero-rise is
+     gone so the chars cascade individually. The gradient breath on
+     line 2 is moved to its own selector below. */
+}
+/* Each character in the hero name enters with its own delay: scale
+   the cascade by --i (set per-letter in the JSX). Line 1 chars run
+   --i = 0..7, line 2 chars run --i = 9..13 so there's a beat of pause
+   between the lines before "Wang." starts cascading. */
+.hero-name-char {
+  display: inline-block;
+  opacity: 0;
+  transform: translateY(60px);
+  animation: hero-char-rise .72s cubic-bezier(.22, 1, .36, 1) forwards;
+  animation-delay: calc(.14s + var(--i, 0) * .045s);
+  /* Once the entry animation completes (it has `forwards` so the final
+     keyframe sticks), transition takes over for the hover lift. */
+  transition: transform .35s cubic-bezier(.22, 1, .36, 1);
+  cursor: default;
+}
+/* Hover lifts the letter slightly and rocks it with an alternating
+   tilt (calculated from --i so adjacent letters lean opposite ways
+   for a hand-typeset feel). Line 2's gradient stays intact because
+   we only touch transform. */
+.hero-name-char:hover {
+  transform: translateY(-10px) rotateZ(calc((var(--i, 0) - 6) * 0.6deg));
+}
+@keyframes hero-char-rise {
+  0%   { opacity: 0; transform: translateY(60px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hero-name-char {
+    opacity: 1 !important;
+    transform: none !important;
+    animation: none !important;
+  }
 }
 .hero-name-line-2 {
-  animation-delay: .24s;
-  /* second line subtle nudge so it doesn't sit flush left — feels
-     more designed and less template. */
+  position: relative;
+  /* Subtle nudge so the line doesn't sit flush left — feels more
+     designed than template. */
   padding-left: 0.5em;
   background: linear-gradient(
     100deg,
@@ -693,9 +1549,34 @@ body::before { display: none; }
   -webkit-background-clip: text;
   color: transparent;
   -webkit-text-fill-color: transparent;
-  animation:
-    hero-rise .9s cubic-bezier(.22,1,.36,1) both .24s,
-    accent-breathe 6s ease-in-out infinite 1.6s;
+  /* Per-char rise handles entry — only the slow gradient drift stays
+     here so the surname keeps shimmering after it lands. */
+  animation: accent-breathe 6s ease-in-out infinite 1.6s;
+}
+/* Thin accent underline that draws under "Wang." once the letter
+   cascade has finished landing. Reads as a printer's signature rule
+   under the surname — editorial flourish, half-line-width so it
+   doesn't span the full title. */
+.hero-name-line-2::after {
+  content: '';
+  position: absolute;
+  left: 0.5em;
+  bottom: 0.08em;
+  width: 0;
+  height: 2px;
+  background: linear-gradient(90deg,
+    var(--accent) 0%,
+    color-mix(in srgb, var(--accent) 40%, transparent) 80%,
+    transparent 100%);
+  animation: hero-rule-draw 1.1s cubic-bezier(.22, 1, .36, 1) 1.4s forwards;
+  pointer-events: none;
+}
+@keyframes hero-rule-draw {
+  from { width: 0; }
+  to   { width: 52%; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hero-name-line-2::after { animation: none; width: 52%; }
 }
 /* Slow horizontal gradient drift — mirrors the network's "alive"
    quality without being attention-grabbing. */
@@ -704,7 +1585,7 @@ body::before { display: none; }
   50%      { background-position: 100% 50%; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .hero-name-line-2 { animation: hero-rise .9s cubic-bezier(.22,1,.36,1) both .24s; }
+  .hero-name-line-2 { animation: none; }
 }
 .hero-tagline {
   font-family: var(--serif);
@@ -732,6 +1613,22 @@ body::before { display: none; }
   animation-delay: .48s;
 }
 .hero-meta-dot { color: var(--fg4); }
+.hero-meta-led {
+  display: inline-block;
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--accent) 70%, transparent);
+  animation: sys-hud-pulse 1.6s ease-in-out infinite;
+  margin-right: .15rem;
+}
+.hero-meta-dim {
+  color: var(--fg4);
+  font-variant-numeric: tabular-nums;
+}
+@media (prefers-reduced-motion: reduce) {
+  .hero-meta-led { animation: none; }
+}
 .hero-cue {
   align-self: flex-start;
   display: inline-flex;
@@ -762,6 +1659,18 @@ body::before { display: none; }
   color: var(--accent);
   transform: translateY(-2px);
 }
+/* Once the reader has scrolled, the chevron has served its purpose
+   — fade it gracefully so it doesn't loiter when the hero comes
+   back into view. opacity transition + pointer-events: none keeps
+   the layout stable. */
+.hero-cue {
+  transition: all .3s cubic-bezier(.22,1,.36,1), opacity .55s ease;
+}
+.hero-cue-fade {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(8px);
+}
 @keyframes hero-rise {
   from { opacity: 0; transform: translateY(28px); }
   to   { opacity: 1; transform: none; }
@@ -787,7 +1696,17 @@ body::before { display: none; }
 }
 .sect-n {
   color: var(--accent);
-  user-select: none;
+  text-decoration: none;
+  transition: color .25s, opacity .25s;
+}
+a.sect-n {
+  /* Real anchor — clicking updates the URL hash so the section is
+     deep-linkable + shareable. Hover gives a subtle dimming and
+     pointer cursor without changing the type itself. */
+  cursor: pointer;
+}
+a.sect-n:hover {
+  opacity: .75;
 }
 .sect-meta-aux {
   color: var(--fg3);
@@ -811,6 +1730,19 @@ body::before { display: none; }
   color: var(--fg);
   margin-bottom: clamp(2rem, 5vh, 3.5rem);
   padding-bottom: clamp(1rem, 2.5vh, 1.75rem);
+}
+/* When DecodeText drives a section title, preserve embedded \n so
+   multi-line titles ("Field notes / from three labs.") still wrap
+   on the same break they used to enforce with <br/>. */
+.sect-title.decode-title {
+  white-space: pre-line;
+}
+/* sect-meta-aux already inherits mono from sect-meta — fix tabular
+   advance so the DecodeText scrambled tail doesn't jitter horizontally
+   while the label resolves. */
+.sect-meta-aux {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
 }
 /* Hairline accent rule below the title — wipes in once the section is
    visible, like a printer-stripe drawing under a chapter heading. */
@@ -1133,6 +2065,21 @@ body::before { display: none; }
   color: var(--fg3);
   white-space: nowrap;
 }
+.proj-stars {
+  color: var(--warm);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: .08em;
+}
+.proj-lang { display: inline-flex; align-items: center; gap: .4rem; }
+.proj-lang-dot {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  border: 1px solid color-mix(in srgb, var(--fg) 12%, transparent);
+}
 .proj-arrow {
   font-size: 1.1rem;
   color: var(--fg3);
@@ -1263,29 +2210,65 @@ body::before { display: none; }
   font-size: .75rem;
   margin-top: .5rem;
 }
+/* AI-lab signature line above the copyright. Mirrors the sys-hud
+   header so the page feels like one consistent dashboard. */
+.foot-sig {
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+  font-family: var(--mono);
+  font-size: .62rem;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+}
+.foot-led {
+  display: inline-block;
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--accent) 70%, transparent);
+  animation: sys-hud-pulse 1.6s ease-in-out infinite;
+}
+.foot-sig-k {
+  color: var(--fg);
+  font-weight: 600;
+}
+.foot-sig-sep { color: var(--fg4); }
+.foot-sig-v {
+  color: var(--fg3);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+.foot-sig-dim { color: var(--fg4); }
+.foot-sig-link {
+  color: var(--accent);
+  text-decoration: none;
+  font-weight: 600;
+  border-bottom: 1px dashed color-mix(in srgb, var(--accent) 50%, transparent);
+  transition: color .25s, border-color .25s;
+}
+.foot-sig-link:hover {
+  color: var(--accent2);
+  border-color: var(--accent2);
+}
+@media (prefers-reduced-motion: reduce) {
+  .foot-led { animation: none; }
+}
 
 /* ════════════════════════════════════════════════════════════════════
-   Back to Top
+   Screen-reader-only utility — visually hidden but still announced.
+   Standard a11y pattern; used by the aria-live scene-change region.
    ════════════════════════════════════════════════════════════════════ */
-
-.btt {
-  position: fixed; right: 1.5rem; bottom: 1.5rem;
-  width: 48px; height: 48px; border-radius: 50%;
-  border: 1px solid var(--border-strong);
-  background: var(--card);
-  color: var(--fg); cursor: pointer;
-  display: grid; place-items: center;
-  box-shadow: var(--sh);
-  opacity: 0; transform: translateY(12px) scale(.85);
-  transition: all .4s cubic-bezier(.22,1,.36,1);
-  pointer-events: none; z-index: 50;
-}
-.btt.show { opacity: 1; transform: translateY(0) scale(1); pointer-events: auto; }
-.btt:hover {
-  background: var(--accent); color: #fff;
-  border-color: var(--accent);
-  transform: translateY(-3px) scale(1);
-  box-shadow: 0 8px 30px var(--accent-soft2);
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 /* ════════════════════════════════════════════════════════════════════
@@ -1342,4 +2325,74 @@ body::before { display: none; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0s !important; transition-duration: 0s !important; }
   .canvas-placeholder { display: block; }
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   Print
+   Strip every layer of chrome (canvas, HUD, chips, watermark, splash,
+   ripples) so the printed page is just the actual content text on a
+   plain background. Sized for letter / A4 with normal serif body.
+   ════════════════════════════════════════════════════════════════════ */
+@media print {
+  body::before,
+  body::after,
+  .atmos,
+  .glyph-rain,
+  .scroll-progress,
+  .scene-flash,
+  .click-ripple-layer,
+  .cursor-spot,
+  .intro-splash,
+  .section-watermark,
+  .id-badge,
+  .kbd-hint,
+  .side-rail,
+  .sys-hud,
+  .corner-controls,
+  .hero-cue,
+  .hero-avatar-btn,
+  .hero-meta-led,
+  .foot-led {
+    display: none !important;
+  }
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+    cursor: default !important;
+  }
+  .main {
+    max-width: 64ch;
+    margin: 0 auto;
+    padding: 2rem;
+  }
+  .hero-scene { padding-block: 0; min-height: auto; }
+  .sect, .sect[data-pos] {
+    align-items: flex-start;
+    min-height: auto;
+    padding-block: 1.5rem;
+    page-break-inside: avoid;
+  }
+  .sect[data-pos] .sect-stage,
+  .hero-scene {
+    margin: 0 !important;
+    max-width: none !important;
+    transform: none !important;
+    opacity: 1 !important;
+    padding: 0;
+    text-shadow: none !important;
+  }
+  .hero-name { font-size: 2.2rem; }
+  .hero-name-line-2 {
+    color: #000 !important;
+    -webkit-text-fill-color: #000 !important;
+    background: none !important;
+    animation: none !important;
+  }
+  .hero-name-line-2::after { display: none; }
+  .sect-title, .pub-title { font-size: 1.5rem; }
+  .sect-title::after { display: none; }
+  a { color: #000 !important; text-decoration: underline; }
+  /* Make sure decode-text resolves to target on print (the React state
+     should already settle, but force it just in case). */
+  .sect-meta-aux, .hero-kicker { color: #333 !important; }
 }

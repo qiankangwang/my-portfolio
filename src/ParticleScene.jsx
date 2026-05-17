@@ -28,6 +28,25 @@ import * as THREE from "three";
 const PARTICLE_COUNT = 1200;
 const SCENE_COUNT = 6;
 
+// Neural-network architecture for the Research scene.
+// Five layers with distinct widths — looks like a real feedforward
+// net silhouette (input wide, narrowing, output narrow). Each "node"
+// is a cloud of ~25 particles around an anchor point so the field
+// reads as fuzzy neuron dots, not single geometric points.
+const NN_LAYERS = [14, 10, 8, 10, 6];
+const NN_TOTAL = NN_LAYERS.reduce((a, b) => a + b, 0);
+// LUT: global slot index → { layer, node, layerSize }.
+// Built once at module load so the per-particle place lookup is O(1).
+const NN_SLOT_LUT = (() => {
+  const out = [];
+  for (let L = 0; L < NN_LAYERS.length; L++) {
+    for (let n = 0; n < NN_LAYERS[L]; n++) {
+      out.push({ layer: L, node: n, layerSize: NN_LAYERS[L] });
+    }
+  }
+  return out;
+})();
+
 // Build every particle's target position for every scene. Returns an
 // array of 6 Float32Arrays (one per scene), each of length COUNT*3.
 function buildFormations(count) {
@@ -68,18 +87,30 @@ function buildFormations(count) {
     }
 
     // ── 2  Research — feedforward neural network ──
-    // Wider column spread + taller layers so the outer layers fall
-    // outside the card's footprint at viewport centre.
+    // 5-layer architecture with distinct node counts (input wide,
+    // narrowing through hidden, expanding to output). Each "node" is
+    // a small cloud of ~25 particles around an anchor, so the field
+    // reads as a real architecture diagram with fuzzy neuron dots.
+    //
+    //   layer 0  14 nodes  (input)
+    //   layer 1  10        (hidden)
+    //   layer 2   8        (bottleneck)
+    //   layer 3  10        (hidden)
+    //   layer 4   6        (output)
     {
-      const LAYERS = 6;
-      const layer = i % LAYERS;
-      const idxInLayer = Math.floor(i / LAYERS);
-      const perLayer = Math.ceil(count / LAYERS);
-      const ratio = (idxInLayer + 0.5) / perLayer;
-      const curve = Math.sin((ratio - 0.5) * Math.PI) * 18;
-      out[2][ix]     = (layer - (LAYERS - 1) / 2) * 50;
-      out[2][ix + 1] = (ratio - 0.5) * 180 + curve;
-      out[2][ix + 2] = (rand() - 0.5) * 22;
+      // Map particle index i → slot k via even distribution
+      const slotK = Math.min(NN_TOTAL - 1, Math.floor((i / count) * NN_TOTAL));
+      const { layer: nnLayer, node: nnNode, layerSize } = NN_SLOT_LUT[slotK];
+      const layerAnchorX = (nnLayer - (NN_LAYERS.length - 1) / 2) * 64;
+      const nodeAnchorY  = (nnNode - (layerSize - 1) / 2) * 13;
+      // Stable per-particle micro-jitter so each node is a fuzzy blob,
+      // not one geometric point.
+      const jx = (rand() - 0.5) * 6;
+      const jy = (rand() - 0.5) * 6;
+      const jz = (rand() - 0.5) * 12;
+      out[2][ix]     = layerAnchorX + jx;
+      out[2][ix + 1] = nodeAnchorY + jy;
+      out[2][ix + 2] = jz;
     }
 
     // ── 3  Publication — Fibonacci sphere (enlarged) ──
@@ -142,6 +173,48 @@ function buildFormations(count) {
   return out;
 }
 
+// Build k-nearest-neighbor edges over a single formation. Each
+// particle finds its k closest spatial neighbors; pairs are deduped
+// so (i, j) and (j, i) become one undirected edge. We compute this
+// once on the Hero (cloud) formation and use the resulting graph
+// topology across every scene — the same edges connect the same
+// particle pairs as they morph between DNA, network, sphere, grid,
+// rings. Reads as the same neural network viewed in different
+// layouts, instead of an arbitrary sequential adjacency.
+function buildKnnEdges(positions, k, count) {
+  const edgeSet = new Set();
+  const buf = new Array(count - 1);
+  for (let i = 0; i < count; i++) {
+    const ix = i * 3;
+    const xi = positions[ix], yi = positions[ix + 1], zi = positions[ix + 2];
+    let n = 0;
+    for (let j = 0; j < count; j++) {
+      if (j === i) continue;
+      const jx = j * 3;
+      const dx = positions[jx]     - xi;
+      const dy = positions[jx + 1] - yi;
+      const dz = positions[jx + 2] - zi;
+      buf[n++] = [dx * dx + dy * dy + dz * dz, j];
+    }
+    // Partial sort: only need the top-k smallest distances.
+    buf.length = n;
+    buf.sort((a, b) => a[0] - b[0]);
+    for (let kk = 0; kk < k && kk < n; kk++) {
+      const j = buf[kk][1];
+      const a = i < j ? i : j;
+      const b = i < j ? j : i;
+      edgeSet.add(a * count + b);
+    }
+  }
+  const edges = [];
+  edgeSet.forEach((key) => {
+    const a = Math.floor(key / count);
+    const b = key % count;
+    edges.push([a, b]);
+  });
+  return edges;
+}
+
 // Small deterministic PRNG so formation jitter is repeatable across
 // reloads.
 function mulberry32(seed) {
@@ -155,7 +228,7 @@ function mulberry32(seed) {
   };
 }
 
-export default function ParticleScene({ sceneRef }) {
+export default function ParticleScene({ sceneRef, scrollVelRef, lastInteractRef, fpsRef }) {
   const containerRef = useRef(null);
 
   useEffect(() => {
@@ -258,11 +331,11 @@ export default function ParticleScene({ sceneRef }) {
     // alpha and let the canvas-level multiply do the integration —
     // particles read as ink dots on the paper, not phosphor pixels.
     const material = new THREE.PointsMaterial({
-      size: 3.6,
+      size: 4.2,
       map: haloTex,
       vertexColors: true,
       transparent: true,
-      opacity: 0.85,
+      opacity: 0.88,
       blending: THREE.NormalBlending,
       depthWrite: false,
       sizeAttenuation: true,
@@ -277,18 +350,25 @@ export default function ParticleScene({ sceneRef }) {
     //     traces the formation's natural ordering — DNA strands, ring
     //     orbits, grid rows. Single saturated colour pulled from the
     //     active scene palette per frame. ──────────────────────────
-    const LINE_STRIDE = 8;
-    const linePairs = [];
-    for (let i = 0; i + 1 < PARTICLE_COUNT; i += LINE_STRIDE) {
-      linePairs.push([i, i + 1]);
-    }
+    // ── KNN graph topology ──
+    // Real k-nearest-neighbor edges computed once on the Hero (cloud)
+    // formation. The graph is fixed: the same edges connect the same
+    // particle pairs across every scene, so the "neural network" is a
+    // consistent structure that the camera views in different layouts
+    // (helix, layered net, sphere, grid, rings) as the user scrolls.
+    // k=2 gives each particle two neighbors; after dedupe, ~1800
+    // unique edges. Lower opacity (0.34) because there are 6x more
+    // lines than before — they read as a dense graph, not a tangle.
+    const linePairs = buildKnnEdges(formations[0], 2, PARTICLE_COUNT);
     const linePositions = new Float32Array(linePairs.length * 2 * 3);
+    const lineColors = new Float32Array(linePairs.length * 2 * 3);
     const lineGeometry = new THREE.BufferGeometry();
     lineGeometry.setAttribute("position", new THREE.BufferAttribute(linePositions, 3));
+    lineGeometry.setAttribute("color", new THREE.BufferAttribute(lineColors, 3));
     const lineMaterial = new THREE.LineBasicMaterial({
-      color: 0x1e3a8a,
+      vertexColors: true,
       transparent: true,
-      opacity: 0.42,
+      opacity: 0.34,
       blending: THREE.NormalBlending,
       depthWrite: false,
     });
@@ -310,11 +390,11 @@ export default function ParticleScene({ sceneRef }) {
     pulseGeometry.setAttribute("position", new THREE.BufferAttribute(pulsePositions, 3));
     pulseGeometry.setAttribute("color", new THREE.BufferAttribute(pulseColors, 3));
     const pulseMaterial = new THREE.PointsMaterial({
-      size: 7.5,
+      size: 9.5,
       map: haloTex,
       vertexColors: true,
       transparent: true,
-      opacity: 0.92,
+      opacity: 0.95,
       blending: THREE.NormalBlending,
       depthWrite: false,
       sizeAttenuation: true,
@@ -356,6 +436,53 @@ export default function ParticleScene({ sceneRef }) {
       lifeMs: 800,
     };
 
+    // ── Cursor attention rays ──
+    // Whenever the cursor is over the field we draw 6 faint lines
+    // from the cursor's world-space projection to the 6 nearest
+    // particles within an extended radius. Makes the existing
+    // (invisible) pull + attention-anchor effects literal — the model
+    // is visibly "looking at" specific tokens. Opacity is lerped each
+    // frame toward 0 when cursor leaves the field.
+    const CURSOR_EDGE_COUNT = 6;
+    const cursorEdgePositions = new Float32Array(CURSOR_EDGE_COUNT * 2 * 3);
+    const cursorEdgeGeometry = new THREE.BufferGeometry();
+    cursorEdgeGeometry.setAttribute("position", new THREE.BufferAttribute(cursorEdgePositions, 3));
+    const cursorEdgeMaterial = new THREE.LineBasicMaterial({
+      color: 0xb45309,           // warm rust — matches cursor spotlight tone
+      transparent: true,
+      opacity: 0,
+      blending: THREE.NormalBlending,
+      depthWrite: false,
+    });
+    const cursorEdgeLines = new THREE.LineSegments(cursorEdgeGeometry, cursorEdgeMaterial);
+    scene.add(cursorEdgeLines);
+    // Reused per-frame top-K arrays (no GC churn).
+    const topKDist = new Float32Array(CURSOR_EDGE_COUNT);
+    const topKIdx = new Int32Array(CURSOR_EDGE_COUNT);
+
+    // ── Cursor particle ──
+    // A single, larger, warm-rust Point at the cursor's projected world
+    // position. The 6 edge rays + 2 attention edges anchored to the
+    // closest particle were all emanating from invisible — now they
+    // read as "this glowing particle is reaching out to those
+    // neighbors." Inhabits the scene as a first-class point, not just
+    // a screen-space overlay.
+    const cursorParticlePos = new Float32Array(3);
+    const cursorParticleGeometry = new THREE.BufferGeometry();
+    cursorParticleGeometry.setAttribute("position", new THREE.BufferAttribute(cursorParticlePos, 3));
+    const cursorParticleMaterial = new THREE.PointsMaterial({
+      size: 18,
+      map: haloTex,
+      color: 0xb45309,
+      transparent: true,
+      opacity: 0,
+      blending: THREE.NormalBlending,
+      depthWrite: false,
+      sizeAttenuation: true,
+    });
+    const cursorParticle = new THREE.Points(cursorParticleGeometry, cursorParticleMaterial);
+    scene.add(cursorParticle);
+
     // ── Per-scene camera vantage points ────────────────────────────
     // Cinematic camera path. Text + formation occupy the SAME quadrant
     // each scene — they fuse on a shared paper surface via the canvas's
@@ -376,31 +503,53 @@ export default function ParticleScene({ sceneRef }) {
     // Portfolio.jsx track the same quadrants.
     const SCENE_CAMS = [
       // 0 Hero       — centred arrival shot, no quadrant
-      { x:  0, y:  20, z: 240, lookX:   0, lookY:   0 },
+      { x:  0, y:  20, z: 205, lookX:   0, lookY:   0 },
       // 1 About      — TOP-RIGHT (path begins)
-      { x: 14, y:  22, z: 260, lookX: -65, lookY: -22 },
+      { x: 14, y:  22, z: 220, lookX: -68, lookY: -22 },
       // 2 Research   — MIDDLE-RIGHT (camera drifts down)
-      { x: 14, y:   2, z: 240, lookX: -65, lookY:   0 },
+      { x: 14, y:   2, z: 205, lookX: -68, lookY:   0 },
       // 3 Publication — BOTTOM-RIGHT (camera continues down)
-      { x: 14, y: -22, z: 295, lookX: -65, lookY:  22 },
+      { x: 14, y: -22, z: 250, lookX: -68, lookY:  22 },
       // 4 Projects   — BOTTOM-LEFT (camera swings across)
-      { x:-14, y: -22, z: 250, lookX:  65, lookY:  22 },
+      { x:-14, y: -22, z: 215, lookX:  68, lookY:  22 },
       // 5 Skills     — TOP-LEFT (camera rises to exit)
-      { x:-14, y:  22, z: 280, lookX:  65, lookY: -22 },
+      { x:-14, y:  22, z: 235, lookX:  68, lookY: -22 },
     ];
 
     // ── Mouse parallax ─────────────────────────────────────────────
     // Cursor position drives a subtle rotation of the whole scene —
     // moves up to ~5° away from the cursor on each axis. Low-pass on
-    // arrival so it doesn't twitch on every move event.
-    const mouse = { x: 0, y: 0, tx: 0, ty: 0 };
+    // arrival so it doesn't twitch on every move event. The cursor is
+    // also projected to the z=0 world plane (via raycaster) so the
+    // particle field can elastically pull toward the cursor and so
+    // attention edges can anchor on the particle nearest the cursor —
+    // the model "attends" where the reader is looking.
+    const mouse = { x: 0, y: 0, tx: 0, ty: 0, active: false };
     const onMouseMove = (e) => {
       mouse.tx = (e.clientX / window.innerWidth)  * 2 - 1;
       mouse.ty = (e.clientY / window.innerHeight) * 2 - 1;
+      mouse.active = true;
     };
+    const onMouseLeave = () => { mouse.active = false; };
     if (!reducedMotion) {
       window.addEventListener("mousemove", onMouseMove, { passive: true });
+      document.addEventListener("mouseleave", onMouseLeave, { passive: true });
     }
+
+    // Reusable vectors for cursor → world projection (avoid per-frame
+    // allocations). Mouse is in NDC ([-1, 1] x, with web-y flipped);
+    // raycaster intersects the z=0 plane to get a world point that
+    // the particle pull + attention anchor both use. The intersect is
+    // inverse-rotated by the current scene quaternion so it lines up
+    // with the un-rotated particle buffer.
+    const cursorRay = new THREE.Raycaster();
+    const cursorPlane = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);
+    const cursorNDC = new THREE.Vector2();
+    const cursorWorld = new THREE.Vector3();
+    const cursorLocal = new THREE.Vector3();
+    const cursorInvQuat = new THREE.Quaternion();
+    let cursorLocalValid = false;
+    let cursorClosestIdx = 0;
 
     // ── Animation loop ─────────────────────────────────────────────
     let raf = 0;
@@ -411,6 +560,17 @@ export default function ParticleScene({ sceneRef }) {
     // doesn't twitch with wheel jitter).
     let smoothedScene = sceneRef?.current ?? 0;
     let lastTime = performance.now();
+
+    // Scene-boundary brightness pulse — when the integer scene index
+    // changes, the field briefly saturates and brightens. Decays
+    // exponentially each frame so the burst lasts ~1s. Initial value
+    // is -1 so the first frame (lo=0) doesn't fire a phantom flash.
+    let prevSceneLo = -1;
+    let sceneFlashI = 0;
+    // Easter-egg trigger: typing 'qk' anywhere dispatches a custom
+    // event we listen for and respond with a 2x flash burst.
+    const onEgg = () => { sceneFlashI = Math.max(sceneFlashI, 2.0); };
+    window.addEventListener("portfolio:qk", onEgg);
 
     // Camera state — interpolated between SCENE_CAMS entries per frame.
     const cam = {
@@ -424,6 +584,13 @@ export default function ParticleScene({ sceneRef }) {
     const tmpEuler = new THREE.Euler();
     const tmpQuat = new THREE.Quaternion();
 
+    // Rolling FPS buffer — keep the last 60 frame deltas, average for
+    // a smoothed reading. Writes to fpsRef each frame so the HUD can
+    // poll without setting up its own timing infrastructure.
+    const fpsBuf = new Float32Array(60);
+    let fpsBufIdx = 0;
+    let fpsBufFilled = 0;
+
     const animate = () => {
       if (!running) return;
       raf = requestAnimationFrame(animate);
@@ -431,16 +598,51 @@ export default function ParticleScene({ sceneRef }) {
       const dt = Math.min(0.05, (now - lastTime) / 1000);
       lastTime = now;
       frame++;
+      // FPS sample: dt in seconds → fps = 1/dt. Buffer & average.
+      if (dt > 0.0005) {
+        fpsBuf[fpsBufIdx] = 1 / dt;
+        fpsBufIdx = (fpsBufIdx + 1) % fpsBuf.length;
+        if (fpsBufFilled < fpsBuf.length) fpsBufFilled++;
+        if (fpsRef && (frame & 7) === 0) {  // update every 8 frames
+          let sum = 0;
+          for (let i = 0; i < fpsBufFilled; i++) sum += fpsBuf[i];
+          fpsRef.current = sum / fpsBufFilled;
+        }
+      }
 
       const target = sceneRef?.current ?? 0;
       const k = 1 - Math.exp(-dt / 0.25);
       smoothedScene += (target - smoothedScene) * k;
+
+      // ── Cursor projection (1-frame lag — imperceptible) ──
+      // Project mouse NDC through the camera onto the z=0 plane, then
+      // inverse-rotate by the field's current quaternion so the result
+      // lives in particle-local space. Both the elastic pull (below)
+      // and the attention-edge anchoring (later) consume cursorLocal.
+      cursorLocalValid = false;
+      if (mouse.active && !reducedMotion) {
+        cursorNDC.set(mouse.x, -mouse.y);
+        cursorRay.setFromCamera(cursorNDC, camera);
+        if (cursorRay.ray.intersectPlane(cursorPlane, cursorWorld)) {
+          cursorInvQuat.copy(points.quaternion).invert();
+          cursorLocal.copy(cursorWorld).applyQuaternion(cursorInvQuat);
+          cursorLocalValid = true;
+        }
+      }
 
       const segCount = formations.length - 1;
       const clamped = Math.max(0, Math.min(segCount, smoothedScene));
       const lo = Math.floor(clamped);
       const hi = Math.min(lo + 1, segCount);
       const u = clamped - lo;
+
+      // Scene-change brightness pulse: fires when integer scene index
+      // shifts (either direction). Decays multiplicatively each frame.
+      if (lo !== prevSceneLo) {
+        if (prevSceneLo !== -1) sceneFlashI = 1.0;
+        prevSceneLo = lo;
+      }
+      sceneFlashI *= 0.92;
       // Smoothstep so the morph eases at the ends of each segment.
       const eased = u * u * (3 - 2 * u);
 
@@ -448,15 +650,41 @@ export default function ParticleScene({ sceneRef }) {
       const B = formations[hi];
       const posAttr = geometry.attributes.position.array;
       // Per-particle tiny live drift so the field always breathes.
-      const driftAmp = reducedMotion ? 0 : 0.7;
+      // Idle awareness: after 5s of no reader input, ramp drift up
+      // over 8s so the field starts "dreaming" rather than just
+      // floating. Snaps back to base the moment anything happens.
+      let idleNorm = 0;
+      if (lastInteractRef) {
+        const idleMs = now - lastInteractRef.current;
+        idleNorm = Math.min(1, Math.max(0, (idleMs - 5000) / 8000));
+      }
+      const driftAmp = reducedMotion ? 0 : 0.7 + idleNorm * 1.6;
       const t = frame * 0.02;
       // Dispersal: particles fly outward from the centre during the
       // middle of each scene transition, then settle back as the next
       // formation comes in. Magnitude peaks at u = 0.5 and is zero at
       // u = 0 and u = 1 so the rest position of each scene is exact.
       // Kept gentle so text + formation stay visually fused mid-cut.
-      const dispersal = 1 + Math.sin(u * Math.PI) * 0.12;
-      const scatterAmp = Math.sin(u * Math.PI) * 7;
+      // Scroll velocity (0..1.5+) boosts both — fast scrolling wakes
+      // the field up, settled scrolling keeps it calm.
+      const rawVel = scrollVelRef?.current ?? 0;
+      const velNorm = Math.min(rawVel / 1400, 1.5);
+      const dispersal = 1 + Math.sin(u * Math.PI) * 0.12 + velNorm * 0.05;
+      const scatterAmp = Math.sin(u * Math.PI) * 7 + velNorm * 5.5;
+      // Track the particle closest to the cursor while we walk the
+      // buffer. The attention-edge re-roll below anchors two edges
+      // there so the field visibly "attends" to the reader. We also
+      // maintain a top-K list of nearest particles within an extended
+      // radius so the cursor edge-rays know which endpoints to use.
+      let closestDistSq = Infinity;
+      const cursorR = 55;
+      const cursorRSq = cursorR * cursorR;
+      const cursorRTrackSq = cursorR * cursorR * 2.6;  // wider window for rays
+      const cursorPullMax = 2.6;
+      for (let k = 0; k < CURSOR_EDGE_COUNT; k++) {
+        topKDist[k] = Infinity;
+        topKIdx[k] = 0;
+      }
       for (let i = 0; i < PARTICLE_COUNT; i++) {
         const idx = i * 3;
         const ax = A[idx],     ay = A[idx + 1],     az = A[idx + 2];
@@ -473,9 +701,45 @@ export default function ParticleScene({ sceneRef }) {
         const lx = (ax + (bx - ax) * eased) * dispersal;
         const ly = (ay + (by - ay) * eased) * dispersal;
         const lz = (az + (bz - az) * eased) * dispersal;
-        posAttr[idx]     = lx + dx + sx;
-        posAttr[idx + 1] = ly + dy + sy;
-        posAttr[idx + 2] = lz + dz + sz;
+        let px = lx + dx + sx;
+        let py = ly + dy + sy;
+        const pz = lz + dz + sz;
+        // ── Elastic cursor pull + top-K tracking ──
+        // Particles within cursorR of the projected cursor are tugged
+        // toward it with linear falloff, so the field bulges gently
+        // under the reader's pointer. We also keep a sorted top-K
+        // list of the closest particles in an extended radius — the
+        // cursor edge-rays connect the cursor to those endpoints, so
+        // the reader literally sees which tokens the model is
+        // attending to.
+        if (cursorLocalValid) {
+          const ddx = cursorLocal.x - px;
+          const ddy = cursorLocal.y - py;
+          const dSq = ddx * ddx + ddy * ddy;
+          if (dSq < cursorRSq && dSq > 1) {
+            const d = Math.sqrt(dSq);
+            const pull = (1 - d / cursorR) * cursorPullMax;
+            px += (ddx / d) * pull;
+            py += (ddy / d) * pull;
+            if (dSq < closestDistSq) {
+              closestDistSq = dSq;
+              cursorClosestIdx = i;
+            }
+          }
+          if (dSq < cursorRTrackSq && dSq < topKDist[CURSOR_EDGE_COUNT - 1]) {
+            let pos = CURSOR_EDGE_COUNT - 1;
+            while (pos > 0 && dSq < topKDist[pos - 1]) {
+              topKDist[pos] = topKDist[pos - 1];
+              topKIdx[pos] = topKIdx[pos - 1];
+              pos--;
+            }
+            topKDist[pos] = dSq;
+            topKIdx[pos] = i;
+          }
+        }
+        posAttr[idx]     = px;
+        posAttr[idx + 1] = py;
+        posAttr[idx + 2] = pz;
       }
       geometry.attributes.position.needsUpdate = true;
 
@@ -490,47 +754,75 @@ export default function ParticleScene({ sceneRef }) {
       const wg = palA[4] + (palB[4] - palA[4]) * eased;
       const wb = palA[5] + (palB[5] - palA[5]) * eased;
       const cAttr = geometry.attributes.color.array;
+      const flashBoost = 1 + sceneFlashI * 0.55;
       for (let i = 0; i < PARTICLE_COUNT; i++) {
         const warm = (i % 7 === 0);
         const ci = i * 3;
         if (warm) {
-          cAttr[ci]     = wr;
-          cAttr[ci + 1] = wg;
-          cAttr[ci + 2] = wb;
+          cAttr[ci]     = Math.min(1, wr * flashBoost);
+          cAttr[ci + 1] = Math.min(1, wg * flashBoost);
+          cAttr[ci + 2] = Math.min(1, wb * flashBoost);
         } else {
-          cAttr[ci]     = ar;
-          cAttr[ci + 1] = ag;
-          cAttr[ci + 2] = ab;
+          cAttr[ci]     = Math.min(1, ar * flashBoost);
+          cAttr[ci + 1] = Math.min(1, ag * flashBoost);
+          cAttr[ci + 2] = Math.min(1, ab * flashBoost);
         }
       }
       geometry.attributes.color.needsUpdate = true;
 
-      // Update line endpoint positions. Lines are sequential (i, i+1)
-      // pairs, so their endpoints sit on adjacent particles.
+      // Update line endpoint positions + per-line vertex colors. Lines
+      // whose endpoints sit close to the cursor get a brightness boost
+      // (clamped to 1.0 since RGB > 1 doesn't render), so the graph
+      // visibly "lights up" around the reader's attention.
       const lpos = lineGeometry.attributes.position.array;
+      const cxw = cursorLocal.x, cyw = cursorLocal.y;
+      const brightR = 60 * 60;    // squared brightening radius (60 units)
+      const useCursor = cursorLocalValid;
       for (let p = 0; p < linePairs.length; p++) {
         const [ia, ib] = linePairs[p];
         const a3 = ia * 3, b3 = ib * 3;
-        lpos[p * 6 + 0] = posAttr[a3];
-        lpos[p * 6 + 1] = posAttr[a3 + 1];
-        lpos[p * 6 + 2] = posAttr[a3 + 2];
-        lpos[p * 6 + 3] = posAttr[b3];
-        lpos[p * 6 + 4] = posAttr[b3 + 1];
-        lpos[p * 6 + 5] = posAttr[b3 + 2];
+        const ax = posAttr[a3],     ay = posAttr[a3 + 1], az = posAttr[a3 + 2];
+        const bx = posAttr[b3],     by = posAttr[b3 + 1], bz = posAttr[b3 + 2];
+        lpos[p * 6 + 0] = ax;
+        lpos[p * 6 + 1] = ay;
+        lpos[p * 6 + 2] = az;
+        lpos[p * 6 + 3] = bx;
+        lpos[p * 6 + 4] = by;
+        lpos[p * 6 + 5] = bz;
+        let factor = 1.0;
+        if (useCursor) {
+          const daSq = (cxw - ax) * (cxw - ax) + (cyw - ay) * (cyw - ay);
+          const dbSq = (cxw - bx) * (cxw - bx) + (cyw - by) * (cyw - by);
+          const minSq = daSq < dbSq ? daSq : dbSq;
+          if (minSq < brightR) {
+            factor = 1 + (1 - minSq / brightR) * 1.7;
+          }
+        }
+        const r = Math.min(1, ar * factor);
+        const g = Math.min(1, ag * factor);
+        const b = Math.min(1, ab * factor);
+        lineColors[p * 6 + 0] = r;
+        lineColors[p * 6 + 1] = g;
+        lineColors[p * 6 + 2] = b;
+        lineColors[p * 6 + 3] = r;
+        lineColors[p * 6 + 4] = g;
+        lineColors[p * 6 + 5] = b;
       }
       lineGeometry.attributes.position.needsUpdate = true;
-      // Single uniform line colour pulled from the lerped accent —
-      // gives the line layer a clean saturated reading against the
-      // particles, instead of mush-mixed vertex colours.
-      lineMaterial.color.setRGB(ar, ag, ab);
+      lineGeometry.attributes.color.needsUpdate = true;
+      // Scroll velocity bumps line opacity so the whole network
+      // "lights up" during fast scrolls in addition to the per-line
+      // cursor brightening.
+      lineMaterial.opacity = 0.34 + Math.min(velNorm, 1) * 0.18;
 
       // ── Pulse advance ──
       // Each pulse rides along its assigned line segment from endpoint
       // A to endpoint B. When it reaches B, it respawns on a fresh
       // line so the data-flow effect never stalls.
+      const pulseVelBoost = 1 + Math.min(velNorm, 1) * 0.6;
       for (let p = 0; p < PULSE_COUNT; p++) {
         const ps = pulseState[p];
-        ps.t += ps.speed * dt;
+        ps.t += ps.speed * dt * pulseVelBoost;
         if (ps.t >= 1) {
           ps.t = 0;
           ps.lineIndex = Math.floor(Math.random() * linePairs.length);
@@ -566,6 +858,13 @@ export default function ParticleScene({ sceneRef }) {
           attnState.pairs[a][0] = Math.floor(Math.random() * PARTICLE_COUNT);
           attnState.pairs[a][1] = Math.floor(Math.random() * PARTICLE_COUNT);
         }
+        // When the cursor is on the field, bias the first two edges to
+        // originate at the particle nearest the cursor — the model is
+        // literally "attending to" where the reader is looking.
+        if (cursorLocalValid && closestDistSq < Infinity) {
+          attnState.pairs[0][0] = cursorClosestIdx;
+          attnState.pairs[1][0] = cursorClosestIdx;
+        }
       }
       const attnPhase = attnState.ageMs / attnState.lifeMs;
       attnMaterial.opacity = Math.sin(attnPhase * Math.PI) * 0.34;
@@ -588,6 +887,60 @@ export default function ParticleScene({ sceneRef }) {
         Math.min(1, wb * 0.95)
       );
 
+      // ── Cursor edge-rays ──
+      // If the cursor is on the field, draw 6 lines from the cursor's
+      // local-space projection to the 6 nearest particles tracked
+      // above. Opacity lerps toward 0.55 when active, 0 otherwise so
+      // they fade out cleanly when the cursor leaves the viewport.
+      const cursorActive = cursorLocalValid && topKDist[0] < Infinity;
+      const cursorEdgeTargetOp = cursorActive ? 0.55 : 0;
+      cursorEdgeMaterial.opacity += (cursorEdgeTargetOp - cursorEdgeMaterial.opacity) * 0.18;
+
+      // Cursor particle — sit at the projected cursor world pos, fade
+      // opacity with the same lerp as the edge rays so they appear
+      // together. Subtle size pulse from the frame index gives it a
+      // slow "alive" breath.
+      if (cursorLocalValid) {
+        cursorParticlePos[0] = cursorLocal.x;
+        cursorParticlePos[1] = cursorLocal.y;
+        cursorParticlePos[2] = cursorLocal.z;
+        cursorParticleGeometry.attributes.position.needsUpdate = true;
+      }
+      const cursorParticleTargetOp = cursorActive ? 0.85 : 0;
+      cursorParticleMaterial.opacity += (cursorParticleTargetOp - cursorParticleMaterial.opacity) * 0.18;
+      // Slow breathing scale modulation via material size (re-applied
+      // each frame because Points doesn't have per-instance scale).
+      cursorParticleMaterial.size = 18 + Math.sin(frame * 0.05) * 1.6;
+      // Hue follow per-scene warm accent
+      cursorParticleMaterial.color.setRGB(
+        Math.min(1, wr * 1.1),
+        Math.min(1, wg * 1.1),
+        Math.min(1, wb * 1.1)
+      );
+      if (cursorEdgeMaterial.opacity > 0.005) {
+        for (let kk = 0; kk < CURSOR_EDGE_COUNT; kk++) {
+          if (topKDist[kk] < Infinity) {
+            const pIx = topKIdx[kk] * 3;
+            cursorEdgePositions[kk * 6 + 0] = cursorLocal.x;
+            cursorEdgePositions[kk * 6 + 1] = cursorLocal.y;
+            cursorEdgePositions[kk * 6 + 2] = cursorLocal.z;
+            cursorEdgePositions[kk * 6 + 3] = posAttr[pIx];
+            cursorEdgePositions[kk * 6 + 4] = posAttr[pIx + 1];
+            cursorEdgePositions[kk * 6 + 5] = posAttr[pIx + 2];
+          } else {
+            for (let q = 0; q < 6; q++) cursorEdgePositions[kk * 6 + q] = 0;
+          }
+        }
+        cursorEdgeGeometry.attributes.position.needsUpdate = true;
+        // Use the warm-accent lerp from the palette so the rays also
+        // shift hue per scene, just toward the rust end of the family.
+        cursorEdgeMaterial.color.setRGB(
+          Math.min(1, wr * 1.05),
+          Math.min(1, wg * 1.05),
+          Math.min(1, wb * 1.05)
+        );
+      }
+
       // Low-pass smoothing on mouse parallax — keeps the cursor follow
       // gentle rather than twitchy.
       mouse.x += (mouse.tx - mouse.x) * (1 - Math.exp(-dt / 0.18));
@@ -604,6 +957,8 @@ export default function ParticleScene({ sceneRef }) {
       lines.quaternion.copy(tmpQuat);
       pulseObj.quaternion.copy(tmpQuat);
       attnLines.quaternion.copy(tmpQuat);
+      cursorEdgeLines.quaternion.copy(tmpQuat);
+      cursorParticle.quaternion.copy(tmpQuat);
 
       // Per-scene camera vantage — lerp toward the scene's base camera
       // position so each formation is viewed from inside. Add a strong
@@ -615,7 +970,7 @@ export default function ParticleScene({ sceneRef }) {
       const tCam = eased;
       const camTargetX = camA.x + (camB.x - camA.x) * tCam;
       const camTargetY = camA.y + (camB.y - camA.y) * tCam;
-      const pullback = Math.sin(u * Math.PI) * 45;
+      const pullback = Math.sin(u * Math.PI) * 72;
       const camTargetZ = camA.z + (camB.z - camA.z) * tCam + pullback;
       const camTargetLX = camA.lookX + (camB.lookX - camA.lookX) * tCam;
       const camTargetLY = camA.lookY + (camB.lookY - camA.lookY) * tCam;
@@ -630,6 +985,18 @@ export default function ParticleScene({ sceneRef }) {
       const oscY = Math.sin(smoothedScene * 1.3 + frame * 0.0009) * 4;
       const oscZ = Math.sin(smoothedScene * 0.9 + frame * 0.0011) * 6;
       camera.position.set(cam.x, cam.y + oscY, cam.z + oscZ);
+
+      // ── Cinematic camera roll on transition ──
+      // Bank the camera slightly around its forward axis during scene
+      // cuts — peaks at u=0.5 (max ~6.3°), zero at both ends. The roll
+      // direction alternates per transition so consecutive cuts don't
+      // bank the same way. Mimics a film dolly's lateral bank on fast
+      // moves. Applied by setting camera.up to a tilted unit vector
+      // BEFORE lookAt so the up-axis is read with the new orientation.
+      const rollPhase = Math.sin(u * Math.PI);
+      const rollDir = (lo % 2 === 0) ? 1 : -1;
+      const rollAngle = rollPhase * 0.11 * rollDir;
+      camera.up.set(-Math.sin(rollAngle), Math.cos(rollAngle), 0);
       // lookAt is shifted in x for non-hero scenes, pushing the
       // formation's centre of mass to the right half of the viewport
       // and leaving the left half for the text content.
@@ -640,13 +1007,21 @@ export default function ParticleScene({ sceneRef }) {
     animate();
 
     // ── Resize handling ────────────────────────────────────────────
+    // FOV adapts to portrait viewports — phones in portrait squash
+    // landscape-tuned 55° framing, so wider angle there fits the
+    // formation while preserving the landscape composition on
+    // desktop / wide screens.
     const onResize = () => {
       const w = container.clientWidth;
       const h = container.clientHeight;
-      camera.aspect = w / h;
+      const aspect = w / h;
+      const fov = aspect < 0.75 ? 70 : aspect < 1.1 ? 62 : 55;
+      camera.aspect = aspect;
+      if (camera.fov !== fov) camera.fov = fov;
       camera.updateProjectionMatrix();
       renderer.setSize(w, h);
     };
+    onResize();
     window.addEventListener("resize", onResize);
 
     // Pause when tab is hidden (saves battery, prevents jank on resume).
@@ -670,6 +1045,7 @@ export default function ParticleScene({ sceneRef }) {
       cancelAnimationFrame(raf);
       window.removeEventListener("resize", onResize);
       window.removeEventListener("mousemove", onMouseMove);
+      window.removeEventListener("portfolio:qk", onEgg);
       document.removeEventListener("visibilitychange", onVisibility);
       try {
         container.removeChild(renderer.domElement);
@@ -684,6 +1060,10 @@ export default function ParticleScene({ sceneRef }) {
       pulseMaterial.dispose();
       attnGeometry.dispose();
       attnMaterial.dispose();
+      cursorEdgeGeometry.dispose();
+      cursorEdgeMaterial.dispose();
+      cursorParticleGeometry.dispose();
+      cursorParticleMaterial.dispose();
       haloTex.dispose();
       renderer.dispose();
     };

@@ -344,24 +344,24 @@ export default function ParticleScene({ sceneRef, scrollVelRef, lastInteractRef,
     const points = new THREE.Points(geometry, material);
     scene.add(points);
 
-    // ── Sparse sequential connecting lines. Far fewer than before
-    //     (~150 instead of ~400) so the field doesn't read as a
-    //     chaotic mesh. Each line is a single (i, i+1) pair, which
-    //     traces the formation's natural ordering — DNA strands, ring
-    //     orbits, grid rows. Single saturated colour pulled from the
-    //     active scene palette per frame. ──────────────────────────
-    // ── KNN graph topology ──
-    // Real k-nearest-neighbor edges computed once on the Hero (cloud)
-    // formation. The graph is fixed: the same edges connect the same
-    // particle pairs across every scene, so the "neural network" is a
-    // consistent structure that the camera views in different layouts
-    // (helix, layered net, sphere, grid, rings) as the user scrolls.
-    // k=2 gives each particle two neighbors; after dedupe, ~1800
-    // unique edges. Lower opacity (0.34) because there are 6x more
-    // lines than before — they read as a dense graph, not a tangle.
-    const linePairs = buildKnnEdges(formations[0], 2, PARTICLE_COUNT);
-    const linePositions = new Float32Array(linePairs.length * 2 * 3);
-    const lineColors = new Float32Array(linePairs.length * 2 * 3);
+    // ── Per-scene KNN graph topology ──
+    // Each formation gets its own k-nearest-neighbor graph. So when
+    // the camera is on the Research scene, the edges actually trace
+    // layer-to-layer connections inside the feedforward network; on
+    // the Sphere scene, edges trace the sphere's surface; on the DNA
+    // helix, they connect within-strand adjacencies. The graph is no
+    // longer "Hero topology viewed in different layouts" — it's a
+    // first-class scene element rebuilt per formation.
+    //
+    // Lines render with vertexColors so unused entries (when a scene
+    // has fewer edges than the max) can be zeroed out per-frame.
+    const formationKnnList = formations.map((pos) =>
+      buildKnnEdges(pos, 2, PARTICLE_COUNT)
+    );
+    const maxEdges = formationKnnList.reduce((m, e) => Math.max(m, e.length), 0);
+    let activePairs = formationKnnList[0];
+    const linePositions = new Float32Array(maxEdges * 2 * 3);
+    const lineColors = new Float32Array(maxEdges * 2 * 3);
     const lineGeometry = new THREE.BufferGeometry();
     lineGeometry.setAttribute("position", new THREE.BufferAttribute(linePositions, 3));
     lineGeometry.setAttribute("color", new THREE.BufferAttribute(lineColors, 3));
@@ -403,7 +403,7 @@ export default function ParticleScene({ sceneRef, scrollVelRef, lastInteractRef,
     scene.add(pulseObj);
 
     const pulseState = Array.from({ length: PULSE_COUNT }, () => ({
-      lineIndex: Math.floor(Math.random() * linePairs.length),
+      lineIndex: Math.floor(Math.random() * activePairs.length),
       t: Math.random(),
       speed: 0.35 + Math.random() * 0.55,
     }));
@@ -638,9 +638,28 @@ export default function ParticleScene({ sceneRef, scrollVelRef, lastInteractRef,
 
       // Scene-change brightness pulse: fires when integer scene index
       // shifts (either direction). Decays multiplicatively each frame.
+      // Also swap the active KNN edge set (and reroll the pulses that
+      // ride on it) so the graph topology matches what the camera is
+      // currently parked on.
       if (lo !== prevSceneLo) {
         if (prevSceneLo !== -1) sceneFlashI = 1.0;
         prevSceneLo = lo;
+        activePairs = formationKnnList[lo];
+        // Reroll pulses onto the new edge set — old line indices would
+        // point at the wrong edges (or out of bounds if the new set
+        // has fewer edges).
+        for (let p = 0; p < PULSE_COUNT; p++) {
+          pulseState[p].lineIndex = Math.floor(Math.random() * activePairs.length);
+          pulseState[p].t = Math.random();
+        }
+        // Zero out any edge slots above the new set's length so they
+        // render as degenerate (0,0,0)-(0,0,0) — invisible.
+        for (let p = activePairs.length; p < maxEdges; p++) {
+          for (let q = 0; q < 6; q++) {
+            linePositions[p * 6 + q] = 0;
+            lineColors[p * 6 + q] = 0;
+          }
+        }
       }
       sceneFlashI *= 0.92;
       // Smoothstep so the morph eases at the ends of each segment.
@@ -778,8 +797,8 @@ export default function ParticleScene({ sceneRef, scrollVelRef, lastInteractRef,
       const cxw = cursorLocal.x, cyw = cursorLocal.y;
       const brightR = 60 * 60;    // squared brightening radius (60 units)
       const useCursor = cursorLocalValid;
-      for (let p = 0; p < linePairs.length; p++) {
-        const [ia, ib] = linePairs[p];
+      for (let p = 0; p < activePairs.length; p++) {
+        const [ia, ib] = activePairs[p];
         const a3 = ia * 3, b3 = ib * 3;
         const ax = posAttr[a3],     ay = posAttr[a3 + 1], az = posAttr[a3 + 2];
         const bx = posAttr[b3],     by = posAttr[b3 + 1], bz = posAttr[b3 + 2];
@@ -825,10 +844,15 @@ export default function ParticleScene({ sceneRef, scrollVelRef, lastInteractRef,
         ps.t += ps.speed * dt * pulseVelBoost;
         if (ps.t >= 1) {
           ps.t = 0;
-          ps.lineIndex = Math.floor(Math.random() * linePairs.length);
+          ps.lineIndex = Math.floor(Math.random() * activePairs.length);
           ps.speed = 0.35 + Math.random() * 0.55;
         }
-        const [pia, pib] = linePairs[ps.lineIndex];
+        // Guard against stale lineIndex from a recent scene change
+        // (the swap reroll already covers most cases, but cheap belt+).
+        if (ps.lineIndex >= activePairs.length) {
+          ps.lineIndex = Math.floor(Math.random() * activePairs.length);
+        }
+        const [pia, pib] = activePairs[ps.lineIndex];
         const pa3 = pia * 3, pb3 = pib * 3;
         const pax = posAttr[pa3],     pay = posAttr[pa3 + 1], paz = posAttr[pa3 + 2];
         const pbx = posAttr[pb3],     pby = posAttr[pb3 + 1], pbz = posAttr[pb3 + 2];

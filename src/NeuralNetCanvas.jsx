@@ -68,7 +68,7 @@ export default function NeuralNetCanvas({ sceneRef }) {
     const researchNet = {
       layers: RES_LAYERS,
       layout: "centered",      // narrow layers compress toward y=0
-      worldScale: 0.5,         // bigger encoder-decoder diagram
+      worldScale: 0.7,         // bigger encoder-decoder diagram
       nodes: [], edges: [], pulses: [], edgeCursor: 0,
     };
     let bioMotifs = [];
@@ -251,7 +251,7 @@ export default function NeuralNetCanvas({ sceneRef }) {
       return [
         { x: 0,    y: 0,    zoom: 1.2, roll: 0    }, // 0 — Hero
         { x: -290, y: -160, zoom: 2.3, roll: -3   }, // 1 — About
-        { x: 220, y: 30,    zoom: 1.3,  roll: 0   }, // 2 — Research (bigger encoder-decoder diagram + bio I/O)
+        { x: -15, y: 30,    zoom: 1.3,  roll: 0   }, // 2 — Research (encoder-decoder, shifted right of text + enlarged)
         { x: 295,  y: -160, zoom: 2.4, roll: -3   }, // 3 — Publication (right) ← swing across
         { x: -310, y: 230,  zoom: 2.6, roll: 4    }, // 4 — Projects (left-bottom) ← swing back
         { x: 290,  y: 230,  zoom: 2.3, roll: -2.5 }, // 5 — Skills (right-bottom)
@@ -861,45 +861,56 @@ export default function NeuralNetCanvas({ sceneRef }) {
         ctx.stroke();
 
         // ── Bio-themed input / output ──
-        // Input side: DNA base letter beside each input node — reads as
-        // a sequence (A C G T ...) being embedded into the encoder.
-        // Output side: protein-residue bead beside each output node —
-        // reads as a folded structure predicted from the latent.
-        const bases = ["A", "C", "G", "T", "A", "G", "C", "T", "A"];
+        // Input: DNA base letters per input node, color-coded by class
+        // (purines A/G → warm; pyrimidines C/T → accent) so the sequence
+        // reads as a coloured strand being embedded.
+        // Output: amino-acid one-letter codes per output node with a
+        // faint backbone — reads as a folded primary sequence emerging
+        // from the latent.
+        const bases  = ["A", "C", "G", "T", "A", "G", "C", "T", "A"];
+        const aminos = ["M", "K", "F", "R", "L", "Y", "P", "W", "I"];
+        const isPurine = (b) => b === "A" || b === "G";
+
         ctx.save();
-        ctx.font = `italic 600 18px Georgia, 'Times New Roman', serif`;
-        ctx.textAlign = "right";
         ctx.textBaseline = "middle";
         const layerOf = (idx) => net.nodes.filter((n) => n.layer === idx);
+
+        // Input DNA letters (right-aligned so they butt against the input nodes)
+        ctx.textAlign = "right";
+        ctx.font = `italic 700 20px Georgia, 'Times New Roman', serif`;
         const inputNodes = layerOf(0);
         inputNodes.forEach((n, i) => {
-          ctx.fillStyle = rgba(warm, 0.85 * alphaScale);
-          ctx.fillText(bases[i % bases.length], n.baseX - n.r - 6, n.baseY);
+          const b = bases[i % bases.length];
+          ctx.fillStyle = rgba(isPurine(b) ? warm : accent, 0.92 * alphaScale);
+          ctx.fillText(b, n.baseX - n.r - 7, n.baseY);
         });
 
+        // Output amino-acid letters (left-aligned past the output nodes)
+        ctx.textAlign = "left";
         const outputNodes = layerOf(ls.length - 1);
-        outputNodes.forEach((n, i) => {
-          const drift = Math.sin(frame * 0.02 + i * 0.6) * 1.6;
-          ctx.beginPath();
-          ctx.arc(n.baseX + n.r + 9, n.baseY + drift, 4, 0, Math.PI * 2);
-          ctx.fillStyle = rgba(i % 2 ? accent : warm, 0.9 * alphaScale);
-          ctx.fill();
+        const aaPositions = outputNodes.map((n, i) => {
+          const drift = Math.sin(frame * 0.022 + i * 0.55) * 2.4;
+          return { x: n.baseX + n.r + 7, y: n.baseY + drift, i };
         });
-        // Light connecting line through the protein-residue beads — reads
-        // as a backbone, like a tiny structure leaving the decoder.
-        if (outputNodes.length > 1) {
+
+        // Faint backbone line connecting amino positions
+        if (aaPositions.length > 1) {
           ctx.beginPath();
-          outputNodes.forEach((n, i) => {
-            const drift = Math.sin(frame * 0.02 + i * 0.6) * 1.6;
-            const px = n.baseX + n.r + 9;
-            const py = n.baseY + drift;
-            if (i === 0) ctx.moveTo(px, py);
-            else ctx.lineTo(px, py);
+          aaPositions.forEach((p, i) => {
+            if (i === 0) ctx.moveTo(p.x + 6, p.y);
+            else ctx.lineTo(p.x + 6, p.y);
           });
-          ctx.strokeStyle = rgba(warm, 0.45 * alphaScale);
+          ctx.strokeStyle = rgba(warm, 0.5 * alphaScale);
           ctx.lineWidth = 1.2;
           ctx.stroke();
         }
+
+        // Amino letters themselves, alternating accent / warm
+        ctx.font = `italic 700 20px Georgia, 'Times New Roman', serif`;
+        aaPositions.forEach((p) => {
+          ctx.fillStyle = rgba(p.i % 2 ? accent : warm, 0.92 * alphaScale);
+          ctx.fillText(aminos[p.i % aminos.length], p.x, p.y);
+        });
         ctx.restore();
       };
 

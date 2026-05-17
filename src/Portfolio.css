@@ -218,32 +218,33 @@ body::after {
    float in viewport corners.
    ════════════════════════════════════════════════════════════════════ */
 
-/* Side rail — vertical nav, fixed to left edge, mid-viewport.
-   Hidden on hero (visible class toggled when user has scrolled). */
+/* Nav bar — horizontal pill anchored bottom-centre. Sits below all
+   text quadrants so it never competes with content. Hidden until the
+   reader scrolls past the hero. */
 .side-rail {
   position: fixed;
-  top: 50%;
-  left: clamp(1rem, 2.5vw, 1.75rem);
-  transform: translateY(-50%);
+  bottom: clamp(1rem, 2.5vh, 1.75rem);
+  left: 50%;
   z-index: 60;
   display: flex;
-  flex-direction: column;
-  gap: .25rem;
-  padding: .9rem .8rem;
-  border-radius: 14px;
-  background: color-mix(in srgb, var(--bg) 50%, transparent);
+  flex-direction: row;
+  align-items: center;
+  gap: .2rem;
+  padding: .35rem .45rem;
+  border-radius: 9999px;
+  background: color-mix(in srgb, var(--bg) 55%, transparent);
   backdrop-filter: blur(14px) saturate(1.2);
   -webkit-backdrop-filter: blur(14px) saturate(1.2);
   border: 1px solid var(--border);
   opacity: 0;
   pointer-events: none;
-  transform: translate(-12px, -50%);
+  transform: translate(-50%, 12px);
   transition: opacity .5s cubic-bezier(.22,1,.36,1), transform .5s cubic-bezier(.22,1,.36,1);
 }
 .side-rail.visible {
   opacity: 1;
   pointer-events: auto;
-  transform: translate(0, -50%);
+  transform: translate(-50%, 0);
 }
 
 /* ── Section watermark ──
@@ -563,39 +564,33 @@ body::after {
   to { opacity: 0; }
 }
 
-/* ── Nav rail (animates from a 24px tick to a 64px line on hover/active) ── */
+/* ── Nav items inside the bottom pill bar ── */
 .sb-nav-item {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 1rem;
-  padding: .55rem 0;
+  gap: .45rem;
+  padding: .4rem .75rem;
+  border-radius: 9999px;
   text-decoration: none;
   color: var(--fg3);
   font-family: var(--mono);
-  font-size: .72rem;
+  font-size: .6rem;
   font-weight: 600;
   letter-spacing: .16em;
   text-transform: uppercase;
-  transition: color .3s cubic-bezier(.22, 1, .36, 1);
-}
-.sb-nav-rail {
-  display: inline-block;
-  width: 24px;
-  height: 1px;
-  background: var(--fg4);
   transition:
-    width .35s cubic-bezier(.22, 1, .36, 1),
-    background .35s cubic-bezier(.22, 1, .36, 1);
+    color .3s cubic-bezier(.22, 1, .36, 1),
+    background .3s cubic-bezier(.22, 1, .36, 1);
 }
+.sb-nav-rail { display: none; }            /* vestigial — was the expanding tick */
 .sb-nav-i {
-  font-size: .6rem;
+  font-size: .55rem;
   color: var(--fg4);
-  min-width: 1.4rem;
   transition: color .3s;
 }
 .sb-nav-glyph {
-  width: 14px;
-  height: 14px;
+  width: 12px;
+  height: 12px;
   flex-shrink: 0;
   color: var(--fg4);
   transition: color .3s cubic-bezier(.22, 1, .36, 1), transform .35s cubic-bezier(.22, 1, .36, 1);
@@ -603,38 +598,26 @@ body::after {
 .sb-nav-item:hover .sb-nav-glyph,
 .sb-nav-item.active .sb-nav-glyph {
   color: var(--accent);
-  transform: scale(1.1);
+  transform: scale(1.15);
 }
-.sb-nav-item:hover,
+.sb-nav-item:hover { color: var(--fg); background: color-mix(in srgb, var(--accent) 6%, transparent); }
 .sb-nav-item.active {
-  color: var(--fg);
-}
-.sb-nav-item:hover .sb-nav-rail,
-.sb-nav-item.active .sb-nav-rail {
-  width: 64px;
-  background: var(--accent);
-}
-.sb-nav-item:hover .sb-nav-i,
-.sb-nav-item.active .sb-nav-i {
   color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
 }
-/* Sections the reader has scrolled past tint accent at lower
-   opacity — so the rail reads as a real three-state progress
-   indicator: pending (gray) → active (full accent + 64px tick) →
-   passed (accent-tinted, slightly faded). */
+.sb-nav-item.active .sb-nav-i,
+.sb-nav-item:hover .sb-nav-i { color: var(--accent); }
 .sb-nav-item.passed { color: var(--fg2); }
-.sb-nav-item.passed .sb-nav-rail {
-  width: 40px;
-  background: var(--accent);
-  opacity: .55;
-}
-.sb-nav-item.passed .sb-nav-i {
-  color: var(--accent);
-  opacity: .8;
-}
+.sb-nav-item.passed .sb-nav-i,
 .sb-nav-item.passed .sb-nav-glyph {
   color: var(--accent);
   opacity: .65;
+}
+/* On narrow viewports drop the section labels to keep the pill compact. */
+@media (max-width: 720px) {
+  .side-rail { gap: .15rem; padding: .3rem .35rem; }
+  .sb-nav-item { padding: .35rem .5rem; gap: .3rem; }
+  .sb-nav-label { display: none; }
 }
 
 /* ── Foot (contacts + theme toggle) ── */
@@ -810,10 +793,8 @@ body::after {
     padding-inline: 0;
     text-align: left;
   }
-  /* Side rail and big watermark are desktop chrome — useless on
-     touch. The atmosphere canvas still runs; the corner socials still
-     show for contact. */
-  .side-rail { display: none; }
+  /* Big italic watermark is too big for narrow screens; the bottom
+     nav pill stays (it's compact and below text). */
   .section-watermark { display: none; }
 }
 
@@ -876,11 +857,14 @@ body::after {
   font-family: var(--serif);
   font-style: italic;
   font-weight: 400;
-  font-size: clamp(4.5rem, 11vw, 8.5rem);
-  line-height: 0.92;
-  letter-spacing: -.045em;
+  /* Tuned so 'Qiankang (Kant) Wang.' lands on one line at desktop
+     widths and wraps gracefully on narrower viewports. */
+  font-size: clamp(2.6rem, 7.5vw, 6rem);
+  line-height: 0.98;
+  letter-spacing: -.035em;
   color: var(--fg);
   margin-bottom: clamp(1.5rem, 3vh, 2.5rem);
+  max-width: 18ch;
 }
 .hero-name-line {
   display: block;

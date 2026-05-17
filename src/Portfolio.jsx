@@ -3,27 +3,9 @@ import D from "./data";
 import NeuralNetCanvas from "./NeuralNetCanvas";
 import "./Portfolio.css";
 
-/* ── Ambient background orbs ── */
-function AmbientBg() {
-  return (
-    <div className="ambient" aria-hidden="true">
-      <div className="amb-orb amb-1" />
-      <div className="amb-orb amb-2" />
-      <div className="amb-orb amb-3" />
-    </div>
-  );
-}
-
-/* ── DecodeText ──
-   AI-style decode/glitch reveal — text starts scrambled (random
-   alphanumerics with structure-preserving spaces/punctuation), then
-   resolves to the target left-to-right as the section enters view.
-   The scrambled tail keeps re-rolling every frame so the unresolved
-   characters churn — reads as a model "deciding" each token before
-   committing it. Triggered once per element via IntersectionObserver. */
-// Greek + math symbols mixed in with the alphanumerics — the glitch
-// passes through ∇ ∂ Σ etc. before resolving. Reads as model output
-// rather than a generic Hollywood-decryption alphabet.
+/* ── DecodeText — left-to-right glitch reveal. Charset mixes Greek +
+   math symbols so the scramble passes through ∇ ∂ Σ before resolving,
+   reading as model output rather than a Hollywood decryption. */
 const DECODE_CHARSET = "0123456789ABCDEFGHJKLMNPQRSTUVWXYZ∇∂Σλπθϕψξµη∫∑";
 function decodeScramble(target) {
   let out = "";
@@ -85,8 +67,6 @@ function DecodeText({ text, duration = 720, delay = 0, threshold = 0.25, classNa
   return <Tag ref={ref} className={className}>{out}</Tag>;
 }
 
-// Typewriter — character-by-character reveal at 28ms / char.
-// Cursor blinks while typing and disappears once fully revealed.
 function useTypewriter(text, speed = 28) {
   const [out, setOut] = useState("");
   const [done, setDone] = useState(false);
@@ -107,11 +87,7 @@ function useTypewriter(text, speed = 28) {
   return { text: out, done };
 }
 
-/* ── Atmosphere ──
-   Full-bleed Three.js particle scene that morphs between formations
-   as the user scrolls — one continuous animation, not six swapped
-   ones. Receives the continuous sceneRef so the morph is smooth
-   between sections, not stepped on scene boundaries. */
+/* ── Atmosphere — full-bleed cinematic canvas + vignette. ── */
 const Atmosphere = memo(function Atmosphere({ sceneRef }) {
   return (
     <div className="atmos" aria-hidden="true">
@@ -121,11 +97,7 @@ const Atmosphere = memo(function Atmosphere({ sceneRef }) {
   );
 });
 
-/* ── SectionWatermark ──
-   Huge translucent italic serif word in the bottom-right corner that
-   names the current scene. Renders behind everything (z 1) so it
-   reads as an editorial chapter watermark, not as content. Fades
-   between section names on scroll. */
+/* ── SectionWatermark — huge italic-serif scene name behind content. ── */
 const SectionWatermark = memo(function SectionWatermark({ active }) {
   const label = active || "Hero";
   return (
@@ -135,12 +107,7 @@ const SectionWatermark = memo(function SectionWatermark({ active }) {
   );
 });
 
-/* ── Side-rail formation icons ──
-   Each section's particle formation rendered as a 14px SVG glyph:
-   helix, layered network, sphere, grid, rings. Slot into the nav
-   items so scrolling between sections previews where you're going,
-   not just "01 / About". currentColor lets the .sb-nav-item active
-   state tint them with the section accent. */
+/* ── Side-rail formation glyphs (one per section's canvas motif). ── */
 const NavGlyphHelix = () => (
   <svg className="sb-nav-glyph" viewBox="0 0 16 16" aria-hidden="true">
     <path d="M3 2 C7 5, 9 5, 13 2 M3 8 C7 11, 9 11, 13 8 M3 14 C7 11, 9 11, 13 14" fill="none" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round" />
@@ -201,9 +168,6 @@ const NAV_GLYPHS = {
   Skills:      NavGlyphRings,
 };
 
-/* Vertical nav rail floating on the left edge of the viewport — appears
-   only after the user has scrolled past the hero. Clicking a label
-   smooth-scrolls to its section. */
 const SideRail = memo(function SideRail({ active, scrollTo, visible }) {
   const activeIdx = NAV.indexOf(active);
   return (
@@ -239,13 +203,7 @@ const SideRail = memo(function SideRail({ active, scrollTo, visible }) {
   );
 });
 
-/* ── GlyphRain ──
-   Ambient layer of sparse mathematical glyphs drifting top-to-bottom
-   behind the content column (z 1, below .main z 2). Each span gets
-   a random column position, random font size, random animation
-   duration with a negative delay so they don't all start at the top
-   together. Very low opacity so they read as research-paper ambient
-   rather than a distinct effect. */
+/* ── GlyphRain — sparse math glyphs drifting top-to-bottom behind content. ── */
 const GLYPH_CHARS = ["∇", "∂", "Σ", "λ", "π", "θ", "∫", "ϕ", "ψ", "ξ", "∞", "∑", "η", "μ"];
 const GlyphRain = memo(function GlyphRain() {
   const ref = useRef(null);
@@ -273,14 +231,7 @@ const GlyphRain = memo(function GlyphRain() {
   return <div ref={ref} className="glyph-rain" aria-hidden="true" />;
 });
 
-/* ── IntroSplash ──
-   First-visit only. A solid-cream boot screen with "NEURAL_FIELD"
-   header, staged status messages (INIT → LOAD_WEIGHTS → WARM_PASS →
-   READY), a progress bar, and a numeric percent readout. Plays once,
-   stamps localStorage so repeat visits jump straight to the hero. */
-// Streaming boot log lines for the IntroSplash. Each entry is the
-// fraction-of-duration at which the line appears + the line itself.
-// Last entry is the OK that completes the boot.
+/* ── IntroSplash — first-visit-only NEURAL_FIELD boot screen. ── */
 const SPLASH_LOG = [
   [0.00, "[INFO] booting neural_field.v2.6"],
   [0.18, "[INFO] loading checkpoint.bin · 100%"],
@@ -318,7 +269,6 @@ const IntroSplash = memo(function IntroSplash() {
     return () => cancelAnimationFrame(raf);
   }, [skip]);
   if (unmount) return null;
-  // Filter SPLASH_LOG to lines whose threshold has been crossed.
   const visibleLines = SPLASH_LOG.filter(([t]) => progress >= t);
   const isDone = progress >= 1;
   return (
@@ -357,14 +307,7 @@ const IntroSplash = memo(function IntroSplash() {
   );
 });
 
-/* ── SceneFlash ──
-   Cinematic punctuation at scene boundaries — a horizontal scan band
-   sweeps top-to-bottom whenever the camera's rounded scene index
-   changes. Polls sceneRef every 80 ms and remounts a fresh <div>
-   with a 700 ms CSS animation keyed off the scene-change counter, so
-   the animation always plays from frame 0 instead of being stale.
-   Debounced to 600 ms so a fast scroll across multiple scenes doesn't
-   strobe. */
+/* ── SceneFlash — horizontal scan band on scene-index change, debounced. ── */
 const SceneFlash = memo(function SceneFlash({ sceneRef }) {
   const [key, setKey] = useState(0);
   const prevInt = useRef(-1);
@@ -389,17 +332,7 @@ const SceneFlash = memo(function SceneFlash({ sceneRef }) {
   return <div key={key} className="scene-flash" aria-hidden="true" />;
 });
 
-/* ── CursorSpot ──
-   A soft warm halo that drifts behind the cursor at ~5 Hz under the
-   real pointer. Layered between the particle canvas (z 4) and the
-   floating UI chrome (z 60+) with mix-blend-mode: soft-light, so it
-   warms the paper + particles + text where the user is looking
-   without obscuring anything. Reads as a "reading lamp" / the model
-   subtly tracking the reader's attention. Direct DOM writes via a
-   ref — no React re-render per mouse move.
-
-   Disabled on coarse pointers, narrow viewports, and when the user
-   prefers reduced motion. */
+/* ── CursorSpot — soft warm halo drifting under the cursor. ── */
 const CursorSpot = memo(function CursorSpot() {
   const ref = useRef(null);
   useEffect(() => {
@@ -436,11 +369,8 @@ const CursorSpot = memo(function CursorSpot() {
   return <div ref={ref} className="cursor-spot" aria-hidden="true" />;
 });
 
-// Per-section accent palette mirror — Portfolio.jsx publishes the
-// active section's primary accent at body level (--scene-accent) so
-// chrome that lives outside .sect[data-pos] (edge glow) can still
-// tint with the scene the reader is on. The full table here keeps
-// the CSS [data-pos] rules and the JS body var in sync.
+// Per-section accent — mirrors the CSS [data-pos] palette so body-
+// level chrome (edge glow) can tint with the active scene.
 const SCENE_HUES = [
   { a: "#1E3A8A" }, // Hero (root)
   { a: "#1E3A8A" }, // About
@@ -450,7 +380,6 @@ const SCENE_HUES = [
   { a: "#1F3D8E" }, // Skills
 ];
 
-/* Corner widget for socials anchored bottom-right. */
 const CornerControls = memo(function CornerControls() {
   return (
     <div className="corner-controls">
@@ -469,7 +398,6 @@ const CornerControls = memo(function CornerControls() {
   );
 });
 
-/* ── Intersection Observer hook ── */
 function useInView(threshold = 0.12, once = true) {
   const ref = useRef(null);
   const [visible, setVisible] = useState(false);
@@ -491,23 +419,12 @@ function useInView(threshold = 0.12, once = true) {
   return [ref, visible];
 }
 
-/* ── Section ──
-   Each section is a tall scroll container (.sect, 150svh) whose inner stage
-   (.sect-pin) is sticky-pinned to the viewport. While the user scrolls
-   through the section's range, the visible content stays locked at the
-   viewport's vertical center — that pinned midpoint is the "central anchor"
-   the viewer's eye rests on. Internal content (headings, cards) reveals
-   inside the anchor; the scroll only advances progress, it doesn't move
-   focus. .in toggles a one-shot fly-in just before the pin engages so the
-   stage lands cleanly. */
 const Section = memo(function Section({ id, pos, children, className = "", ...rest }) {
   const ref = useRef(null);
   const [vis, setVis] = useState(false);
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
-    // rootMargin shrinks the trigger zone to the upper half of the viewport,
-    // so .in fires when the section is just about to take the pinned position.
     const obs = new IntersectionObserver(
       ([e]) => {
         if (e.isIntersecting) {
@@ -537,11 +454,6 @@ const Section = memo(function Section({ id, pos, children, className = "", ...re
   );
 });
 
-/* ── Stagger child ──
-   IO-triggered cascade: the parent container watches for entry, then each
-   child fades + lifts in with a delay = index × 90ms. One-shot, calm. The
-   scene's sticky pin is what makes scrolling feel cinematic; the stagger
-   itself stays restrained so the page doesn't read as a particle demo. */
 const StaggerItem = memo(function StaggerItem({ children, index, visible }) {
   return (
     <div
@@ -553,7 +465,6 @@ const StaggerItem = memo(function StaggerItem({ children, index, visible }) {
   );
 });
 
-/* ── Animated counter ── */
 const CountUp = memo(function CountUp({ target, suffix = "", duration = 2000 }) {
   const [ref, visible] = useInView(0.5);
   const raf = useRef(null);
@@ -575,21 +486,10 @@ const CountUp = memo(function CountUp({ target, suffix = "", duration = 2000 }) 
   return <span ref={ref}>{val}{suffix}</span>;
 });
 
-/* ── Hero scene ──
-   First viewport of the page. The page subject's name is rendered HUGE
-   in italic serif over the network, the tagline types out below, then
-   a scroll cue points down. Sets the overall art direction.
-
-   id="hero" so the scroll-handler's SCENE_IDS picks up its centre as
-   the first camera waypoint (the wide-overview shot). */
 const HeroScene = memo(function HeroScene({ onAvatarClick, avatarRef, scrolled }) {
   const tagline = useTypewriter(D.tagline);
   return (
     <section id="hero" className="hero-scene">
-      {/* Hero avatar — bigger, anchored above the name. Click to
-         trigger the headpat easter egg (same ref used by the corner
-         badge so either click target works). */}
-      {/* avatar button */}
       <button
         type="button"
         className="hero-avatar-btn sb-avatar-btn"
@@ -645,16 +545,11 @@ const HeroScene = memo(function HeroScene({ onAvatarClick, avatarRef, scrolled }
   );
 });
 
-/* ── Main ──
-   SCENE_IDS drives the canvas camera path (one waypoint per id, in order),
-   while NAV is what the nav rail shows (hero is the implicit entry, not
-   a clickable rail item). */
+// SCENE_IDS drives the canvas camera path; NAV is the rail order (hero
+// is the implicit entry, not a clickable rail item).
 const SCENE_IDS = ["hero", "about", "research", "publication", "projects", "skills"];
 const NAV = ["About", "Research", "Publication", "Projects", "Skills"];
 
-// GitHub-style language colour dots — keys match the GitHub
-// repo.language field exactly so lookups are O(1) and unknown
-// languages fall back to a neutral fg4.
 const LANG_COLORS = {
   JavaScript: "#F1E05A",
   TypeScript: "#3178C6",
@@ -690,9 +585,9 @@ export default function Portfolio() {
   const [active, setActive] = useState("");
   const [repos, setRepos] = useState([]);
   const [repoLoading, setRepoLoading] = useState(true);
-  // Continuous "scene index" — a value in [0, SCENE_IDS.length-1] that
-  // tracks the current scroll position as a float. Handed to the
-  // ParticleScene every frame to drive the morph between formations.
+  // Continuous scroll-position scene index [0, SCENE_IDS.length-1] →
+  // NeuralNetCanvas camera. Ref instead of state so we don't re-render
+  // per frame.
   const sceneRef = useRef(0);
 
   useEffect(() => {
@@ -708,8 +603,6 @@ export default function Portfolio() {
         const p = docH > 0 ? Math.min(y / docH, 1) : 0;
         setProgress(p);
 
-        // Camera path: use ALL scenes (hero + 5 sections). Each scene's
-        // anchor is its element's vertical centre in doc coords.
         const sceneEls = SCENE_IDS.map((id) => document.getElementById(id));
         const viewCentre = y + winH * 0.5;
         const centres = sceneEls.map((s) => {
@@ -734,8 +627,6 @@ export default function Portfolio() {
         }
         sceneRef.current = scene;
 
-        // Nav rail highlight — flip when a NAV section's top crosses
-        // the upper threshold of the viewport. (Hero isn't in the rail.)
         const navEls = NAV.map((n) => document.getElementById(n.toLowerCase()));
         const flipAt = winH * 0.4;
         for (let i = navEls.length - 1; i >= 0; i--) {
@@ -799,20 +690,12 @@ export default function Portfolio() {
     document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
   }, []);
 
-  // Publish the active section's accent as a body-level CSS variable
-  // so chrome that lives outside .sect[data-pos] (edge glow, future
-  // body-level decorations) can still tint with the scene the reader
-  // is on. NAV is About..Skills (indices 0..4) which map to scenes
-  // 1..5; null active means we're still in the hero (scene 0).
   useEffect(() => {
     const idx = active ? NAV.indexOf(active) + 1 : 0;
     const hue = SCENE_HUES[Math.max(0, Math.min(5, idx))].a;
     document.body.style.setProperty("--scene-accent", hue);
   }, [active]);
 
-  // Reflect the current scene in the browser tab title so users
-  // bookmarking or scanning their tab strip see where they are in
-  // the document, not just the same static "Qiankang Wang" string.
   useEffect(() => {
     const base = "Qiankang (Kant) Wang · Personal Website";
     document.title = active ? `${active} · Qiankang (Kant) Wang` : base;
@@ -851,11 +734,9 @@ export default function Portfolio() {
   return (
     <>
       <IntroSplash />
-      <AmbientBg />
       <GlyphRain />
       <a className="skip" href="#about">Skip to content</a>
 
-      {/* ── Scroll progress ── */}
       <div className="scroll-progress" aria-hidden="true">
         <div
           className="scroll-progress-bar"
@@ -863,16 +744,8 @@ export default function Portfolio() {
         />
       </div>
 
-      {/* ── Unified atmosphere ───────────────────────────────────────
-         Full-bleed neural-network canvas sits behind everything as the
-         page's living atmosphere. Identity badge, nav rail, and theme
-         controls float in the viewport corners. Content scrolls in a
-         single centred column on top — no split panes anywhere. */}
       <Atmosphere sceneRef={sceneRef} />
       <div className="edge-glow" aria-hidden="true" />
-      {/* Screen-reader-only live region — announces the active section
-         when it changes so AT users hear what the canvas is showing
-         even though the canvas itself is aria-hidden. */}
       <div className="sr-only" aria-live="polite" aria-atomic="true">
         {active ? `Now viewing: ${active}` : "Now viewing: Introduction"}
       </div>
@@ -883,19 +756,13 @@ export default function Portfolio() {
       <CornerControls />
 
       <main className="main">
-
-        {/* ── Hero — first viewport, giant name + avatar floating over the network ── */}
         <HeroScene onAvatarClick={onAvatarClick} avatarRef={avatarRef} scrolled={scrolled} />
 
-        {/* ── About — editorial pull-quote intro, stats row, focus list ── */}
-        {/* Text + formation share each quadrant — they fuse via the
-           canvas's mix-blend-mode: multiply. Quadrants drift along a
-           continuous path TR → MR → BR → BL → TL so the camera and
-           text move together as one cluster. */}
         <Section id="about" pos="tr">
           <div className="sect-meta">
             <a href="#about" className="sect-n">01 · About</a>
           </div>
+          <DecodeText as="h2" className="sect-title decode-title" text="About." duration={620} delay={120} />
           <p className="about-lede">{D.about}</p>
           <div className="about-stats-row">
             {D.stats.map((s) => (
@@ -916,12 +783,11 @@ export default function Portfolio() {
           </ul>
         </Section>
 
-        {/* ── Research — year-led editorial rows, no card chrome ── */}
-        <Section id="research" pos="mr">
+        <Section id="research" pos="ml">
           <div className="sect-meta">
             <a href="#research" className="sect-n">02 · Research</a>
           </div>
-          <DecodeText as="h2" className="sect-title decode-title" text={"Field notes\nfrom three labs."} duration={820} delay={120} />
+          <DecodeText as="h2" className="sect-title decode-title" text="Research." duration={620} delay={120} />
           <ol className="exp-list" ref={expRef}>
             {D.experience.map((exp, i) => {
               const startYear = exp.period.match(/(\d{4})/)?.[1] ?? "—";
@@ -943,19 +809,19 @@ export default function Portfolio() {
           </ol>
         </Section>
 
-        {/* ── Publication — huge serif title, no card ── */}
-        <Section id="publication" pos="br">
+        <Section id="publication" pos="bl">
           <div className="sect-meta">
             <a href="#publication" className="sect-n">03 · Publication</a>
             <span className="sect-meta-aux">{D.publication.venue} · {D.publication.year}</span>
           </div>
+          <DecodeText as="h2" className="sect-title decode-title" text="Publication." duration={620} delay={120} />
           <a
             href={D.publication.links[0]?.url || "#"}
             target="_blank"
             rel="noopener noreferrer"
             className="pub-link"
           >
-            <DecodeText as="h2" className="pub-title" text={D.publication.title} duration={820} delay={120} />
+            <DecodeText as="h3" className="pub-title" text={D.publication.title} duration={820} delay={120} />
             <p className="pub-authors">
               {D.publication.authors} · <em>{D.publication.role}</em>
             </p>
@@ -966,12 +832,11 @@ export default function Portfolio() {
           </a>
         </Section>
 
-        {/* ── Projects — list rows, hover-revealed underline ── */}
-        <Section id="projects" pos="bl">
+        <Section id="projects" pos="br">
           <div className="sect-meta">
             <a href="#projects" className="sect-n">04 · Projects</a>
           </div>
-          <DecodeText as="h2" className="sect-title decode-title" text="Things I built." duration={820} delay={120} />
+          <DecodeText as="h2" className="sect-title decode-title" text="Projects." duration={620} delay={120} />
           {repoLoading ? (
             <div className="projects-loading">
               <div className="spinner" />
@@ -1012,12 +877,11 @@ export default function Portfolio() {
           )}
         </Section>
 
-        {/* ── Skills — pill cloud grouped under mono labels ── */}
         <Section id="skills" pos="tl">
           <div className="sect-meta">
             <a href="#skills" className="sect-n">05 · Skills</a>
           </div>
-          <DecodeText as="h2" className="sect-title decode-title" text={"Tools of\nthe trade."} duration={820} delay={120} />
+          <DecodeText as="h2" className="sect-title decode-title" text="Skills." duration={620} delay={120} />
           <div className="skill-groups" ref={skillRef}>
             {Object.entries(D.skills).map(([cat, items], ci) => (
               <StaggerItem key={cat} index={ci} visible={skillVis}>
@@ -1034,7 +898,6 @@ export default function Portfolio() {
           </div>
         </Section>
 
-        {/* ── Footer (inside main column so it scrolls with content) ── */}
         <footer className="foot">
           <div className="foot-inner">
             <div className="foot-copy">© {new Date().getFullYear()} {D.fullName} · Built with React</div>

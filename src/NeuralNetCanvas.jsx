@@ -61,18 +61,9 @@ export default function NeuralNetCanvas({ sceneRef }) {
     let edgeCursor = 0;
     let frame = 0;
 
-    // Theme detection — data-theme attr on <html>, fall back to system pref.
-    const readDark = () => {
-      const attr = document.documentElement.getAttribute("data-theme");
-      if (attr === "dark") return true;
-      if (attr === "light") return false;
-      return window.matchMedia("(prefers-color-scheme: dark)").matches;
-    };
-    let dark = readDark();
-    const themeObs = new MutationObserver(() => { dark = readDark(); });
-    themeObs.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
     const darkMq = window.matchMedia("(prefers-color-scheme: dark)");
-    const onDarkMq = () => { dark = readDark(); };
+    let dark = darkMq.matches;
+    const onDarkMq = (e) => { dark = e.matches; };
     darkMq.addEventListener("change", onDarkMq);
     const rgba = (rgb, a) => `rgba(${rgb[0]},${rgb[1]},${rgb[2]},${a})`;
 
@@ -218,35 +209,18 @@ export default function NeuralNetCanvas({ sceneRef }) {
       }
     };
 
-    // Six camera waypoints — one per portfolio scene (incl. hero). Each is
-    // a target (worldX, worldY, zoom, roll) in world coords; the draw loop
-    // interpolates between them along an arc path (not a straight line) and
-    // adds a zoom-dolly pull-back at the midpoint of every transition. This
-    // gives the camera a cinematic "fly-through 3D space" feel even though
-    // the canvas is 2D.
-    //
-    //   roll : per-scene camera bank angle in degrees. Mostly small; the
-    //          banks between scenes are what create the 3D feel.
+    // Six camera waypoints. The motif sits in the gutter OPPOSITE the
+    // text's CSS quadrant (sect[data-pos]) so they never share screen
+    // space. About→tr/DNA-left; Research→ml/network-right; Publication
+    // →bl/equations-right; Projects→br/grid-left; Skills→tl/labels-right.
     const computeWaypoints = () => {
-      // The page's centred content card sits over the viewport's middle.
-      // To keep each scene's motif visible, the camera anchors slightly
-      // OFFSET from the motif so the motif lands in the gutter beside
-      // the card rather than directly behind it. Computed so the motif's
-      // screen position falls ~280px from a viewport edge at ~1440px wide
-      // (with the per-waypoint zoom).
       return [
-        // 0 — Hero: wide overview — sees all four corners + the network
-        { x: 0, y: 0, zoom: 1.0, roll: 0 },
-        // 1 — About: DNA helix sits in the LEFT gutter beside the card
-        { x: -290, y: -160, zoom: 2.3, roll: -3 },
-        // 2 — Research: network hidden layer centred behind the card
-        { x: 0, y: 0, zoom: 1.75, roll: 2.5 },
-        // 3 — Publication: equation cluster in the RIGHT gutter
-        { x: 295, y: -160, zoom: 2.4, roll: -3 },
-        // 4 — Projects: contribution grid in the LEFT gutter
-        { x: -310, y: 230, zoom: 2.6, roll: 4 },
-        // 5 — Skills: skill-label orbit in the RIGHT gutter
-        { x: 290, y: 230, zoom: 2.3, roll: -2.5 },
+        { x: 0,    y: 0,    zoom: 1.0, roll: 0    }, // 0 — Hero: wide overview
+        { x: -290, y: -160, zoom: 2.3, roll: -3   }, // 1 — About → DNA left
+        { x: 290,  y: 0,    zoom: 1.9, roll: 2.5  }, // 2 — Research → network right
+        { x: 295,  y: -160, zoom: 2.4, roll: -3   }, // 3 — Publication → equations right
+        { x: -310, y: 230,  zoom: 2.6, roll: 4    }, // 4 — Projects → grid left
+        { x: 290,  y: 230,  zoom: 2.3, roll: -2.5 }, // 5 — Skills → labels right
       ];
     };
 
@@ -872,7 +846,6 @@ export default function NeuralNetCanvas({ sceneRef }) {
       cancelAnimationFrame(raf.current);
       window.removeEventListener("resize", resize);
       darkMq.removeEventListener("change", onDarkMq);
-      themeObs.disconnect();
       document.removeEventListener("visibilitychange", onVisibility);
     };
   }, [sceneRef]);

@@ -41,9 +41,7 @@
   --sh3:   0 4px 16px rgba(27,31,38,.09), 0 20px 60px rgba(27,31,38,.10);
 }
 
-[data-theme] {
-  color-scheme: light;
-}
+html { color-scheme: light; }
 
 /* ════════════════════════════════════════════════════════════════════
    Base
@@ -161,53 +159,22 @@ body::after {
    owns this pseudo-element.) */
 
 /* ════════════════════════════════════════════════════════════════════
-   Ambient Orbs
-   ════════════════════════════════════════════════════════════════════ */
-
-/* Ambient orbs removed — too soft / glamorous for the terminal feel. */
-.ambient,
-.amb-orb,
-.amb-1, .amb-2, .amb-3 { display: none; }
-
-/* ════════════════════════════════════════════════════════════════════
-   Atmosphere — full-bleed neural-network canvas
-   The network IS the page's background. Everything else (content,
-   identity badge, nav rail, controls) floats on top.
+   Atmosphere — full-bleed neural-network canvas above content with
+   mix-blend-mode multiply, so motifs read as ink on the same paper
+   as the text rather than a separate layer.
    ════════════════════════════════════════════════════════════════════ */
 .atmos {
   position: fixed;
   inset: 0;
-  /* z-index 4 — ABOVE the main content (z-index 2) so particles
-     visually intersect / occlude the text. Combined with the canvas's
-     mix-blend-mode (multiply) the particles read as if they're ON the
-     paper with the text, not behind a glass pane. */
   z-index: 4;
   pointer-events: none;
   background: transparent;
-  /* Multiply so the particles DARKEN the page where they land — they
-     look like ink on the same paper as the text, not glowing pixels
-     on a separate layer. This is the single biggest "text + animation
-     fused into one whole" trick. */
   mix-blend-mode: multiply;
 }
-.atmos > div:not(.atmos-vignette):not(.particle-scene),
+.atmos > div:not(.atmos-vignette),
 .atmos canvas {
   width: 100% !important;
   height: 100% !important;
-}
-
-/* Single Three.js particle field container. The morph between
-   formations is continuous — no cross-fade overlays needed. */
-.particle-scene {
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
-}
-.particle-scene > canvas {
-  width: 100% !important;
-  height: 100% !important;
-  display: block;
 }
 .atmos-vignette {
   position: absolute;
@@ -246,95 +213,10 @@ body::after {
 }
 
 /* ════════════════════════════════════════════════════════════════════
-   Unified layout
-   ════════════════════════════════════════════════════════════════════
-
-   The atmosphere (fixed network canvas) sits behind everything.
-   The .main column scrolls a single centred reading column on top.
-   Identity, nav and theme controls float in viewport corners — so
-   the page reads as ONE living scene, not as panes side-by-side.
+   Floating chrome — atmosphere is fixed beneath; .main scrolls a
+   single centred reading column on top; nav rail + corner socials
+   float in viewport corners.
    ════════════════════════════════════════════════════════════════════ */
-
-/* Identity badge — text-only label, top-left of the viewport */
-.id-badge {
-  position: fixed;
-  top: clamp(1rem, 2.5vh, 1.75rem);
-  left: clamp(1rem, 2.5vw, 1.75rem);
-  z-index: 60;
-  display: flex;
-  align-items: center;
-  padding: .45rem .85rem;
-  border-radius: 9999px;
-  background: color-mix(in srgb, var(--bg) 55%, transparent);
-  backdrop-filter: blur(14px) saturate(1.2);
-  -webkit-backdrop-filter: blur(14px) saturate(1.2);
-  border: 1px solid var(--border);
-}
-.id-badge-meta {
-  display: flex;
-  flex-direction: column;
-  line-height: 1.2;
-}
-.id-badge-name {
-  font-family: var(--serif);
-  font-style: italic;
-  font-size: .95rem;
-  color: var(--fg);
-  letter-spacing: -.01em;
-}
-.id-badge-sub {
-  font-family: var(--mono);
-  font-size: .55rem;
-  letter-spacing: .14em;
-  text-transform: uppercase;
-  color: var(--fg3);
-}
-
-/* ── Keyboard hint chip — top-right ──
-   Discoverability for the j/k/g/G nav. Hidden on touch and narrow
-   viewports where the keys can't be pressed anyway. */
-.kbd-hint {
-  position: fixed;
-  top: clamp(1rem, 2.5vh, 1.75rem);
-  right: clamp(1rem, 2.5vw, 1.75rem);
-  z-index: 60;
-  display: flex;
-  align-items: center;
-  gap: .25rem;
-  padding: .4rem .7rem;
-  border-radius: 9999px;
-  background: color-mix(in srgb, var(--bg) 55%, transparent);
-  backdrop-filter: blur(14px) saturate(1.2);
-  -webkit-backdrop-filter: blur(14px) saturate(1.2);
-  border: 1px solid var(--border);
-  font-family: var(--mono);
-  font-size: .54rem;
-  letter-spacing: .14em;
-  color: var(--fg3);
-  text-transform: uppercase;
-  pointer-events: none;
-}
-.kbd-hint kbd {
-  font-family: var(--mono);
-  font-size: .54rem;
-  font-weight: 600;
-  background: color-mix(in srgb, var(--fg) 10%, transparent);
-  color: var(--fg);
-  padding: 1px .35rem 0;
-  border-radius: 3px;
-  border: 1px solid var(--border);
-  line-height: 1.4;
-  letter-spacing: 0;
-}
-.kbd-hint kbd + kbd { margin-left: 2px; }
-.kbd-hint-sep {
-  margin: 0 .35rem 0 .25rem;
-  color: var(--fg4);
-}
-.kbd-hint-sep:last-child { margin-right: 0; }
-@media (max-width: 968px), (pointer: coarse) {
-  .kbd-hint { display: none; }
-}
 
 /* Side rail — vertical nav, fixed to left edge, mid-viewport.
    Hidden on hero (visible class toggled when user has scrolled). */
@@ -562,171 +444,6 @@ body::after {
   .edge-glow { animation: none; opacity: .7; }
 }
 
-/* ── Help overlay ──
-   Modal showing every keyboard shortcut + interactive feature.
-   Backdrop blurs the page behind, dialog is a serif/mono document
-   styled like a quick-reference card. */
-.help-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 9000;
-  background: color-mix(in srgb, var(--bg) 80%, transparent);
-  backdrop-filter: blur(14px) saturate(1.1);
-  -webkit-backdrop-filter: blur(14px) saturate(1.1);
-  display: grid;
-  place-items: center;
-  padding: clamp(1rem, 4vw, 2rem);
-  animation: help-overlay-in .35s cubic-bezier(.22, 1, .36, 1);
-}
-@keyframes help-overlay-in {
-  from { opacity: 0; backdrop-filter: blur(0); }
-  to   { opacity: 1; }
-}
-.help-inner {
-  width: min(540px, 100%);
-  background: var(--bg);
-  border: 1px solid var(--border-strong);
-  border-radius: 14px;
-  padding: 1.5rem 1.75rem 1.75rem;
-  box-shadow: 0 24px 70px color-mix(in srgb, var(--accent) 12%, transparent);
-  animation: help-inner-rise .45s cubic-bezier(.22, 1, .36, 1);
-}
-@keyframes help-inner-rise {
-  from { opacity: 0; transform: translateY(20px) scale(.98); }
-  to   { opacity: 1; transform: none; }
-}
-.help-head {
-  display: flex;
-  align-items: center;
-  gap: .65rem;
-  padding-bottom: 1rem;
-  margin-bottom: 1rem;
-  border-bottom: 1px solid var(--border);
-}
-.help-led {
-  width: 7px; height: 7px;
-  border-radius: 50%;
-  background: var(--accent);
-  box-shadow: 0 0 10px color-mix(in srgb, var(--accent) 70%, transparent);
-  animation: sys-hud-pulse 1.6s ease-in-out infinite;
-}
-.help-head h3 {
-  font-family: var(--mono);
-  font-size: .8rem;
-  letter-spacing: .26em;
-  text-transform: uppercase;
-  font-weight: 600;
-  color: var(--fg);
-}
-.help-close {
-  margin-left: auto;
-  appearance: none;
-  background: transparent;
-  border: 1px solid var(--border);
-  color: var(--fg3);
-  font-family: var(--mono);
-  font-size: 1.1rem;
-  width: 28px; height: 28px;
-  border-radius: 6px;
-  display: grid;
-  place-items: center;
-  cursor: pointer;
-  line-height: 1;
-  transition: color .2s, border-color .2s, background .2s;
-}
-.help-close:hover {
-  color: var(--accent);
-  border-color: var(--accent);
-  background: color-mix(in srgb, var(--accent) 8%, transparent);
-}
-.help-sub {
-  font-family: var(--mono);
-  font-size: .56rem;
-  font-weight: 600;
-  letter-spacing: .26em;
-  text-transform: uppercase;
-  color: var(--fg4);
-  margin-top: 1.1rem;
-  margin-bottom: .55rem;
-}
-.help-sub:first-of-type { margin-top: 0; }
-.help-list {
-  display: flex;
-  flex-direction: column;
-  gap: .35rem;
-}
-.help-list > div {
-  display: grid;
-  grid-template-columns: 9rem 1fr;
-  gap: 1rem;
-  align-items: baseline;
-  padding: .15rem 0;
-}
-.help-list dt {
-  font-family: var(--mono);
-  font-size: .65rem;
-  letter-spacing: .14em;
-  text-transform: uppercase;
-  color: var(--fg3);
-  display: flex;
-  align-items: center;
-  gap: .25rem;
-}
-.help-list dt kbd {
-  font-family: var(--mono);
-  font-size: .6rem;
-  font-weight: 600;
-  background: color-mix(in srgb, var(--fg) 10%, transparent);
-  color: var(--fg);
-  padding: 1px .35rem;
-  border-radius: 3px;
-  border: 1px solid var(--border);
-}
-.help-list dt kbd + kbd { margin-left: 2px; }
-.help-list dd {
-  font-size: .82rem;
-  color: var(--fg2);
-  margin: 0;
-  line-height: 1.5;
-}
-
-/* ── Easter-egg toast ──
-   Brief celebratory label that pops in dead-centre whenever the qk
-   sequence fires. Mono + warm rust to match the existing scene
-   flash punctuation. Bigger / louder than ambient HUD text — this
-   is an active event, not a status readout. */
-.egg-toast {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  z-index: 100;
-  font-family: var(--mono);
-  font-size: 1rem;
-  font-weight: 600;
-  letter-spacing: .28em;
-  text-transform: uppercase;
-  color: var(--warm);
-  text-shadow:
-    0 0 18px color-mix(in srgb, var(--warm) 60%, transparent),
-    0 0 32px color-mix(in srgb, var(--warm) 30%, transparent);
-  pointer-events: none;
-  opacity: 0;
-  animation: egg-toast-pop 1.8s cubic-bezier(.22, 1, .36, 1) forwards;
-}
-@keyframes egg-toast-pop {
-  0%   { opacity: 0; transform: translate(-50%, -50%) scale(.6); letter-spacing: .12em; }
-  15%  { opacity: 1; transform: translate(-50%, -50%) scale(1);  letter-spacing: .28em; }
-  80%  { opacity: 1; }
-  100% { opacity: 0; transform: translate(-50%, -50%) scale(1.06); }
-}
-@media (prefers-reduced-motion: reduce) {
-  .egg-toast {
-    animation: none;
-    opacity: 0;
-  }
-}
-
 /* ── Scene flash ──
    Horizontal scan band that sweeps top-to-bottom whenever the camera
    crosses a scene boundary. Reads as a film-projector frame change /
@@ -759,42 +476,9 @@ body::after {
   .scene-flash { display: none; }
 }
 
-/* ── Click ripple ──
-   Expanding warm ring at the click point. mix-blend-mode: multiply
-   so the ring darkens the paper like ink, instead of glowing on top
-   of it. Lives between the cursor spot and the UI chrome. */
-.click-ripple-layer {
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  z-index: 7;
-}
-.click-ripple-ring {
-  position: absolute;
-  width: 60px;
-  height: 60px;
-  margin: -30px 0 0 -30px;
-  border-radius: 50%;
-  border: 1.5px solid var(--warm);
-  opacity: 0;
-  pointer-events: none;
-  mix-blend-mode: multiply;
-  animation: click-ripple 950ms cubic-bezier(.22, 1, .36, 1) forwards;
-}
-@keyframes click-ripple {
-  0%   { transform: scale(.15); opacity: .75; border-width: 2px; }
-  15%  { opacity: .8; }
-  100% { transform: scale(8);  opacity: 0;   border-width: .4px; }
-}
-@media (prefers-reduced-motion: reduce) {
-  .click-ripple-layer { display: none; }
-}
-
-/* ── Cursor spotlight ──
-   Soft warm halo that drifts under the cursor — sits above the
-   particle canvas (z 4) and below all UI chrome (z 60+), blended
-   with soft-light so it warms the rendered scene without painting
-   over anything. Hidden on touch / narrow / reduced-motion. */
+/* ── Cursor spotlight — soft warm halo drifting under the cursor.
+   Sits above the atmos canvas, below UI chrome; soft-light blend so
+   it warms whatever's beneath without painting over it. */
 .cursor-spot {
   position: fixed;
   top: 0; left: 0;
@@ -816,204 +500,7 @@ body::after {
   .cursor-spot { display: none; }
 }
 
-/* ── System HUD — fixed bottom-left ──
-   AI-lab dashboard readout: scene type, quadrant, attention count,
-   sweeping signal meter. Reinforces the "you're inside a running
-   model" feel without competing with the content column. */
-.sys-hud {
-  position: fixed;
-  bottom: clamp(1rem, 2.5vh, 1.75rem);
-  left: clamp(1rem, 2.5vw, 1.75rem);
-  z-index: 60;
-  display: flex;
-  flex-direction: column;
-  gap: .35rem;
-  padding: .7rem .9rem;
-  border-radius: 10px;
-  background: color-mix(in srgb, var(--bg) 55%, transparent);
-  backdrop-filter: blur(14px) saturate(1.2);
-  -webkit-backdrop-filter: blur(14px) saturate(1.2);
-  border: 1px solid var(--border);
-  font-family: var(--mono);
-  font-size: .55rem;
-  letter-spacing: .14em;
-  text-transform: uppercase;
-  /* Panel itself is click-transparent so cursor effects beneath still
-     fire when the cursor passes over the HUD area. Only the collapse
-     button overrides this with pointer-events: auto below. */
-  pointer-events: none;
-  min-width: 14.5rem;
-}
-/* Collapsed state — hide every body row, keep only the avatar +
-   NEURAL_FIELD header row visible. The reader still sees the
-   identity + version + per-scene ring tint, but the panel takes
-   the absolute minimum vertical real estate. */
-.sys-hud.collapsed .sys-hud-row:not(.sys-hud-head) {
-  display: none;
-}
-.sys-hud.collapsed { min-width: 11rem; }
-.sys-hud-collapse {
-  margin-left: auto;
-  appearance: none;
-  background: transparent;
-  border: 1px solid var(--border);
-  color: var(--fg3);
-  font-family: var(--mono);
-  font-weight: 600;
-  font-size: .8rem;
-  line-height: 1;
-  width: 18px;
-  height: 18px;
-  border-radius: 4px;
-  display: grid;
-  place-items: center;
-  cursor: pointer;
-  padding: 0;
-  pointer-events: auto;
-  transition: color .2s, border-color .2s, background .2s;
-}
-.sys-hud-collapse:hover {
-  color: var(--accent);
-  border-color: var(--accent);
-  background: color-mix(in srgb, var(--accent) 8%, transparent);
-}
-.sys-hud-row {
-  display: flex;
-  align-items: center;
-  gap: .65rem;
-  white-space: nowrap;
-}
-.sys-hud-head { margin-bottom: .15rem; }
-.sys-hud-k {
-  color: var(--fg4);
-  min-width: 3.4rem;
-  font-weight: 500;
-}
-.sys-hud-v {
-  color: var(--fg);
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-  font-feature-settings: "tnum" 1;
-}
-.sys-hud-ver {
-  color: var(--fg3);
-  margin-left: auto;
-  font-weight: 500;
-}
-.sys-hud-led {
-  display: inline-block;
-  width: 6px; height: 6px;
-  border-radius: 50%;
-  background: var(--accent);
-  box-shadow:
-    0 0 0 1px color-mix(in srgb, var(--accent) 30%, transparent),
-    0 0 10px color-mix(in srgb, var(--accent) 80%, transparent);
-  animation: sys-hud-pulse 1.6s ease-in-out infinite;
-}
-/* Mini avatar in the HUD header — the user's photo as the system
-   identity, wrapped in a pulsing accent ring so it still reads as a
-   'live' indicator like the LED it replaces. */
-.sys-hud-avatar-wrap {
-  position: relative;
-  display: inline-block;
-  width: 18px; height: 18px;
-  flex-shrink: 0;
-}
-.sys-hud-avatar {
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  object-fit: cover;
-  display: block;
-  margin: 2px;
-  border: none;
-}
-.sys-hud-avatar-wrap::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: 50%;
-  /* --ring is injected inline per-scene from SCENE_HUES so the
-     pulsing avatar ring shifts hue as the reader scrolls between
-     sections, matching the HUE swatch row in the panel body. */
-  border: 1px solid var(--ring, var(--accent));
-  box-shadow: 0 0 8px color-mix(in srgb, var(--ring, var(--accent)) 60%, transparent);
-  animation: sys-hud-pulse 1.6s ease-in-out infinite;
-  pointer-events: none;
-  transition: border-color .35s ease, box-shadow .35s ease;
-}
-@media (prefers-reduced-motion: reduce) {
-  .sys-hud-avatar-wrap::after { animation: none; }
-}
-@keyframes sys-hud-pulse {
-  0%, 100% { opacity: 1;    transform: scale(1); }
-  50%      { opacity: .35;  transform: scale(.82); }
-}
-.sys-hud-meter {
-  display: flex;
-  gap: 2px;
-  align-items: flex-end;
-  height: 10px;
-}
-.sys-hud-tick {
-  width: 4px;
-  height: 8px;
-  background: color-mix(in srgb, var(--fg) 12%, transparent);
-  /* Height transitions smoothly between sin-wave samples so the bars
-     undulate instead of stepping; background still snaps. */
-  transition: background .15s linear, height .25s cubic-bezier(.22, 1, .36, 1);
-  align-self: flex-end;
-}
-.sys-hud-tick.on {
-  background: var(--accent);
-  box-shadow: 0 0 4px color-mix(in srgb, var(--accent) 50%, transparent);
-}
-.sys-hud-hue {
-  display: flex;
-  gap: 3px;
-  align-items: center;
-}
-.sys-hud-hue span {
-  display: inline-block;
-  width: 14px;
-  height: 8px;
-  border-radius: 1px;
-  border: 1px solid color-mix(in srgb, var(--fg) 8%, transparent);
-}
-/* TRACE row — streaming model output. Reserve min-width so the panel
-   doesn't reflow on every character keystroke. */
-.sys-hud-trace { margin-top: .15rem; }
-.sys-hud-trace-v {
-  color: var(--warm);
-  font-weight: 600;
-  display: inline-block;
-  min-width: 9.5rem;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: clip;
-}
-.sys-hud-caret {
-  display: inline-block;
-  margin-left: 1px;
-  color: var(--warm);
-  font-weight: 700;
-  animation: sys-hud-caret-blink 1s steps(2, end) infinite;
-}
-@keyframes sys-hud-caret-blink {
-  0%, 50%      { opacity: 1; }
-  50.01%, 100% { opacity: 0; }
-}
-@media (prefers-reduced-motion: reduce) {
-  .sys-hud-caret { animation: none; }
-}
-@media (max-width: 968px) {
-  .sys-hud { display: none; }
-}
-@media (prefers-reduced-motion: reduce) {
-  .sys-hud-led { animation: none; }
-}
-
-/* Corner controls (contacts + theme toggle) — bottom-right */
+/* Corner controls — socials, bottom-right */
 .corner-controls {
   position: fixed;
   bottom: clamp(1rem, 2.5vh, 1.75rem);
@@ -1161,49 +648,10 @@ body::after {
   background: var(--accent-soft);
   transform: translateY(-2px);
 }
-.sb-theme {
-  background: none; border: none;
-  color: var(--fg3);
-  font-size: 1.1rem; cursor: pointer;
-  padding: .4rem; border-radius: 10px;
-  width: 38px; height: 38px;
-  display: grid; place-items: center;
-  transition: color .25s, background .25s, transform .25s;
-}
-.sb-theme:hover { color: var(--fg); background: var(--accent-soft); transform: translateY(-2px); }
-
-/* ── Mobile: split-stage collapses to a single column.
-   The sticky cinematic screen becomes a short header at the top
-   (identity only — canvas + nav rail hidden because there's no
-   room for a separate "screen" beside the content on a phone). ── */
-@media (max-width: 968px) {
-  .layout {
-    grid-template-columns: 1fr;
-    gap: 0;
-  }
-  .lstage {
-    position: static;
-    height: auto;
-    padding: 2rem clamp(1rem, 4vw, 1.75rem) 1.5rem;
-    background: none;
-  }
-  .lstage-canvas,
-  .lstage-vignette,
-  .lstage-nav,
-  .lstage-foot {
-    display: none;
-  }
-  .lstage-id {
-    padding: 0;
-  }
-  .sb-tagline { max-width: none; }
-}
-
 /* ════════════════════════════════════════════════════════════════════
-   Main column — full-width container. Hero centres itself; sections
-   sit in the LEFT half so the camera-shifted particle formation has
-   the RIGHT half of the viewport to itself. Text floats directly on
-   the atmosphere without card chrome.
+   Main column — full-width container. Hero centres itself; per-
+   section content floats in one of five quadrants on top of the
+   atmosphere with no card chrome.
    ════════════════════════════════════════════════════════════════════ */
 .main {
   position: relative;
@@ -1261,75 +709,37 @@ body::after {
     0 1px 0  color-mix(in srgb, var(--bg) 70%, transparent);
 }
 
-/* ── Per-section accent palette ──
-   Each section's local --accent shifts a few degrees in the navy /
-   indigo / graphite family. All --accent-soft, --accent-soft2, and
-   anything derived via color-mix(... var(--accent) ...) recomputes
-   automatically, so the section number, title underline, pub-link
-   hover, exp-year, focus-item hover, etc. all retint together.
-   Mirrors the canvas SCENE_PALETTE shifts so text + particles share
-   a per-section colour identity. */
-.sect[data-pos="tr"] {
-  --accent:  #1E3A8A;    /* About — base journal navy */
-  --accent2: #2754C2;
-  --accent3: #1E2A5E;
+/* ── Per-section accent palette — keyed to text quadrant. ── */
+.sect[data-pos="tr"] {           /* About — base journal navy */
+  --accent: #1E3A8A; --accent2: #2754C2; --accent3: #1E2A5E;
 }
-.sect[data-pos="mr"] {
-  --accent:  #1E40AF;    /* Research — slightly brighter navy */
-  --accent2: #2563EB;
-  --accent3: #1D3491;
+.sect[data-pos="ml"] {           /* Research — slightly brighter navy */
+  --accent: #1E40AF; --accent2: #2563EB; --accent3: #1D3491;
 }
-.sect[data-pos="br"] {
-  --accent:  #334155;    /* Publication — graphite for the manuscript */
-  --accent2: #475569;
-  --accent3: #1F2937;
+.sect[data-pos="bl"] {           /* Publication — graphite manuscript */
+  --accent: #334155; --accent2: #475569; --accent3: #1F2937;
 }
-.sect[data-pos="bl"] {
-  --accent:  #4338CA;    /* Projects — engineer indigo */
-  --accent2: #4F46E5;
-  --accent3: #3730A3;
+.sect[data-pos="br"] {           /* Projects — engineer indigo */
+  --accent: #4338CA; --accent2: #4F46E5; --accent3: #3730A3;
 }
-.sect[data-pos="tl"] {
-  --accent:  #1F3D8E;    /* Skills — warm steel navy */
-  --accent2: #3B5BDB;
-  --accent3: #1E2D6B;
+.sect[data-pos="tl"] {           /* Skills — warm steel navy */
+  --accent: #1F3D8E; --accent2: #3B5BDB; --accent3: #1E2D6B;
 }
 
-/* ── Quadrant variants ──
-   Each non-hero section is anchored to one of five positions. Camera
-   lookAt in ParticleScene.SCENE_CAMS is set to the opposite quadrant so
-   the formation lives in the empty space across from the text. */
-.sect[data-pos="tl"] { align-items: flex-start; padding-top: clamp(5rem, 10vh, 7rem); }
-.sect[data-pos="tl"] .sect-stage {
-  margin-left: clamp(8rem, 16vw, 13rem);
-  margin-right: auto;
-}
-
+/* ── Quadrant variants — text in one quadrant, motif on opposite side. ── */
+.sect[data-pos="tl"],
 .sect[data-pos="tr"] { align-items: flex-start; padding-top: clamp(5rem, 10vh, 7rem); }
-.sect[data-pos="tr"] .sect-stage {
-  margin-left: auto;
-  margin-right: clamp(4rem, 10vw, 9rem);
-}
-
 .sect[data-pos="ml"] { align-items: center; }
-.sect[data-pos="ml"] .sect-stage {
-  margin-left: clamp(8rem, 16vw, 13rem);
-  margin-right: auto;
-}
+.sect[data-pos="bl"],
+.sect[data-pos="br"] { align-items: flex-end; padding-bottom: clamp(5rem, 10vh, 7rem); }
 
-.sect[data-pos="mr"] { align-items: center; }
-.sect[data-pos="mr"] .sect-stage {
-  margin-left: auto;
-  margin-right: clamp(4rem, 10vw, 9rem);
-}
-
-.sect[data-pos="bl"] { align-items: flex-end; padding-bottom: clamp(5rem, 10vh, 7rem); }
+.sect[data-pos="tl"] .sect-stage,
+.sect[data-pos="ml"] .sect-stage,
 .sect[data-pos="bl"] .sect-stage {
   margin-left: clamp(8rem, 16vw, 13rem);
   margin-right: auto;
 }
-
-.sect[data-pos="br"] { align-items: flex-end; padding-bottom: clamp(5rem, 10vh, 7rem); }
+.sect[data-pos="tr"] .sect-stage,
 .sect[data-pos="br"] .sect-stage {
   margin-left: auto;
   margin-right: clamp(4rem, 10vw, 9rem);
@@ -1373,53 +783,34 @@ body::after {
   to   { opacity: 1; transform: none; }
 }
 
-@media (max-width: 968px) {
-  .sect { padding-block: 4rem; }
-  /* Collapse all quadrant variants to a single centred column on
-     phones — no room for left/right offsets when the viewport is
-     narrower than the particle field's framing margins. */
-  .sect[data-pos] { align-items: center; }
-  .sect[data-pos] .sect-stage {
-    margin-left: auto;
-    margin-right: auto;
-    max-width: none;
-    padding-inline: clamp(1rem, 4vw, 1.75rem);
-  }
-}
 @media (prefers-reduced-motion: reduce) {
-  .stag-item, .project-card {
+  .stag-item {
     animation: none !important;
     opacity: 1 !important;
     transform: none !important;
   }
 }
-/* Mobile teardown of the split-stage:
-   - .main fills the column (canvas pane is gone on phone)
-   - Padding tightens, gutters become symmetrical
-   - .sect-stage has no chrome anywhere so no padding override needed */
-@media (max-width: 968px) {
-  .main {
-    max-width: none;
-    padding: 0 clamp(1rem, 4vw, 1.75rem);
-  }
-  .sect { padding-block: 3rem; }
-}
 
-/* Narrower-column overrides for the right-pane content — multi-column
-   grids need to collapse earlier because the right pane is only ~50vw
-   instead of the full document width. */
-@media (max-width: 1280px) {
-  .about-layout { grid-template-columns: 1fr; gap: 2.25rem; }
-  .about-stats {
-    flex-direction: row;
-    gap: 2rem;
-    padding-right: 0;
-    padding-bottom: 1.5rem;
-    border-right: none;
-    border-bottom: 1px solid var(--border);
+/* ════════════════════════════════════════════════════════════════════
+   Mobile / narrow viewport
+   ════════════════════════════════════════════════════════════════════ */
+
+/* Tablet: collapse quadrant offsets to a centred column. */
+@media (max-width: 968px) {
+  .main { padding: 0 clamp(1rem, 4vw, 1.75rem); }
+  .sect { padding-block: 4rem; }
+  .sect[data-pos] { align-items: center; }
+  .sect[data-pos] .sect-stage {
+    margin: 0 auto;
+    max-width: 640px;
+    padding-inline: 0;
+    text-align: left;
   }
-  .about-highlights { grid-template-columns: 1fr; }
-  .projects-grid { grid-template-columns: 1fr 1fr; }
+  /* Side rail and big watermark are desktop chrome — useless on
+     touch. The atmosphere canvas still runs; the corner socials still
+     show for contact. */
+  .side-rail { display: none; }
+  .section-watermark { display: none; }
 }
 
 /* ════════════════════════════════════════════════════════════════════
@@ -2184,69 +1575,10 @@ a.sect-n:hover {
   gap: 1.5rem;
   text-align: center;
 }
-.foot-brand {
-  font-family: var(--serif);
-  font-size: 1.4rem; font-style: italic;
-  color: var(--fg);
-}
-.foot-links {
-  display: flex; gap: 1.5rem;
-}
-.foot-links a {
-  color: var(--fg3);
-  text-decoration: none;
-  font-size: .85rem; font-weight: 500;
-  transition: color .25s;
-}
-.foot-links a:hover { color: var(--accent); }
 .foot-copy {
   color: var(--fg4);
   font-size: .75rem;
   margin-top: .5rem;
-}
-/* AI-lab signature line above the copyright. Mirrors the sys-hud
-   header so the page feels like one consistent dashboard. */
-.foot-sig {
-  display: flex;
-  align-items: center;
-  gap: .6rem;
-  font-family: var(--mono);
-  font-size: .62rem;
-  letter-spacing: .18em;
-  text-transform: uppercase;
-}
-.foot-led {
-  display: inline-block;
-  width: 5px; height: 5px;
-  border-radius: 50%;
-  background: var(--accent);
-  box-shadow: 0 0 8px color-mix(in srgb, var(--accent) 70%, transparent);
-  animation: sys-hud-pulse 1.6s ease-in-out infinite;
-}
-.foot-sig-k {
-  color: var(--fg);
-  font-weight: 600;
-}
-.foot-sig-sep { color: var(--fg4); }
-.foot-sig-v {
-  color: var(--fg3);
-  font-weight: 500;
-  font-variant-numeric: tabular-nums;
-}
-.foot-sig-dim { color: var(--fg4); }
-.foot-sig-link {
-  color: var(--accent);
-  text-decoration: none;
-  font-weight: 600;
-  border-bottom: 1px dashed color-mix(in srgb, var(--accent) 50%, transparent);
-  transition: color .25s, border-color .25s;
-}
-.foot-sig-link:hover {
-  color: var(--accent2);
-  border-color: var(--accent2);
-}
-@media (prefers-reduced-motion: reduce) {
-  .foot-led { animation: none; }
 }
 
 /* ════════════════════════════════════════════════════════════════════
@@ -2293,30 +1625,48 @@ a.sect-n:hover {
    Responsive
    ════════════════════════════════════════════════════════════════════ */
 
-@media (max-width: 900px) {
-  .section-head { margin-bottom: 2.5rem; }
-  .content { padding: 0 1.5rem; }
-  .sect { padding-block: 6rem; }
+/* Phone: tighter typography, smaller chrome. */
+@media (max-width: 640px) {
+  body::before {
+    opacity: .25;
+    background-size: 180px 180px, 180px 180px, 40px 40px, 40px 40px;
+  }
+  .sect { padding-block: 3.25rem; min-height: auto; }
+
+  .hero-scene { padding: 3rem 0 2.5rem; min-height: 90svh; }
+  .hero-avatar-btn { margin-bottom: 1rem; }
+  .hero-avatar { width: 68px; height: 68px; }
+  .hero-kicker { font-size: .58rem; letter-spacing: .14em; }
+  .hero-name { font-size: clamp(2.6rem, 14vw, 4.4rem); line-height: .96; }
+  .hero-tagline { font-size: .9rem; max-width: none; }
+  .hero-meta { font-size: .62rem; gap: .35rem; }
+  .hero-cue { padding: .5rem .85rem; font-size: .58rem; }
+
+  .corner-controls {
+    bottom: clamp(.75rem, 2vh, 1.25rem);
+    right: clamp(.75rem, 2vw, 1.25rem);
+    padding: .3rem .5rem;
+  }
+  .sb-icon { width: 32px; height: 32px; }
+
+  .sect-meta { font-size: .58rem; flex-wrap: wrap; gap: .5rem; }
+  .sect-title { font-size: clamp(2rem, 9vw, 3rem); line-height: 1.04; }
+  .pub-title { font-size: clamp(1.55rem, 5.5vw, 2.2rem); }
+  .about-lede { font-size: 1.05rem; }
+  .about-stats-row { flex-wrap: wrap; gap: 1rem 1.5rem; }
+  .focus-list { gap: .55rem; }
+  .exp-row { grid-template-columns: 3rem 1fr; gap: .85rem; }
+  .exp-year { font-size: .82rem; }
+  .proj-row { padding-block: 1rem; }
+  .proj-name { font-size: 1.05rem; }
+  .skill-groups { gap: 1.5rem; }
+  .pill { font-size: .72rem; }
 }
 
-@media (max-width: 640px) {
-  body::before { opacity: .3; }
-  .content { padding: 0 1.25rem; }
-  .sect { padding-block: 4.5rem; }
-  .hero-scene { padding: 4rem 0 3rem; min-height: 92svh; }
-  .hero-avatar-btn { margin-bottom: 1rem; }
-  .hero-avatar { width: 72px; height: 72px; }
-  .hero-kicker { font-size: .6rem; }
-  .hero-name { font-size: clamp(3rem, 13vw, 4.6rem); line-height: .96; }
-  .hero-tagline { font-size: .95rem; }
-  .hero-meta { font-size: .65rem; gap: .4rem; }
-  .hero-cue { padding: .55rem .9rem; font-size: .6rem; }
-  .section-watermark { display: none; }   /* too big for narrow viewports */
-  .id-badge, .corner-controls { padding: .35rem .65rem; }
-  .sb-icon { width: 32px; height: 32px; }
-  .sect-stage { padding: 0; }
-  .sect-title { font-size: clamp(2.1rem, 8vw, 3rem); }
-  .scroll-hint, .skill-bento { grid-template-columns: 1fr; }
+/* Tiny phone safety net. */
+@media (max-width: 380px) {
+  .hero-name { font-size: clamp(2.2rem, 16vw, 3.2rem); }
+  .sect-title { font-size: clamp(1.8rem, 10vw, 2.4rem); }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -2325,10 +1675,7 @@ a.sect-n:hover {
 }
 
 /* ════════════════════════════════════════════════════════════════════
-   Print
-   Strip every layer of chrome (canvas, HUD, chips, watermark, splash,
-   ripples) so the printed page is just the actual content text on a
-   plain background. Sized for letter / A4 with normal serif body.
+   Print — strip atmosphere/chrome, leave plain text body.
    ════════════════════════════════════════════════════════════════════ */
 @media print {
   body::before,
@@ -2337,19 +1684,14 @@ a.sect-n:hover {
   .glyph-rain,
   .scroll-progress,
   .scene-flash,
-  .click-ripple-layer,
   .cursor-spot,
   .intro-splash,
   .section-watermark,
-  .id-badge,
-  .kbd-hint,
   .side-rail,
-  .sys-hud,
   .corner-controls,
   .hero-cue,
   .hero-avatar-btn,
-  .hero-meta-led,
-  .foot-led {
+  .hero-meta-led {
     display: none !important;
   }
   body {
@@ -2389,7 +1731,5 @@ a.sect-n:hover {
   .sect-title, .pub-title { font-size: 1.5rem; }
   .sect-title::after { display: none; }
   a { color: #000 !important; text-decoration: underline; }
-  /* Make sure decode-text resolves to target on print (the React state
-     should already settle, but force it just in case). */
   .sect-meta-aux, .hero-kicker { color: #333 !important; }
 }

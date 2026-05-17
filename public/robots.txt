@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://qiankangwang.github.io/my-portfolio/sitemap.xml
+Sitemap: https://kantwang.com/sitemap.xml

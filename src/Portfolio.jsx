@@ -814,8 +814,8 @@ export default function Portfolio() {
   // bookmarking or scanning their tab strip see where they are in
   // the document, not just the same static "Qiankang Wang" string.
   useEffect(() => {
-    const base = "Qiankang (Kant) Wang - Data Science, UC Berkeley";
-    document.title = active ? `${active} · Qiankang Wang` : base;
+    const base = "Qiankang (Kant) Wang · Personal Website";
+    document.title = active ? `${active} · Qiankang (Kant) Wang` : base;
     return () => { document.title = base; };
   }, [active]);
 

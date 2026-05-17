@@ -239,6 +239,13 @@ export default function ParticleScene({ sceneRef, scrollVelRef, lastInteractRef,
 
     // ── Scene setup ────────────────────────────────────────────────
     const scene = new THREE.Scene();
+    // Atmospheric depth fog — distant particles fade toward the cream
+    // paper colour. Combined with the canvas-level mix-blend-mode
+    // multiply, fogged-out particles dissolve into the page instead
+    // of rendering at full opacity regardless of distance. Near plane
+    // 110, far plane 420 brackets the camera's working z range
+    // (cameras live at z 205-295 with a +72 pullback at transitions).
+    scene.fog = new THREE.Fog(0xf4f1ea, 110, 420);
     const camera = new THREE.PerspectiveCamera(
       55,
       container.clientWidth / container.clientHeight,
@@ -994,11 +1001,16 @@ export default function ParticleScene({ sceneRef, scrollVelRef, lastInteractRef,
       const tCam = eased;
       const camTargetX = camA.x + (camB.x - camA.x) * tCam;
       const camTargetY = camA.y + (camB.y - camA.y) * tCam;
-      const pullback = Math.sin(u * Math.PI) * 72;
+      // Bigger z-pullback so the camera flies further out between
+      // scenes, then dives back in — reads as a deliberate cinematic
+      // dolly rather than a quick pan.
+      const pullback = Math.sin(u * Math.PI) * 110;
       const camTargetZ = camA.z + (camB.z - camA.z) * tCam + pullback;
       const camTargetLX = camA.lookX + (camB.lookX - camA.lookX) * tCam;
       const camTargetLY = camA.lookY + (camB.lookY - camA.lookY) * tCam;
-      const camK = 1 - Math.exp(-dt / 0.45);
+      // Slower camera lerp (tau .45 -> .65) for a more deliberate
+      // cinematic glide between vantage points, less reactive feel.
+      const camK = 1 - Math.exp(-dt / 0.65);
       cam.x += (camTargetX - cam.x) * camK;
       cam.y += (camTargetY - cam.y) * camK;
       cam.z += (camTargetZ - cam.z) * camK;

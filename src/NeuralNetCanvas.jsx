@@ -219,7 +219,7 @@ export default function NeuralNetCanvas({ sceneRef }) {
       return [
         { x: 0,    y: 0,    zoom: 1.2, roll: 0    }, // 0 — Hero
         { x: -290, y: -160, zoom: 2.3, roll: -3   }, // 1 — About
-        { x: -290, y: 50,   zoom: 1.85, roll: 2.5 }, // 2 — Research (left)
+        { x: -240, y: 30,   zoom: 1.5, roll: 1.5  }, // 2 — Research (left, wider framing)
         { x: 295,  y: -160, zoom: 2.4, roll: -3   }, // 3 — Publication (right) ← swing across
         { x: -310, y: 230,  zoom: 2.6, roll: 4    }, // 4 — Projects (left-bottom) ← swing back
         { x: 290,  y: 230,  zoom: 2.3, roll: -2.5 }, // 5 — Skills (right-bottom)
@@ -373,7 +373,7 @@ export default function NeuralNetCanvas({ sceneRef }) {
       // Bio motifs: prominent on Hero, very faint on the other scenes
       // so the page has atmosphere without competing with the primary
       // motif. Fully suppressed on Research (user wants network alone).
-      const visBio       = (0.1 + 0.72 * motifVis(0)) * (1 - motifVis(2));
+      const visBio       = (0.16 + 0.74 * motifVis(0)) * (1 - motifVis(2));
       // Research-scene amplifier — same network as Hero but faster
       // pulses, brighter edges, tighter forward-pass sweep so the
       // Research view feels like a working model, not a wide overview.
@@ -737,9 +737,8 @@ export default function NeuralNetCanvas({ sceneRef }) {
 
       // ── Node positions: Lissajous drift around base point ─────────
       // Forward-pass wave sweeps left-to-right through the layers.
-      // Period tightens on Research (more frequent passes) — the
-      // network feels like it's actively inferring, not just resting.
-      const WAVE_PERIOD = Math.round(180 - 75 * researchBoost);
+      // Slightly tighter period on Research so it feels more active.
+      const WAVE_PERIOD = Math.round(180 - 45 * researchBoost);
       const waveT = (frame % WAVE_PERIOD) / WAVE_PERIOD;   // 0..1
       const waveLayer = waveT * (layers.length + 0.5);     // walks 0..N
       nodes.forEach((n) => {
@@ -751,7 +750,7 @@ export default function NeuralNetCanvas({ sceneRef }) {
         n.activation *= 0.955;
         const layerDist = Math.abs(waveLayer - n.layer);
         if (layerDist < 0.45) {
-          const peak = 0.38 + 0.32 * researchBoost;
+          const peak = 0.38 + 0.18 * researchBoost;
           n.activation = Math.max(n.activation, peak * (1 - layerDist / 0.45));
         }
       });
@@ -767,18 +766,18 @@ export default function NeuralNetCanvas({ sceneRef }) {
         ctx.beginPath();
         ctx.moveTo(a.x, a.y);
         ctx.lineTo(b.x, b.y);
-        const edgeBoost = 1 + 0.55 * researchBoost;
+        const edgeBoost = 1 + 0.22 * researchBoost;
         ctx.strokeStyle = act > 0.08
           ? rgba(accent, (0.18 + act * 0.32) * edgeBoost * visNetwork)
           : rgba(dim, (dark ? 0.22 : 0.42) * e.weight * edgeBoost * visNetwork);
-        ctx.lineWidth = (act > 0.08 ? 0.9 + act * 0.9 : 0.65) * (1 + 0.25 * researchBoost);
+        ctx.lineWidth = (act > 0.08 ? 0.9 + act * 0.9 : 0.65) * (1 + 0.08 * researchBoost);
         ctx.stroke();
       });
 
       // ── Pulses travelling along edges ─────────────────────────────
-      // Calmer cadence on Hero (every ~22 frames so pulses don't strobe
-      // behind the text), tightens to ~6 frames on Research.
-      const pulseEvery = reducedMotion ? 48 : Math.max(5, Math.round(22 - 16 * researchBoost));
+      // Calm on Hero (every ~22 frames), modestly faster on Research
+      // (~12 frames) — enough to feel different without strobing.
+      const pulseEvery = reducedMotion ? 48 : Math.max(7, Math.round(22 - 10 * researchBoost));
       if (frame % pulseEvery === 0) spawnPulse();
 
       for (let i = pulses.length - 1; i >= 0; i--) {
@@ -815,10 +814,10 @@ export default function NeuralNetCanvas({ sceneRef }) {
         ctx.arc(px, py, 2.4 + glow * 1.3, 0, Math.PI * 2);
         ctx.fillStyle = rgba(accent, Math.min(1, p.alpha + 0.18) * visNetwork);
         ctx.fill();
-        // Outer halo — softened on Hero so pulses don't bloom into the
-        // hero text. Restores to full intensity on Research.
-        const haloAlpha = 0.045 + 0.04 * researchBoost;
-        const haloR = 9 + glow * (4.5 + 1.5 * researchBoost);
+        // Outer halo — soft on both Hero (no text bloom) and Research
+        // (no flicker at higher zoom). Subtle boost on Research only.
+        const haloAlpha = 0.045 + 0.018 * researchBoost;
+        const haloR = 9 + glow * (4.5 + 0.6 * researchBoost);
         ctx.beginPath();
         ctx.arc(px, py, haloR, 0, Math.PI * 2);
         ctx.fillStyle = rgba(accent, haloAlpha * glow * visNetwork);

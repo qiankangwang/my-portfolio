@@ -717,7 +717,7 @@ body::after {
 .sect[data-pos="tr"] {           /* About — base journal navy */
   --accent: #1E3A8A; --accent2: #2754C2; --accent3: #1E2A5E;
 }
-.sect[data-pos="ml"] {           /* Research — slightly brighter navy */
+.sect[data-pos="mr"] {           /* Research — slightly brighter navy */
   --accent: #1E40AF; --accent2: #2563EB; --accent3: #1D3491;
 }
 .sect[data-pos="bl"] {           /* Publication — graphite manuscript */

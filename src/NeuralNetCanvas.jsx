@@ -209,18 +209,23 @@ export default function NeuralNetCanvas({ sceneRef }) {
       }
     };
 
-    // Six camera waypoints. The motif sits in the gutter OPPOSITE the
-    // text's CSS quadrant (sect[data-pos]) so they never share screen
-    // space. About→tr/DNA-left; Research→ml/network-right; Publication
-    // →bl/equations-right; Projects→br/grid-left; Skills→tl/labels-right.
+    // Six camera waypoints. Motif sits OPPOSITE the text quadrant
+    // (sect[data-pos]) so they don't share screen space — and consecutive
+    // waypoints land in different halves of the viewport so every scene
+    // transition is a visible camera swing, not a drift.
+    //   About (tr) → DNA upper-left
+    //   Research (mr) → network mid-left
+    //   Publication (bl) → equations upper-right
+    //   Projects (br) → grid lower-left
+    //   Skills (tl) → labels lower-right
     const computeWaypoints = () => {
       return [
-        { x: 0,    y: 0,    zoom: 1.0, roll: 0    }, // 0 — Hero: wide overview
-        { x: -290, y: -160, zoom: 2.3, roll: -3   }, // 1 — About → DNA left
-        { x: 290,  y: 0,    zoom: 1.9, roll: 2.5  }, // 2 — Research → network right
-        { x: 295,  y: -160, zoom: 2.4, roll: -3   }, // 3 — Publication → equations right
-        { x: -310, y: 230,  zoom: 2.6, roll: 4    }, // 4 — Projects → grid left
-        { x: 290,  y: 230,  zoom: 2.3, roll: -2.5 }, // 5 — Skills → labels right
+        { x: 0,    y: 0,    zoom: 1.0, roll: 0    }, // 0 — Hero
+        { x: -290, y: -160, zoom: 2.3, roll: -3   }, // 1 — About
+        { x: -290, y: 50,   zoom: 1.85, roll: 2.5 }, // 2 — Research (left)
+        { x: 295,  y: -160, zoom: 2.4, roll: -3   }, // 3 — Publication (right) ← swing across
+        { x: -310, y: 230,  zoom: 2.6, roll: 4    }, // 4 — Projects (left-bottom) ← swing back
+        { x: 290,  y: 230,  zoom: 2.3, roll: -2.5 }, // 5 — Skills (right-bottom)
       ];
     };
 

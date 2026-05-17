@@ -505,7 +505,7 @@ const HeroScene = memo(function HeroScene({ onAvatarClick, avatarRef, scrolled }
           decoding="async"
         />
       </button>
-      <DecodeText className="hero-kicker" text="Qiankang (Kant) Wang · 2026 portfolio" duration={820} delay={140} />
+      <DecodeText className="hero-kicker" text="Qiankang (Kant) Wang · 2026" duration={820} delay={140} />
       <h1 className="hero-name">
         <span className="hero-name-line">
           {Array.from("Qiankang").map((c, i) => (
@@ -762,7 +762,7 @@ export default function Portfolio() {
           <div className="sect-meta">
             <a href="#about" className="sect-n">01 · About</a>
           </div>
-          <DecodeText as="h2" className="sect-title decode-title" text="About." duration={620} delay={120} />
+          <DecodeText as="h2" className="sect-title decode-title" text="About me." duration={620} delay={120} />
           <p className="about-lede">{D.about}</p>
           <div className="about-stats-row">
             {D.stats.map((s) => (
@@ -783,11 +783,11 @@ export default function Portfolio() {
           </ul>
         </Section>
 
-        <Section id="research" pos="ml">
+        <Section id="research" pos="mr">
           <div className="sect-meta">
             <a href="#research" className="sect-n">02 · Research</a>
           </div>
-          <DecodeText as="h2" className="sect-title decode-title" text="Research." duration={620} delay={120} />
+          <DecodeText as="h2" className="sect-title decode-title" text="Research experience." duration={620} delay={120} />
           <ol className="exp-list" ref={expRef}>
             {D.experience.map((exp, i) => {
               const startYear = exp.period.match(/(\d{4})/)?.[1] ?? "—";
@@ -814,7 +814,7 @@ export default function Portfolio() {
             <a href="#publication" className="sect-n">03 · Publication</a>
             <span className="sect-meta-aux">{D.publication.venue} · {D.publication.year}</span>
           </div>
-          <DecodeText as="h2" className="sect-title decode-title" text="Publication." duration={620} delay={120} />
+          <DecodeText as="h2" className="sect-title decode-title" text="Selected publication." duration={620} delay={120} />
           <a
             href={D.publication.links[0]?.url || "#"}
             target="_blank"
@@ -836,7 +836,7 @@ export default function Portfolio() {
           <div className="sect-meta">
             <a href="#projects" className="sect-n">04 · Projects</a>
           </div>
-          <DecodeText as="h2" className="sect-title decode-title" text="Projects." duration={620} delay={120} />
+          <DecodeText as="h2" className="sect-title decode-title" text="Selected projects." duration={620} delay={120} />
           {repoLoading ? (
             <div className="projects-loading">
               <div className="spinner" />
@@ -881,7 +881,7 @@ export default function Portfolio() {
           <div className="sect-meta">
             <a href="#skills" className="sect-n">05 · Skills</a>
           </div>
-          <DecodeText as="h2" className="sect-title decode-title" text="Skills." duration={620} delay={120} />
+          <DecodeText as="h2" className="sect-title decode-title" text="Skills & tools." duration={620} delay={120} />
           <div className="skill-groups" ref={skillRef}>
             {Object.entries(D.skills).map(([cat, items], ci) => (
               <StaggerItem key={cat} index={ci} visible={skillVis}>

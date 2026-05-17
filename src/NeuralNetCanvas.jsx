@@ -68,7 +68,7 @@ export default function NeuralNetCanvas({ sceneRef }) {
     const researchNet = {
       layers: RES_LAYERS,
       layout: "centered",      // narrow layers compress toward y=0
-      worldScale: 0.4,         // compact diagram so it fits beside the text
+      worldScale: 0.5,         // bigger encoder-decoder diagram
       nodes: [], edges: [], pulses: [], edgeCursor: 0,
     };
     let bioMotifs = [];
@@ -251,7 +251,7 @@ export default function NeuralNetCanvas({ sceneRef }) {
       return [
         { x: 0,    y: 0,    zoom: 1.2, roll: 0    }, // 0 — Hero
         { x: -290, y: -160, zoom: 2.3, roll: -3   }, // 1 — About
-        { x: 220, y: 30,    zoom: 1.45, roll: 0   }, // 2 — Research (hourglass diagram sits left of text)
+        { x: 220, y: 30,    zoom: 1.3,  roll: 0   }, // 2 — Research (bigger encoder-decoder diagram + bio I/O)
         { x: 295,  y: -160, zoom: 2.4, roll: -3   }, // 3 — Publication (right) ← swing across
         { x: -310, y: 230,  zoom: 2.6, roll: 4    }, // 4 — Projects (left-bottom) ← swing back
         { x: 290,  y: 230,  zoom: 2.3, roll: -2.5 }, // 5 — Skills (right-bottom)
@@ -860,18 +860,46 @@ export default function NeuralNetCanvas({ sceneRef }) {
         ctx.lineWidth = 1.6;
         ctx.stroke();
 
-        // Labels — sit just below each shape.
-        const labelY = Math.max(inH, outH) + 24;
+        // ── Bio-themed input / output ──
+        // Input side: DNA base letter beside each input node — reads as
+        // a sequence (A C G T ...) being embedded into the encoder.
+        // Output side: protein-residue bead beside each output node —
+        // reads as a folded structure predicted from the latent.
+        const bases = ["A", "C", "G", "T", "A", "G", "C", "T", "A"];
         ctx.save();
-        ctx.textAlign = "center";
-        ctx.textBaseline = "top";
-        ctx.font = `600 18px ui-monospace, Menlo, monospace`;
-        ctx.fillStyle = rgba(accent, 0.85 * alphaScale);
-        ctx.fillText("ENCODER", (inX + bX) / 2, labelY);
-        ctx.fillText("DECODER", (bX + outX) / 2, labelY);
-        ctx.font = `italic 26px Georgia, 'Times New Roman', serif`;
-        ctx.fillStyle = rgba(warm, 0.95 * alphaScale);
-        ctx.fillText("z", bX, labelY - 4);
+        ctx.font = `italic 600 18px Georgia, 'Times New Roman', serif`;
+        ctx.textAlign = "right";
+        ctx.textBaseline = "middle";
+        const layerOf = (idx) => net.nodes.filter((n) => n.layer === idx);
+        const inputNodes = layerOf(0);
+        inputNodes.forEach((n, i) => {
+          ctx.fillStyle = rgba(warm, 0.85 * alphaScale);
+          ctx.fillText(bases[i % bases.length], n.baseX - n.r - 6, n.baseY);
+        });
+
+        const outputNodes = layerOf(ls.length - 1);
+        outputNodes.forEach((n, i) => {
+          const drift = Math.sin(frame * 0.02 + i * 0.6) * 1.6;
+          ctx.beginPath();
+          ctx.arc(n.baseX + n.r + 9, n.baseY + drift, 4, 0, Math.PI * 2);
+          ctx.fillStyle = rgba(i % 2 ? accent : warm, 0.9 * alphaScale);
+          ctx.fill();
+        });
+        // Light connecting line through the protein-residue beads — reads
+        // as a backbone, like a tiny structure leaving the decoder.
+        if (outputNodes.length > 1) {
+          ctx.beginPath();
+          outputNodes.forEach((n, i) => {
+            const drift = Math.sin(frame * 0.02 + i * 0.6) * 1.6;
+            const px = n.baseX + n.r + 9;
+            const py = n.baseY + drift;
+            if (i === 0) ctx.moveTo(px, py);
+            else ctx.lineTo(px, py);
+          });
+          ctx.strokeStyle = rgba(warm, 0.45 * alphaScale);
+          ctx.lineWidth = 1.2;
+          ctx.stroke();
+        }
         ctx.restore();
       };
 

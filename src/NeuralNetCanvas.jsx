@@ -362,6 +362,29 @@ export default function NeuralNetCanvas({ sceneRef }) {
       const warm   = dark ? [220, 158, 115] : [200, 105, 55];
       const t = frame * (reducedMotion ? 0.012 : 0.025);
 
+      // ── Per-motif visibility ──
+      // Each scene has a primary element (DNA at About, equations at
+      // Publication, etc.). When the camera is parked on its owner
+      // scene the motif is at full alpha; as the camera slides away
+      // it fades toward 0.15 so the next motif can take focus. Linear
+      // ramp between ±0.5 (full) and ±1.5 (faint).
+      const motifVis = (target) => {
+        const d = Math.abs(smoothedScene - target);
+        if (d <= 0.5) return 1.0;
+        if (d >= 1.5) return 0.15;
+        return 0.15 + (1.5 - d) * 0.85;
+      };
+      const visDNA       = motifVis(1);
+      const visEquations = motifVis(3);
+      const visGrid      = motifVis(4);
+      const visLabels    = motifVis(5);
+      // Network is the headlining element at Hero (0) AND Research (2)
+      // — visible at full alpha on either, faded between.
+      const visNetwork   = Math.max(motifVis(0), motifVis(2));
+      // Bio motifs are atmospheric background; keep them low so they
+      // don't fight whichever scene-motif is currently in focus.
+      const visBio       = 0.22;
+
       // Soft radial wash drawn in SCREEN coords (no transform yet).
       const grad = ctx.createRadialGradient(
         w * 0.5, h * 0.45, 0,
@@ -394,6 +417,9 @@ export default function NeuralNetCanvas({ sceneRef }) {
       });
 
       // ── Bio motifs (drawn after ambient, before network) ────────────
+      // Atmospheric decoration only — every alpha is multiplied by
+      // visBio so they sit well behind whichever scene motif is
+      // currently in focus.
       bioMotifs.forEach((m, mi) => {
         const drift = Math.sin(frame * 0.008 + m.phase) * 8;
         if (m.type === "rna") {
@@ -407,12 +433,12 @@ export default function NeuralNetCanvas({ sceneRef }) {
             const y    = m.y + dy * i + drift + Math.cos(m.angle + Math.PI / 2) * (wave * 5 + arc);
             const hot  = (i / Math.max(1, m.len - 1) + frame * 0.0045 + mi * 0.17) % 1;
             const active = hot > 0.42 && hot < 0.58;
-            const alpha  = active ? (dark ? 0.82 : 0.66) : (dark ? 0.4 : 0.32);
+            const alpha  = (active ? (dark ? 0.82 : 0.66) : (dark ? 0.4 : 0.32)) * visBio;
             if (i > 0) {
               ctx.beginPath();
               ctx.moveTo(x - dx * 0.72, y - dy * 0.72);
               ctx.lineTo(x - dx * 0.25, y - dy * 0.25);
-              ctx.strokeStyle = rgba(dim, dark ? 0.3 : 0.22);
+              ctx.strokeStyle = rgba(dim, (dark ? 0.3 : 0.22) * visBio);
               ctx.lineWidth = active ? 1 : 0.7;
               ctx.stroke();
             }
@@ -431,13 +457,13 @@ export default function NeuralNetCanvas({ sceneRef }) {
           }
           ctx.beginPath();
           pts.forEach((pt, i) => { if (i === 0) ctx.moveTo(pt.x, pt.y); else ctx.lineTo(pt.x, pt.y); });
-          ctx.strokeStyle = rgba(warm, dark ? 0.34 : 0.26);
+          ctx.strokeStyle = rgba(warm, (dark ? 0.34 : 0.26) * visBio);
           ctx.lineWidth = 0.85;
           ctx.stroke();
           pts.forEach((pt, i) => {
             ctx.beginPath();
             ctx.arc(pt.x, pt.y, i % 3 === 0 ? 2 : 1.45, 0, Math.PI * 2);
-            ctx.fillStyle = rgba(i % 2 ? warm : accent, dark ? 0.44 : 0.32);
+            ctx.fillStyle = rgba(i % 2 ? warm : accent, (dark ? 0.44 : 0.32) * visBio);
             ctx.fill();
           });
         }
@@ -447,6 +473,15 @@ export default function NeuralNetCanvas({ sceneRef }) {
       // Drawn after bio motifs but before the network nodes, so the
       // network's bright nodes/pulses still pop over everything.
       sceneMotifs.forEach((m) => {
+        // Pick this motif's visibility multiplier — chosen by motif type
+        // so it tracks the right scene anchor. Multiplied into every
+        // rgba() alpha in the branch.
+        let vM = 1;
+        if (m.type === "dna") vM = visDNA;
+        else if (m.type === "equations") vM = visEquations;
+        else if (m.type === "grid") vM = visGrid;
+        else if (m.type === "labels") vM = visLabels;
+        if (vM < 0.02) return; // fully off — skip the work
         if (m.type === "dna") {
           // Two intertwined sine strands with horizontal rungs every step.
           // Phase advances slowly so the helix appears to spin around its
@@ -465,17 +500,17 @@ export default function NeuralNetCanvas({ sceneRef }) {
             ctx.beginPath();
             ctx.moveTo(xA, py);
             ctx.lineTo(xB, py);
-            ctx.strokeStyle = rgba(warm, (dark ? 0.32 : 0.24) * (0.3 + sep * 0.7));
+            ctx.strokeStyle = rgba(warm, (dark ? 0.32 : 0.24) * (0.3 + sep * 0.7) * vM);
             ctx.lineWidth = 1.1;
             ctx.stroke();
             // Strand dots
             ctx.beginPath();
             ctx.arc(xA, py, 2.4, 0, Math.PI * 2);
-            ctx.fillStyle = rgba(accent, (dark ? 0.85 : 0.7) * (0.4 + sep * 0.6));
+            ctx.fillStyle = rgba(accent, (dark ? 0.85 : 0.7) * (0.4 + sep * 0.6) * vM);
             ctx.fill();
             ctx.beginPath();
             ctx.arc(xB, py, 2.4, 0, Math.PI * 2);
-            ctx.fillStyle = rgba(warm, (dark ? 0.75 : 0.6) * (0.4 + sep * 0.6));
+            ctx.fillStyle = rgba(warm, (dark ? 0.75 : 0.6) * (0.4 + sep * 0.6) * vM);
             ctx.fill();
             // Connecting backbone lines down the strand
             if (i > 0) {
@@ -485,13 +520,13 @@ export default function NeuralNetCanvas({ sceneRef }) {
               ctx.beginPath();
               ctx.moveTo(prevXA, py - step);
               ctx.lineTo(xA, py);
-              ctx.strokeStyle = rgba(accent, dark ? 0.55 : 0.42);
+              ctx.strokeStyle = rgba(accent, (dark ? 0.55 : 0.42) * vM);
               ctx.lineWidth = 1.4;
               ctx.stroke();
               ctx.beginPath();
               ctx.moveTo(prevXB, py - step);
               ctx.lineTo(xB, py);
-              ctx.strokeStyle = rgba(warm, dark ? 0.5 : 0.38);
+              ctx.strokeStyle = rgba(warm, (dark ? 0.5 : 0.38) * vM);
               ctx.lineWidth = 1.4;
               ctx.stroke();
             }
@@ -508,7 +543,7 @@ export default function NeuralNetCanvas({ sceneRef }) {
             ctx.save();
             ctx.translate(px, py);
             ctx.scale(pulse, pulse);
-            ctx.fillStyle = rgba(accent, dark ? 0.75 : 0.62);
+            ctx.fillStyle = rgba(accent, (dark ? 0.75 : 0.62) * vM);
             ctx.font = `italic ${g.size}px Georgia, 'Times New Roman', serif`;
             ctx.textAlign = "center";
             ctx.textBaseline = "middle";
@@ -527,7 +562,7 @@ export default function NeuralNetCanvas({ sceneRef }) {
             ctx.beginPath();
             ctx.moveTo(ax, ay);
             ctx.lineTo(bx, by);
-            ctx.strokeStyle = rgba(accent, dark ? 0.16 : 0.12);
+            ctx.strokeStyle = rgba(accent, (dark ? 0.16 : 0.12) * vM);
             ctx.lineWidth = 0.6;
             ctx.stroke();
           }
@@ -553,11 +588,11 @@ export default function NeuralNetCanvas({ sceneRef }) {
               const ar = Math.round(cool[0] + (accent[0] - cool[0]) * intensity);
               const ag = Math.round(cool[1] + (accent[1] - cool[1]) * intensity);
               const ab = Math.round(cool[2] + (accent[2] - cool[2]) * intensity);
-              ctx.fillStyle = rgba([ar, ag, ab], dark ? 0.45 + intensity * 0.45 : 0.32 + intensity * 0.5);
+              ctx.fillStyle = rgba([ar, ag, ab], ((dark ? 0.45 + intensity * 0.45 : 0.32 + intensity * 0.5)) * vM);
               ctx.fillRect(x, y, m.cell, m.cell);
               if (intensity > 0.7) {
                 // Bright cell gets a soft halo
-                ctx.fillStyle = rgba(accent, (intensity - 0.7) * 0.18);
+                ctx.fillStyle = rgba(accent, (intensity - 0.7) * 0.18 * vM);
                 ctx.fillRect(x - 2, y - 2, m.cell + 4, m.cell + 4);
               }
             }
@@ -573,20 +608,20 @@ export default function NeuralNetCanvas({ sceneRef }) {
             ctx.textAlign = "center";
             ctx.textBaseline = "middle";
             // Subtle "halo" pass for legibility
-            ctx.fillStyle = rgba(accent, 0.10);
+            ctx.fillStyle = rgba(accent, 0.10 * vM);
             ctx.fillText(it.text, px, py);
-            ctx.fillStyle = rgba(accent, dark ? 0.82 : 0.7);
+            ctx.fillStyle = rgba(accent, (dark ? 0.82 : 0.7) * vM);
             ctx.fillText(it.text, px, py);
             // Anchor dot at orbit centre
           });
           // Central anchor — small ring + dot
           ctx.beginPath();
           ctx.arc(m.x, m.y, 4, 0, Math.PI * 2);
-          ctx.fillStyle = rgba(accent, dark ? 0.85 : 0.7);
+          ctx.fillStyle = rgba(accent, (dark ? 0.85 : 0.7) * vM);
           ctx.fill();
           ctx.beginPath();
           ctx.arc(m.x, m.y, 14, 0, Math.PI * 2);
-          ctx.strokeStyle = rgba(accent, 0.25);
+          ctx.strokeStyle = rgba(accent, 0.25 * vM);
           ctx.lineWidth = 1;
           ctx.stroke();
         }
@@ -600,6 +635,9 @@ export default function NeuralNetCanvas({ sceneRef }) {
       });
 
       // ── Edges ──────────────────────────────────────────────────────
+      // Network as a whole is multiplied by visNetwork (full on Hero +
+      // Research, faint on other scenes where another motif takes the
+      // spotlight). Per-edge `act` activation still modulates within.
       edges.forEach((e) => {
         const a = nodes[e.from];
         const b = nodes[e.to];
@@ -608,8 +646,8 @@ export default function NeuralNetCanvas({ sceneRef }) {
         ctx.moveTo(a.x, a.y);
         ctx.lineTo(b.x, b.y);
         ctx.strokeStyle = act > 0.08
-          ? rgba(accent, 0.18 + act * 0.32)
-          : rgba(dim, (dark ? 0.22 : 0.42) * e.weight);
+          ? rgba(accent, (0.18 + act * 0.32) * visNetwork)
+          : rgba(dim, (dark ? 0.22 : 0.42) * e.weight * visNetwork);
         ctx.lineWidth = act > 0.08 ? 0.9 + act * 0.9 : 0.65;
         ctx.stroke();
       });
@@ -638,7 +676,7 @@ export default function NeuralNetCanvas({ sceneRef }) {
         const tailY = a.y + (b.y - a.y) * tailStartT;
         const tailGrad = ctx.createLinearGradient(tailX, tailY, px, py);
         tailGrad.addColorStop(0, rgba(accent, 0));
-        tailGrad.addColorStop(1, rgba(accent, p.alpha * 0.6));
+        tailGrad.addColorStop(1, rgba(accent, p.alpha * 0.6 * visNetwork));
         ctx.beginPath();
         ctx.moveTo(tailX, tailY);
         ctx.lineTo(px, py);
@@ -649,12 +687,12 @@ export default function NeuralNetCanvas({ sceneRef }) {
         // Inner bright dot
         ctx.beginPath();
         ctx.arc(px, py, 2.4 + glow * 1.3, 0, Math.PI * 2);
-        ctx.fillStyle = rgba(accent, Math.min(1, p.alpha + 0.18));
+        ctx.fillStyle = rgba(accent, Math.min(1, p.alpha + 0.18) * visNetwork);
         ctx.fill();
         // Outer halo — slightly bigger and warmer
         ctx.beginPath();
         ctx.arc(px, py, 11 + glow * 6, 0, Math.PI * 2);
-        ctx.fillStyle = rgba(accent, 0.075 * glow);
+        ctx.fillStyle = rgba(accent, 0.075 * glow * visNetwork);
         ctx.fill();
       }
 
@@ -664,7 +702,7 @@ export default function NeuralNetCanvas({ sceneRef }) {
         if (mix > 0.08) {
           ctx.beginPath();
           ctx.arc(n.x, n.y, n.r + 8 * mix, 0, Math.PI * 2);
-          ctx.fillStyle = rgba(accent, mix * 0.08);
+          ctx.fillStyle = rgba(accent, mix * 0.08 * visNetwork);
           ctx.fill();
         }
         ctx.beginPath();
@@ -672,9 +710,9 @@ export default function NeuralNetCanvas({ sceneRef }) {
         const cr = Math.round(cool[0] + (accent[0] - cool[0]) * mix);
         const cg = Math.round(cool[1] + (accent[1] - cool[1]) * mix);
         const cb = Math.round(cool[2] + (accent[2] - cool[2]) * mix);
-        ctx.fillStyle = rgba([cr, cg, cb], dark ? 0.78 : 0.88);
+        ctx.fillStyle = rgba([cr, cg, cb], (dark ? 0.78 : 0.88) * visNetwork);
         ctx.fill();
-        ctx.strokeStyle = rgba(accent, 0.32 + mix * 0.32);
+        ctx.strokeStyle = rgba(accent, (0.32 + mix * 0.32) * visNetwork);
         ctx.lineWidth = 0.9;
         ctx.stroke();
       });

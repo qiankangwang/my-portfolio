@@ -508,13 +508,10 @@ const HeroScene = memo(function HeroScene({ onAvatarClick, avatarRef, scrolled }
       <DecodeText className="hero-kicker" text="Qiankang (Kant) Wang · 2026" duration={820} delay={140} />
       <h1 className="hero-name">
         <span className="hero-name-line">
-          {Array.from("Qiankang").map((c, i) => (
-            <span key={i} className="hero-name-char" style={{ "--i": i }}>{c}</span>
-          ))}
-        </span>
-        <span className="hero-name-line hero-name-line-2">
-          {Array.from("Wang.").map((c, i) => (
-            <span key={i} className="hero-name-char" style={{ "--i": i + 9 }}>{c}</span>
+          {Array.from("Qiankang Wang").map((c, i) => (
+            <span key={i} className="hero-name-char" style={{ "--i": i }}>
+              {c === " " ? " " : c}
+            </span>
           ))}
         </span>
       </h1>
@@ -821,7 +818,7 @@ export default function Portfolio() {
             rel="noopener noreferrer"
             className="pub-link"
           >
-            <DecodeText as="h3" className="pub-title" text={D.publication.title} duration={820} delay={120} />
+            <h3 className="pub-title">{D.publication.title}</h3>
             <p className="pub-authors">
               {D.publication.authors} · <em>{D.publication.role}</em>
             </p>

@@ -354,16 +354,17 @@ export default function NeuralNetCanvas({ sceneRef }) {
       const t = frame * (reducedMotion ? 0.012 : 0.025);
 
       // ── Per-motif visibility ──
-      // Each scene has a primary element (DNA at About, equations at
-      // Publication, etc.). When the camera is parked on its owner
-      // scene the motif is at full alpha; as the camera slides away
-      // it fades toward 0.15 so the next motif can take focus. Linear
-      // ramp between ±0.5 (full) and ±1.5 (faint).
+      // Each scene has a primary motif (DNA at About, equations at
+      // Publication, etc.). Tight parked zone at full alpha, smoothstep
+      // crossfade ending at zero by the time the adjacent scene parks
+      // — so when the camera is on scene N, scene N±1's motifs are
+      // fully gone, not lingering at 50%.
       const motifVis = (target) => {
         const d = Math.abs(smoothedScene - target);
-        if (d <= 0.5) return 1.0;
-        if (d >= 1.5) return 0.15;
-        return 0.15 + (1.5 - d) * 0.85;
+        if (d <= 0.15) return 1.0;
+        if (d >= 0.85) return 0.0;
+        const t = (0.85 - d) / 0.7;
+        return t * t * (3 - 2 * t);
       };
       const visDNA       = motifVis(1);
       const visEquations = motifVis(3);

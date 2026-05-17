@@ -921,61 +921,6 @@ body::after {
     animation: none !important;
   }
 }
-.hero-name-line-2 {
-  position: relative;
-  /* Subtle nudge so the line doesn't sit flush left — feels more
-     designed than template. */
-  padding-left: 0.5em;
-  background: linear-gradient(
-    100deg,
-    var(--accent) 0%,
-    var(--accent2) 40%,
-    var(--accent) 60%,
-    var(--accent3) 100%
-  );
-  background-size: 200% 100%;
-  background-clip: text;
-  -webkit-background-clip: text;
-  color: transparent;
-  -webkit-text-fill-color: transparent;
-  /* Per-char rise handles entry — only the slow gradient drift stays
-     here so the surname keeps shimmering after it lands. */
-  animation: accent-breathe 6s ease-in-out infinite 1.6s;
-}
-/* Thin accent underline that draws under "Wang." once the letter
-   cascade has finished landing. Reads as a printer's signature rule
-   under the surname — editorial flourish, half-line-width so it
-   doesn't span the full title. */
-.hero-name-line-2::after {
-  content: '';
-  position: absolute;
-  left: 0.5em;
-  bottom: 0.08em;
-  width: 0;
-  height: 2px;
-  background: linear-gradient(90deg,
-    var(--accent) 0%,
-    color-mix(in srgb, var(--accent) 40%, transparent) 80%,
-    transparent 100%);
-  animation: hero-rule-draw 1.1s cubic-bezier(.22, 1, .36, 1) 1.4s forwards;
-  pointer-events: none;
-}
-@keyframes hero-rule-draw {
-  from { width: 0; }
-  to   { width: 52%; }
-}
-@media (prefers-reduced-motion: reduce) {
-  .hero-name-line-2::after { animation: none; width: 52%; }
-}
-/* Slow horizontal gradient drift — mirrors the network's "alive"
-   quality without being attention-grabbing. */
-@keyframes accent-breathe {
-  0%, 100% { background-position: 0% 50%; }
-  50%      { background-position: 100% 50%; }
-}
-@media (prefers-reduced-motion: reduce) {
-  .hero-name-line-2 { animation: none; }
-}
 .hero-tagline {
   font-family: var(--serif);
   font-size: clamp(1.05rem, 1.7vw, 1.35rem);
@@ -1725,13 +1670,6 @@ a.sect-n:hover {
     text-shadow: none !important;
   }
   .hero-name { font-size: 2.2rem; }
-  .hero-name-line-2 {
-    color: #000 !important;
-    -webkit-text-fill-color: #000 !important;
-    background: none !important;
-    animation: none !important;
-  }
-  .hero-name-line-2::after { display: none; }
   .sect-title, .pub-title { font-size: 1.5rem; }
   .sect-title::after { display: none; }
   a { color: #000 !important; text-decoration: underline; }

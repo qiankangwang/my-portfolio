@@ -131,13 +131,10 @@ export default function NeuralNetCanvas({ sceneRef }) {
       const top = -netH * 0.34;
       const bottom = netH * 0.34;
       bioMotifs = [
-        { type: "rna",     x: left + netW * 0.10, y: top + netH * 0.12,    len: 13, angle: 0.15,  phase: 0.2, bend: 10 },
-        { type: "rna",     x: left + netW * 0.50, y: top + netH * 0.74,    len: 10, angle: -0.20, phase: 3.1, bend: -7 },
-        { type: "rna",     x: left + netW * 0.08, y: top + netH * 0.58,    len: 9,  angle: 0.32,  phase: 6.0, bend: 6 },
-        { type: "protein", x: left + netW * 0.18, y: bottom - netH * 0.16, len: 8,  scale: 0.92, phase: 2.4 },
-        { type: "protein", x: left + netW * 0.42, y: top + netH * 0.06,    len: 7,  scale: 0.70, phase: 5.4 },
-        { type: "protein", x: left + netW * 0.88, y: bottom - netH * 0.28, len: 6,  scale: 0.65, phase: 6.8 },
-        { type: "protein", x: left + netW * 0.30, y: top + netH * 0.48,    len: 7,  scale: 0.78, phase: 1.3 },
+        { type: "rna",     x: left + netW * 0.12, y: top + netH * 0.16,    len: 12, angle: 0.18,  phase: 0.2, bend: 9  },
+        { type: "rna",     x: left + netW * 0.52, y: top + netH * 0.78,    len: 10, angle: -0.20, phase: 3.1, bend: -7 },
+        { type: "protein", x: left + netW * 0.88, y: bottom - netH * 0.28, len: 7,  scale: 0.72, phase: 6.8 },
+        { type: "protein", x: left + netW * 0.32, y: top + netH * 0.50,    len: 7,  scale: 0.80, phase: 1.3 },
       ];
 
       // Scene motifs — each becomes one section's camera anchor.
@@ -373,10 +370,10 @@ export default function NeuralNetCanvas({ sceneRef }) {
       // Network is the headlining element at Hero (0) AND Research (2)
       // — visible at full alpha on either, faded between.
       const visNetwork   = Math.max(motifVis(0), motifVis(2));
-      // Bio motifs only show during Hero — on every other scene the
-      // bio strands + connecting lines were blocking the primary motif.
-      // Fades smoothly with the Hero camera leaving.
-      const visBio       = 0.85 * motifVis(0);
+      // Bio motifs: prominent on Hero, very faint on the other scenes
+      // so the page has atmosphere without competing with the primary
+      // motif. Fully suppressed on Research (user wants network alone).
+      const visBio       = (0.1 + 0.72 * motifVis(0)) * (1 - motifVis(2));
       // Research-scene amplifier — same network as Hero but faster
       // pulses, brighter edges, tighter forward-pass sweep so the
       // Research view feels like a working model, not a wide overview.

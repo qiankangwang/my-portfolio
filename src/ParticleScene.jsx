@@ -314,23 +314,29 @@ export default function ParticleScene({ sceneRef }) {
     // Transitions still add a z-pullback at u=0.5 so the camera flies
     // out of the current formation, travels open space, then frames
     // the next one — the "exit → travel → re-enter" beat.
-    // Text reads in the LEFT column; camera lookX is shifted LEFT
-    // (negative) so the formation lands on the RIGHT half of the
-    // viewport. Hero is the exception — text is centred there, camera
-    // looks at world centre too.
+    // Per-section quadrant layout: text lands in one quadrant (chosen
+    // in Portfolio.jsx via [data-pos]) and the camera's lookAt is
+    // shifted to the OPPOSITE quadrant so the formation occupies the
+    // empty space across from the text.
+    //   lookX > 0  → lookAt right of origin → formation appears LEFT
+    //   lookX < 0  → lookAt left of origin  → formation appears RIGHT
+    //   lookY > 0  → lookAt above origin    → formation appears BELOW
+    //   lookY < 0  → lookAt below origin    → formation appears ABOVE
+    // Hero is the exception — name is huge and centred, camera stays
+    // looking at world origin.
     const SCENE_CAMS = [
-      // 0 Hero — wide atmospheric arrival, centred
-      { x:  0, y:  20, z: 240, lookX:   0, lookY:  -5 },
-      // 1 About — DNA helix framed on the right
-      { x: 12, y:   0, z: 260, lookX: -65, lookY:   0 },
-      // 2 Research — layered network on the right
-      { x:  0, y:  10, z: 230, lookX: -65, lookY:   0 },
-      // 3 Publication — sphere on the right
-      { x:-12, y:  18, z: 305, lookX: -65, lookY:  -5 },
-      // 4 Projects — grid on the right, slight low angle
-      { x:  0, y: -38, z: 250, lookX: -65, lookY:  22 },
-      // 5 Skills — rings on the right, slight high angle
-      { x: 20, y:  30, z: 285, lookX: -65, lookY: -12 },
+      // 0 Hero            — centred arrival, no quadrant
+      { x:  0, y:  20, z: 240, lookX:   0, lookY:   0 },
+      // 1 About (text TR)      → formation BOTTOM-LEFT
+      { x: -8, y: -18, z: 260, lookX:  68, lookY:  26 },
+      // 2 Research (text BL)   → formation TOP-RIGHT
+      { x: 14, y:  20, z: 235, lookX: -68, lookY: -24 },
+      // 3 Publication (text MR) → formation MIDDLE-LEFT
+      { x: 18, y:   8, z: 295, lookX:  72, lookY:   0 },
+      // 4 Projects (text TL)   → formation BOTTOM-RIGHT
+      { x:-10, y: -22, z: 255, lookX: -68, lookY:  24 },
+      // 5 Skills (text BR)     → formation TOP-LEFT
+      { x: 18, y:  24, z: 280, lookX:  68, lookY: -22 },
     ];
 
     // ── Mouse parallax ─────────────────────────────────────────────

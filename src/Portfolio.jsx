@@ -146,7 +146,7 @@ function useInView(threshold = 0.12, once = true) {
    inside the anchor; the scroll only advances progress, it doesn't move
    focus. .in toggles a one-shot fly-in just before the pin engages so the
    stage lands cleanly. */
-const Section = memo(function Section({ id, children, className = "", ...rest }) {
+const Section = memo(function Section({ id, pos, children, className = "", ...rest }) {
   const ref = useRef(null);
   const [vis, setVis] = useState(false);
   useEffect(() => {
@@ -170,6 +170,7 @@ const Section = memo(function Section({ id, children, className = "", ...rest })
     <section
       ref={ref}
       id={id}
+      data-pos={pos}
       className={`sect${vis ? " in" : ""} ${className}`}
       {...rest}
     >
@@ -480,7 +481,7 @@ export default function Portfolio() {
         <HeroScene onAvatarClick={onAvatarClick} avatarRef={avatarRef} />
 
         {/* ── About — editorial pull-quote intro, stats row, focus list ── */}
-        <Section id="about">
+        <Section id="about" pos="tr">
           <div className="sect-meta">
             <span className="sect-n">01 · About</span>
           </div>
@@ -505,7 +506,7 @@ export default function Portfolio() {
         </Section>
 
         {/* ── Research — year-led editorial rows, no card chrome ── */}
-        <Section id="research">
+        <Section id="research" pos="bl">
           <div className="sect-meta">
             <span className="sect-n">02 · Research</span>
           </div>
@@ -532,7 +533,7 @@ export default function Portfolio() {
         </Section>
 
         {/* ── Publication — huge serif title, no card ── */}
-        <Section id="publication">
+        <Section id="publication" pos="mr">
           <div className="sect-meta">
             <span className="sect-n">03 · Publication</span>
             <span className="sect-meta-aux">{D.publication.venue} · {D.publication.year}</span>
@@ -555,7 +556,7 @@ export default function Portfolio() {
         </Section>
 
         {/* ── Projects — list rows, hover-revealed underline ── */}
-        <Section id="projects">
+        <Section id="projects" pos="tl">
           <div className="sect-meta">
             <span className="sect-n">04 · Projects</span>
           </div>
@@ -589,7 +590,7 @@ export default function Portfolio() {
         </Section>
 
         {/* ── Skills — pill cloud grouped under mono labels ── */}
-        <Section id="skills">
+        <Section id="skills" pos="br">
           <div className="sect-meta">
             <span className="sect-n">05 · Skills</span>
           </div>

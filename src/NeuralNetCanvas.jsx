@@ -62,11 +62,13 @@ export default function NeuralNetCanvas({ sceneRef }) {
     const heroNet = {
       layers: HERO_LAYERS,
       layout: "spread",        // node placement strategy
+      worldScale: 1,           // full size at world origin
       nodes: [], edges: [], pulses: [], edgeCursor: 0,
     };
     const researchNet = {
       layers: RES_LAYERS,
       layout: "centered",      // narrow layers compress toward y=0
+      worldScale: 0.4,         // compact diagram so it fits beside the text
       nodes: [], edges: [], pulses: [], edgeCursor: 0,
     };
     let bioMotifs = [];
@@ -88,8 +90,9 @@ export default function NeuralNetCanvas({ sceneRef }) {
       net.edges = [];
       net.pulses = [];
       net.edgeCursor = 0;
-      const netW = WORLD_W;
-      const netH = WORLD_H;
+      const scale = net.worldScale || 1;
+      const netW = WORLD_W * scale;
+      const netH = WORLD_H * scale;
       const ls = net.layers;
       const layerGap = netW / (ls.length - 1);
       const startX = -netW / 2;
@@ -248,7 +251,7 @@ export default function NeuralNetCanvas({ sceneRef }) {
       return [
         { x: 0,    y: 0,    zoom: 1.2, roll: 0    }, // 0 — Hero
         { x: -290, y: -160, zoom: 2.3, roll: -3   }, // 1 — About
-        { x: -240, y: 30,   zoom: 1.5, roll: 1.5  }, // 2 — Research (left, wider framing)
+        { x: 220, y: 30,    zoom: 1.45, roll: 0   }, // 2 — Research (hourglass diagram sits left of text)
         { x: 295,  y: -160, zoom: 2.4, roll: -3   }, // 3 — Publication (right) ← swing across
         { x: -310, y: 230,  zoom: 2.6, roll: 4    }, // 4 — Projects (left-bottom) ← swing back
         { x: 290,  y: 230,  zoom: 2.3, roll: -2.5 }, // 5 — Skills (right-bottom)
@@ -787,12 +790,98 @@ export default function NeuralNetCanvas({ sceneRef }) {
         }
       });
 
+      // ── Encoder-decoder schematic frame ───────────────────────────
+      // For hourglass networks (a layer with ≤2 nodes flanked by wider
+      // layers), draw the classic trapezoid encoder + bottleneck box +
+      // trapezoid decoder around the nodes, with labels — matches the
+      // textbook autoencoder diagram look.
+      const drawHourglassFrame = (net, alphaScale) => {
+        const ls = net.layers;
+        const minCount = Math.min(...ls);
+        if (minCount > 2) return;
+        const bIdx = ls.indexOf(minCount);
+        if (bIdx <= 0 || bIdx >= ls.length - 1) return;
+
+        const scale = net.worldScale || 1;
+        const netW = WORLD_W * scale;
+        const netH = WORLD_H * scale;
+        const maxCount = Math.max(...ls);
+        const layerGap = netW / (ls.length - 1);
+        const startX = -netW / 2;
+
+        const layerHalfH = (layer) => {
+          const c = ls[layer];
+          const heightFactor = Math.pow(c / maxCount, 1.6);
+          return netH * 0.78 * heightFactor / 2;
+        };
+        const layerX = (layer) => startX + layerGap * layer;
+
+        const inX  = layerX(0);
+        const inH  = layerHalfH(0)        + 30;
+        const bX   = layerX(bIdx);
+        const bH   = layerHalfH(bIdx)     + 28;
+        const outX = layerX(ls.length - 1);
+        const outH = layerHalfH(ls.length - 1) + 30;
+        const bHalfW = 28;       // bottleneck box half-width
+        const sidePad = 18;      // trapezoid padding past input/output
+
+        // Encoder trapezoid — wide on the left tapering into the bottleneck.
+        ctx.beginPath();
+        ctx.moveTo(inX - sidePad, -inH);
+        ctx.lineTo(bX - bHalfW,   -bH);
+        ctx.lineTo(bX - bHalfW,    bH);
+        ctx.lineTo(inX - sidePad,  inH);
+        ctx.closePath();
+        ctx.fillStyle = rgba(accent, 0.085 * alphaScale);
+        ctx.fill();
+        ctx.strokeStyle = rgba(accent, 0.55 * alphaScale);
+        ctx.lineWidth = 1.6;
+        ctx.stroke();
+
+        // Bottleneck box — warm-tinted to read as the latent space.
+        ctx.beginPath();
+        ctx.rect(bX - bHalfW, -bH, bHalfW * 2, bH * 2);
+        ctx.fillStyle = rgba(warm, 0.14 * alphaScale);
+        ctx.fill();
+        ctx.strokeStyle = rgba(warm, 0.75 * alphaScale);
+        ctx.lineWidth = 1.6;
+        ctx.stroke();
+
+        // Decoder trapezoid — mirror of encoder.
+        ctx.beginPath();
+        ctx.moveTo(bX + bHalfW,    -bH);
+        ctx.lineTo(outX + sidePad, -outH);
+        ctx.lineTo(outX + sidePad,  outH);
+        ctx.lineTo(bX + bHalfW,     bH);
+        ctx.closePath();
+        ctx.fillStyle = rgba(accent, 0.085 * alphaScale);
+        ctx.fill();
+        ctx.strokeStyle = rgba(accent, 0.55 * alphaScale);
+        ctx.lineWidth = 1.6;
+        ctx.stroke();
+
+        // Labels — sit just below each shape.
+        const labelY = Math.max(inH, outH) + 24;
+        ctx.save();
+        ctx.textAlign = "center";
+        ctx.textBaseline = "top";
+        ctx.font = `600 18px ui-monospace, Menlo, monospace`;
+        ctx.fillStyle = rgba(accent, 0.85 * alphaScale);
+        ctx.fillText("ENCODER", (inX + bX) / 2, labelY);
+        ctx.fillText("DECODER", (bX + outX) / 2, labelY);
+        ctx.font = `italic 26px Georgia, 'Times New Roman', serif`;
+        ctx.fillStyle = rgba(warm, 0.95 * alphaScale);
+        ctx.fillText("z", bX, labelY - 4);
+        ctx.restore();
+      };
+
       // ── Render one network ─────────────────────────────────────────
       // Drift nodes, draw edges, advance + draw pulses, draw node halos.
       // alphaScale is the visibility multiplier (0 = fully off); params
       // controls intensity (pulse cadence, edge boost, wave behaviour).
       const drawOneNetwork = (net, alphaScale, params) => {
         if (alphaScale < 0.02) return;
+        drawHourglassFrame(net, alphaScale);
         const ls = net.layers;
         const waveT = (frame % params.wavePeriod) / params.wavePeriod;
         const waveLayer = waveT * (ls.length + 0.5);

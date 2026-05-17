@@ -350,7 +350,11 @@ body::after {
   box-shadow:
     0 0 0 1px color-mix(in srgb, var(--accent) 30%, transparent),
     0 0 14px color-mix(in srgb, var(--accent) 70%, transparent);
-  animation: sys-hud-pulse 1.4s ease-in-out infinite;
+  animation: pulse-dot 1.4s ease-in-out infinite;
+}
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1;   transform: scale(1); }
+  50%      { opacity: .35; transform: scale(.82); }
 }
 .intro-splash-title {
   font-size: .8rem;
@@ -386,7 +390,7 @@ body::after {
 .intro-splash-caret {
   align-self: flex-start;
   color: var(--warm);
-  animation: sys-hud-caret-blink 1s steps(2, end) infinite;
+  animation: caret-blink 1s steps(2, end) infinite;
 }
 .intro-splash-bar {
   width: 280px;
@@ -1004,7 +1008,7 @@ body::after {
   border-radius: 50%;
   background: var(--accent);
   box-shadow: 0 0 8px color-mix(in srgb, var(--accent) 70%, transparent);
-  animation: sys-hud-pulse 1.6s ease-in-out infinite;
+  animation: pulse-dot 1.6s ease-in-out infinite;
   margin-right: .15rem;
 }
 .hero-meta-dim {

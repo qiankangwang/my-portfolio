@@ -377,6 +377,10 @@ export default function NeuralNetCanvas({ sceneRef }) {
       // bio strands + connecting lines were blocking the primary motif.
       // Fades smoothly with the Hero camera leaving.
       const visBio       = 0.85 * motifVis(0);
+      // Research-scene amplifier — same network as Hero but faster
+      // pulses, brighter edges, tighter forward-pass sweep so the
+      // Research view feels like a working model, not a wide overview.
+      const researchBoost = motifVis(2);
 
       // Soft radial wash drawn in SCREEN coords (no transform yet).
       const grad = ctx.createRadialGradient(
@@ -398,16 +402,19 @@ export default function NeuralNetCanvas({ sceneRef }) {
       ctx.scale(cam.zoom, cam.zoom);
       ctx.translate(-cam.x, -cam.y);
 
-      // ── Ambient particle field — slow drifting dust behind everything,
-      // gives the world ambient depth so corners never feel empty. ─────
-      ambient.forEach((p) => {
-        const px = p.x + Math.sin(frame * 0.005 + p.phase) * (12 * p.drift);
-        const py = p.y + Math.cos(frame * 0.004 + p.phase * 1.3) * (10 * p.drift);
-        ctx.beginPath();
-        ctx.arc(px, py, p.r, 0, Math.PI * 2);
-        ctx.fillStyle = rgba(dim, p.alpha * 0.5);
-        ctx.fill();
-      });
+      // ── Ambient particle field — slow drifting dust behind everything.
+      // Suppressed on Research so the network reads as the only element.
+      const visAmbient = 1 - motifVis(2);
+      if (visAmbient > 0.02) {
+        ambient.forEach((p) => {
+          const px = p.x + Math.sin(frame * 0.005 + p.phase) * (12 * p.drift);
+          const py = p.y + Math.cos(frame * 0.004 + p.phase * 1.3) * (10 * p.drift);
+          ctx.beginPath();
+          ctx.arc(px, py, p.r, 0, Math.PI * 2);
+          ctx.fillStyle = rgba(dim, p.alpha * 0.5 * visAmbient);
+          ctx.fill();
+        });
+      }
 
       // ── Bio motifs (drawn after ambient, before network) ────────────
       // Atmospheric decoration only — every alpha is multiplied by
@@ -732,10 +739,10 @@ export default function NeuralNetCanvas({ sceneRef }) {
       });
 
       // ── Node positions: Lissajous drift around base point ─────────
-      // Forward-pass wave: every ~3 seconds a wave sweeps left-to-right
-      // through the layers, briefly lighting up each layer's nodes in
-      // sequence. Reads as a real inference pass through the net.
-      const WAVE_PERIOD = 180;   // frames per full sweep
+      // Forward-pass wave sweeps left-to-right through the layers.
+      // Period tightens on Research (more frequent passes) — the
+      // network feels like it's actively inferring, not just resting.
+      const WAVE_PERIOD = Math.round(180 - 75 * researchBoost);
       const waveT = (frame % WAVE_PERIOD) / WAVE_PERIOD;   // 0..1
       const waveLayer = waveT * (layers.length + 0.5);     // walks 0..N
       nodes.forEach((n) => {
@@ -761,15 +768,18 @@ export default function NeuralNetCanvas({ sceneRef }) {
         ctx.beginPath();
         ctx.moveTo(a.x, a.y);
         ctx.lineTo(b.x, b.y);
+        const edgeBoost = 1 + 0.55 * researchBoost;
         ctx.strokeStyle = act > 0.08
-          ? rgba(accent, (0.18 + act * 0.32) * visNetwork)
-          : rgba(dim, (dark ? 0.22 : 0.42) * e.weight * visNetwork);
-        ctx.lineWidth = act > 0.08 ? 0.9 + act * 0.9 : 0.65;
+          ? rgba(accent, (0.18 + act * 0.32) * edgeBoost * visNetwork)
+          : rgba(dim, (dark ? 0.22 : 0.42) * e.weight * edgeBoost * visNetwork);
+        ctx.lineWidth = (act > 0.08 ? 0.9 + act * 0.9 : 0.65) * (1 + 0.25 * researchBoost);
         ctx.stroke();
       });
 
       // ── Pulses travelling along edges ─────────────────────────────
-      if (frame % (reducedMotion ? 42 : 14) === 0) spawnPulse();
+      // Spawn cadence tightens on Research — every ~6 frames instead of 14.
+      const pulseEvery = reducedMotion ? 42 : Math.max(5, Math.round(14 - 8 * researchBoost));
+      if (frame % pulseEvery === 0) spawnPulse();
 
       for (let i = pulses.length - 1; i >= 0; i--) {
         const p = pulses[i];

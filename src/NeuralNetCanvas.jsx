@@ -29,7 +29,10 @@ import { useEffect, useRef } from "react";
 
 const WORLD_W = 1400; // network total width in world coords
 const WORLD_H = 720;  // network total height
-const WORLD_LAYERS = [5, 7, 9, 7, 5, 3];
+// Hourglass network — wide input, narrow latent middle, wide output.
+// Reads as a classic encoder→bottleneck→decoder when the forward-pass
+// wave walks through it.
+const WORLD_LAYERS = [7, 4, 2, 4, 7];
 
 export default function NeuralNetCanvas({ sceneRef }) {
   const canvasRef = useRef(null);
@@ -369,14 +372,16 @@ export default function NeuralNetCanvas({ sceneRef }) {
       const visLabels    = motifVis(5);
       // Network is the headlining element at Hero (0) AND Research (2)
       // — visible at full alpha on either, faded between.
-      const visNetwork   = Math.max(motifVis(0), motifVis(2));
-      // Bio motifs: prominent on Hero, smaller but still visible on
-      // sub-sections (so the page has atmosphere), fully suppressed on
-      // Research where the user wants the network alone.
-      const visBio       = (0.34 + 0.56 * motifVis(0)) * (1 - motifVis(2));
-      // Physical scale — Hero gets full size, sub-sections shrink to
-      // 45% so the close-up zoom doesn't blow them up over the text.
-      const sizeBio      = 0.45 + 0.55 * motifVis(0);
+      // Hero dims to 0.75 so the network sits behind the text gracefully
+      // (instead of darkening it); Research keeps full punch.
+      const visNetwork   = Math.max(0.75 * motifVis(0), motifVis(2));
+      // Bio motifs: prominent on Hero, clearly visible-but-smaller on
+      // sub-sections so they read as atmosphere instead of disappearing.
+      // Fully suppressed on Research where the user wants network alone.
+      const visBio       = (0.6 + 0.35 * motifVis(0)) * (1 - motifVis(2));
+      // Physical scale — Hero full, sub-sections at 60% so the close-up
+      // camera zoom doesn't blow them up over the text.
+      const sizeBio      = 0.6 + 0.4 * motifVis(0);
       // Research-scene amplifier — same network as Hero but faster
       // pulses, brighter edges, tighter forward-pass sweep so the
       // Research view feels like a working model, not a wide overview.

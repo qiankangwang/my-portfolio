@@ -814,16 +814,24 @@ body::after {
   padding-block: clamp(4rem, 10vh, 7rem);
   position: relative;
 }
-/* Cream halo on every hero text element so the network/bio motifs
-   underneath can't darken them via the canvas mix-blend-mode. */
+/* Cream halo on every hero text element — multi-stop so the network /
+   bio motifs underneath blend smoothly with the text instead of cutting
+   into it. Bigger spread on bigger text. */
 .hero-kicker,
-.hero-name,
 .hero-tagline,
 .hero-meta {
   text-shadow:
-    0 0 20px color-mix(in srgb, var(--bg) 95%, transparent),
-    0 0 8px  color-mix(in srgb, var(--bg) 80%, transparent),
-    0 1px 0  color-mix(in srgb, var(--bg) 70%, transparent);
+    0 0 28px var(--bg),
+    0 0 14px var(--bg),
+    0 0 6px  var(--bg),
+    0 1px 0  color-mix(in srgb, var(--bg) 80%, transparent);
+}
+.hero-name {
+  text-shadow:
+    0 0 40px var(--bg),
+    0 0 22px var(--bg),
+    0 0 10px var(--bg),
+    0 0 4px  color-mix(in srgb, var(--bg) 90%, transparent);
 }
 /* Hero avatar — bigger, prominent, grouped with the name + tagline.
    Same headpat easter egg as the old hero. */

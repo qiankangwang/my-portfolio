@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback, memo } from "react";
 import D from "./data";
-import ParticleScene from "./ParticleScene";
+import NeuralNetCanvas from "./NeuralNetCanvas";
 import "./Portfolio.css";
 
 /* ── Ambient background orbs ── */
@@ -40,44 +40,38 @@ function decodeScramble(target) {
   }
   return out;
 }
-function DecodeText({ text, duration = 720, delay = 0, threshold = 0.25, className, as: Tag = "span", retrigger = false }) {
+function DecodeText({ text, duration = 720, delay = 0, threshold = 0.25, className, as: Tag = "span" }) {
   const ref = useRef(null);
   const [out, setOut] = useState(text);
   const startedRef = useRef(false);
   const rafRef = useRef(0);
-  const lastTriggerRef = useRef(0);
-
-  const run = useCallback((skipDelay = false) => {
-    if (rafRef.current) cancelAnimationFrame(rafRef.current);
-    const target = String(text);
-    const startT = performance.now() + (skipDelay ? 0 : delay);
-    const tick = (now) => {
-      const elapsed = now - startT;
-      if (elapsed < 0) {
-        setOut(decodeScramble(target));
-        rafRef.current = requestAnimationFrame(tick);
-        return;
-      }
-      const p = Math.min(elapsed / duration, 1);
-      const eased = 1 - Math.pow(1 - p, 3);
-      const settled = Math.floor(eased * target.length);
-      setOut(target.slice(0, settled) + decodeScramble(target.slice(settled)));
-      if (p < 1) rafRef.current = requestAnimationFrame(tick);
-      else setOut(target);
-    };
-    rafRef.current = requestAnimationFrame(tick);
-  }, [text, delay, duration]);
 
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
     setOut(decodeScramble(text));
+    const target = String(text);
     const obs = new IntersectionObserver(
       ([e]) => {
         if (!e.isIntersecting || startedRef.current) return;
         startedRef.current = true;
         obs.disconnect();
-        run();
+        const startT = performance.now() + delay;
+        const tick = (now) => {
+          const elapsed = now - startT;
+          if (elapsed < 0) {
+            setOut(decodeScramble(target));
+            rafRef.current = requestAnimationFrame(tick);
+            return;
+          }
+          const p = Math.min(elapsed / duration, 1);
+          const eased = 1 - Math.pow(1 - p, 3);
+          const settled = Math.floor(eased * target.length);
+          setOut(target.slice(0, settled) + decodeScramble(target.slice(settled)));
+          if (p < 1) rafRef.current = requestAnimationFrame(tick);
+          else setOut(target);
+        };
+        rafRef.current = requestAnimationFrame(tick);
       },
       { threshold }
     );
@@ -86,100 +80,9 @@ function DecodeText({ text, duration = 720, delay = 0, threshold = 0.25, classNa
       obs.disconnect();
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
     };
-  }, [text, threshold, run]);
+  }, [text, delay, duration, threshold]);
 
-  // Re-trigger a fresh decode on mouseenter. Debounced to 220 ms so
-  // a fast cursor wiggle doesn't restart on every entered pixel.
-  const onMouseEnter = useCallback(() => {
-    if (!retrigger) return;
-    const now = performance.now();
-    if (now - lastTriggerRef.current < 220) return;
-    lastTriggerRef.current = now;
-    run(true);
-  }, [retrigger, run]);
-
-  return (
-    <Tag ref={ref} className={className} onMouseEnter={onMouseEnter}>
-      {out}
-    </Tag>
-  );
-}
-
-/* ── useTrace ──
-   Cycles through a list of fake "model output" lines, character-by-
-   character: type → hold → erase → next. Drives the streaming TRACE
-   row in the SystemHUD so the lab dashboard reads as a continuously
-   inferring model rather than a static panel. */
-// Per-scene trace lines — the HUD's streaming row reads what's
-// "being inferred" right now, based on the camera's current scene.
-// Scene change resets the cycle to that scene's first line so the
-// readout always reflects the section the reader is in.
-const TRACE_LINES_PER_SCENE = [
-  // 0 Hero
-  ["NEURAL_FIELD · INIT", "MODEL → cloud/v0", "BOOT · 100%", "STATE · READY"],
-  // 1 About
-  ["DECODE → profile.bio", "TYPE · BIO_HELIX", "QUERY ← reader.gaze", "EMBED · 768d"],
-  // 2 Research
-  ["ENGINE · GRAD_FLOW", "EPOCH 27 · LOSS 0.0034", "FIELDS · LABS_3", "ATTEND → corpus"],
-  // 3 Publication
-  ["ARTIFACT · MANIFOLD", "LANCET · 2024", "AUTHORS · 8", "VENUE → PUBLISHED"],
-  // 4 Projects
-  ["MATRIX/12×10", "REPOS · 6 LIVE", "STATUS · DEPLOYED", "ATTEND → github"],
-  // 5 Skills
-  ["TOOLKIT · INDEX", "RINGS/7", "STACK → FLUENT", "WEIGHTS · LOADED"],
-];
-function useTrace(sceneRef, typeSpeed = 48, eraseSpeed = 24, holdMs = 1500) {
-  const [text, setText] = useState("");
-  useEffect(() => {
-    let cancelled = false;
-    let line = 0;
-    let char = 0;
-    let phase = "typing";
-    let holdUntil = 0;
-    let lastScene = -1;
-    let tId = 0;
-    const tick = () => {
-      if (cancelled) return;
-      const scene = Math.max(0, Math.min(5, Math.round(sceneRef?.current ?? 0)));
-      // On scene change reset to the new scene's first line so the
-      // streaming readout always describes what the camera is over.
-      if (scene !== lastScene) {
-        lastScene = scene;
-        line = 0;
-        char = 0;
-        phase = "typing";
-      }
-      const sceneLines = TRACE_LINES_PER_SCENE[scene];
-      const cur = sceneLines[line % sceneLines.length];
-      let delay = typeSpeed;
-      if (phase === "typing") {
-        char++;
-        setText(cur.slice(0, char));
-        if (char >= cur.length) {
-          phase = "holding";
-          holdUntil = performance.now() + holdMs;
-        }
-      } else if (phase === "holding") {
-        if (performance.now() >= holdUntil) phase = "erasing";
-        delay = 60;
-      } else {
-        char = Math.max(0, char - 1);
-        setText(cur.slice(0, char));
-        delay = eraseSpeed;
-        if (char <= 0) {
-          phase = "typing";
-          line = (line + 1) % sceneLines.length;
-        }
-      }
-      tId = setTimeout(tick, delay);
-    };
-    tId = setTimeout(tick, typeSpeed);
-    return () => {
-      cancelled = true;
-      clearTimeout(tId);
-    };
-  }, [sceneRef, typeSpeed, eraseSpeed, holdMs]);
-  return text;
+  return <Tag ref={ref} className={className}>{out}</Tag>;
 }
 
 // Typewriter — character-by-character reveal at 28ms / char.
@@ -209,15 +112,10 @@ function useTypewriter(text, speed = 28) {
    as the user scrolls — one continuous animation, not six swapped
    ones. Receives the continuous sceneRef so the morph is smooth
    between sections, not stepped on scene boundaries. */
-const Atmosphere = memo(function Atmosphere({ sceneRef, scrollVelRef, lastInteractRef, fpsRef }) {
+const Atmosphere = memo(function Atmosphere({ sceneRef }) {
   return (
     <div className="atmos" aria-hidden="true">
-      <ParticleScene
-        sceneRef={sceneRef}
-        scrollVelRef={scrollVelRef}
-        lastInteractRef={lastInteractRef}
-        fpsRef={fpsRef}
-      />
+      <NeuralNetCanvas sceneRef={sceneRef} />
       <div className="atmos-vignette" />
     </div>
   );
@@ -233,90 +131,6 @@ const SectionWatermark = memo(function SectionWatermark({ active }) {
   return (
     <div className="section-watermark" aria-hidden="true" key={label}>
       {label}
-    </div>
-  );
-});
-
-/* ── HelpOverlay ──
-   Modal that lists every keyboard shortcut + interactive feature.
-   Opened via ? key, closed via Esc / backdrop click / × button. */
-const HelpOverlay = memo(function HelpOverlay({ onClose }) {
-  useEffect(() => {
-    const onKey = (e) => {
-      if (e.key === "Escape") { e.preventDefault(); onClose(); }
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [onClose]);
-  return (
-    <div
-      className="help-overlay"
-      onClick={onClose}
-      role="dialog"
-      aria-modal="true"
-      aria-label="Help and shortcuts"
-    >
-      <div className="help-inner" onClick={(e) => e.stopPropagation()}>
-        <div className="help-head">
-          <span className="help-led" />
-          <h3>HELP · v2.6</h3>
-          <button onClick={onClose} className="help-close" aria-label="Close help">×</button>
-        </div>
-        <h4 className="help-sub">KEYBOARD</h4>
-        <dl className="help-list">
-          <div><dt><kbd>j</kbd><kbd>k</kbd></dt><dd>next / previous scene</dd></div>
-          <div><dt><kbd>g</kbd><kbd>G</kbd></dt><dd>top / bottom of document</dd></div>
-          <div><dt><kbd>h</kbd></dt><dd>toggle HUD panel</dd></div>
-          <div><dt><kbd>?</kbd></dt><dd>toggle this help</dd></div>
-          <div><dt><kbd>Esc</kbd></dt><dd>close overlays</dd></div>
-        </dl>
-        <h4 className="help-sub">INTERACTIONS</h4>
-        <dl className="help-list">
-          <div><dt>hover title</dt><dd>re-decode characters</dd></div>
-          <div><dt>cursor on field</dt><dd>attention rays + elastic pull</dd></div>
-          <div><dt>click anywhere</dt><dd>ink ripple</dd></div>
-          <div><dt>tap avatar</dt><dd>headpat</dd></div>
-        </dl>
-        <h4 className="help-sub">SYSTEM</h4>
-        <dl className="help-list">
-          <div><dt>scroll velocity</dt><dd>field intensity</dd></div>
-          <div><dt>5s idle</dt><dd>particles begin to drift / dream</dd></div>
-          <div><dt>scene change</dt><dd>camera bank + scan flash + particle pulse</dd></div>
-        </dl>
-      </div>
-    </div>
-  );
-});
-
-/* ── KbdHint ──
-   Top-right floating chip advertising the j/k/g/G keyboard nav.
-   Hidden on touch / narrow / reduced-motion so it doesn't add noise
-   where it can't actually be used. */
-const KbdHint = memo(function KbdHint() {
-  return (
-    <div className="kbd-hint" aria-hidden="true">
-      <kbd>j</kbd><kbd>k</kbd>
-      <span className="kbd-hint-sep">scenes</span>
-      <kbd>g</kbd><kbd>G</kbd>
-      <span className="kbd-hint-sep">top/bot</span>
-      <kbd>h</kbd>
-      <span className="kbd-hint-sep">hud</span>
-      <kbd>?</kbd>
-      <span className="kbd-hint-sep">help</span>
-    </div>
-  );
-});
-
-/* Small text-only identity strip anchored to the top-left corner of
-   the viewport. The interactive avatar (with headpat easter egg) now
-   lives in the hero scene; this strip is a discreet always-on label. */
-const IdentityBadge = memo(function IdentityBadge() {
-  return (
-    <div className="id-badge">
-      <div className="id-badge-meta">
-        <span className="id-badge-name">Qiankang Wang</span>
-        <span className="id-badge-sub">UC Berkeley · DS '27</span>
-      </div>
     </div>
   );
 });
@@ -575,37 +389,6 @@ const SceneFlash = memo(function SceneFlash({ sceneRef }) {
   return <div key={key} className="scene-flash" aria-hidden="true" />;
 });
 
-/* ── ClickRipple ──
-   Spawns a brief expanding ring at the click point whenever the user
-   clicks anywhere that isn't a link / button / interactive element.
-   The page already routes link / button clicks to their own visual
-   feedback (sect-title hover, side rail active state, etc.) — this
-   covers the rest, so every click has visible acknowledgment. Warm
-   rust ring + multiply blend so it darkens the paper at the click
-   point like ink touching down. */
-const ClickRipple = memo(function ClickRipple() {
-  const layerRef = useRef(null);
-  useEffect(() => {
-    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if (reduced) return;
-    const onClick = (e) => {
-      // Skip clicks on interactive elements — their own feedback covers it.
-      if (e.target.closest("a, button, input, textarea, select, [role='button']")) return;
-      const layer = layerRef.current;
-      if (!layer) return;
-      const ring = document.createElement("span");
-      ring.className = "click-ripple-ring";
-      ring.style.left = `${e.clientX}px`;
-      ring.style.top  = `${e.clientY}px`;
-      layer.appendChild(ring);
-      setTimeout(() => ring.remove(), 950);
-    };
-    window.addEventListener("click", onClick, { passive: true });
-    return () => window.removeEventListener("click", onClick);
-  }, []);
-  return <div ref={layerRef} className="click-ripple-layer" aria-hidden="true" />;
-});
-
 /* ── CursorSpot ──
    A soft warm halo that drifts behind the cursor at ~5 Hz under the
    real pointer. Layered between the particle canvas (z 4) and the
@@ -653,190 +436,22 @@ const CursorSpot = memo(function CursorSpot() {
   return <div ref={ref} className="cursor-spot" aria-hidden="true" />;
 });
 
-/* ── SystemHUD ──
-   Bottom-left lab-dashboard readout — a fixed mono panel that
-   reports the current "scene" the camera is parked at, the active
-   quadrant, attention-edge count, and a 16-tick sweeping signal
-   meter that rolls at 4 Hz. Polls sceneRef.current every 200 ms and
-   only re-renders on scene change, so it doesn't fight the
-   high-frequency scroll loop. The LED dot pulses on its own CSS
-   animation. */
-const SCENE_TYPES = [
-  "INIT/0xA0",
-  "BIO_HELIX",
-  "DENSE_NET",
-  "MANIFOLD",
-  "MATRIX/12×10",
-  "ORBITS/7",
-];
-const SCENE_QUADS = ["CENTER", "TR", "MR", "BR", "BL", "TL"];
-// Mirror of the per-section accent palette from Portfolio.css so the
-// HUD's HUE swatches can preview the same shift the .sect[data-pos]
-// overrides apply. Keep these in sync with the [data-pos] rules.
+// Per-section accent palette mirror — Portfolio.jsx publishes the
+// active section's primary accent at body level (--scene-accent) so
+// chrome that lives outside .sect[data-pos] (edge glow) can still
+// tint with the scene the reader is on. The full table here keeps
+// the CSS [data-pos] rules and the JS body var in sync.
 const SCENE_HUES = [
-  { a: "#1E3A8A", a2: "#2754C2", a3: "#1E2A5E" }, // Hero (root)
-  { a: "#1E3A8A", a2: "#2754C2", a3: "#1E2A5E" }, // About
-  { a: "#1E40AF", a2: "#2563EB", a3: "#1D3491" }, // Research
-  { a: "#334155", a2: "#475569", a3: "#1F2937" }, // Publication
-  { a: "#4338CA", a2: "#4F46E5", a3: "#3730A3" }, // Projects
-  { a: "#1F3D8E", a2: "#3B5BDB", a3: "#1E2D6B" }, // Skills
+  { a: "#1E3A8A" }, // Hero (root)
+  { a: "#1E3A8A" }, // About
+  { a: "#1E40AF" }, // Research
+  { a: "#334155" }, // Publication
+  { a: "#4338CA" }, // Projects
+  { a: "#1F3D8E" }, // Skills
 ];
-const WARM_HUE = "#B45309";
-// Actual particle-formation parameters (matches ParticleScene's
-// buildFormations). Reads as a real technical spec line in the HUD,
-// not invented marketing text.
-const SCENE_SHAPES = [
-  "CLOUD · r=80-170",
-  "HELIX · r=75 turns=6",
-  "DENSE_NET · 6 LAYERS",
-  "SPHERE · r=140 fib",
-  "MATRIX · 12×10×N",
-  "RINGS · 7 r=70-154",
-];
-const SystemHUD = memo(function SystemHUD({ sceneRef, fpsRef }) {
-  const [scene, setScene] = useState(0);
-  const [tick, setTick] = useState(0);
-  const [now, setNow] = useState(() => new Date());
-  const [uptimeStr, setUptimeStr] = useState("00:00");
-  const [fps, setFps] = useState(60);
-  const [collapsed, setCollapsed] = useState(() => {
-    try { return localStorage.getItem("sys-hud-collapsed") === "1"; } catch { return false; }
-  });
-  const toggleCollapse = useCallback(() => {
-    setCollapsed((c) => {
-      const next = !c;
-      try { localStorage.setItem("sys-hud-collapsed", next ? "1" : "0"); } catch {}
-      return next;
-    });
-  }, []);
-  useEffect(() => {
-    const onToggle = () => toggleCollapse();
-    window.addEventListener("portfolio:toggle-hud", onToggle);
-    return () => window.removeEventListener("portfolio:toggle-hud", onToggle);
-  }, [toggleCollapse]);
-  const bootRef = useRef(performance.now());
-  const trace = useTrace(sceneRef);
-  useEffect(() => {
-    const id = setInterval(() => {
-      const raw = sceneRef?.current ?? 0;
-      const rounded = Math.max(0, Math.min(5, Math.round(raw)));
-      setScene((p) => (p === rounded ? p : rounded));
-    }, 200);
-    return () => clearInterval(id);
-  }, [sceneRef]);
-  useEffect(() => {
-    const id = setInterval(() => setTick((t) => (t + 1) % 32), 220);
-    return () => clearInterval(id);
-  }, []);
-  useEffect(() => {
-    const id = setInterval(() => setNow(new Date()), 15000);
-    return () => clearInterval(id);
-  }, []);
-  useEffect(() => {
-    const id = setInterval(() => {
-      const elapsed = (performance.now() - bootRef.current) / 1000;
-      const m = Math.floor(elapsed / 60);
-      const s = Math.floor(elapsed % 60);
-      setUptimeStr(`${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`);
-    }, 1000);
-    return () => clearInterval(id);
-  }, []);
-  useEffect(() => {
-    const id = setInterval(() => {
-      const sampled = Math.round(fpsRef?.current ?? 60);
-      setFps((p) => (p === sampled ? p : sampled));
-    }, 500);
-    return () => clearInterval(id);
-  }, [fpsRef]);
-  const timeStr = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
-  const dateStr = `${now.getFullYear()}.${String(now.getMonth() + 1).padStart(2, "0")}.${String(now.getDate()).padStart(2, "0")}`;
-  return (
-    <aside className={`sys-hud${collapsed ? " collapsed" : ""}`}>
-      <div className="sys-hud-row sys-hud-head">
-        <span
-          className="sys-hud-avatar-wrap"
-          style={{ "--ring": SCENE_HUES[scene].a }}
-          aria-hidden="true"
-        >
-          <img className="sys-hud-avatar" src={D.avatar} alt="" />
-        </span>
-        <span className="sys-hud-k">NEURAL_FIELD</span>
-        <span className="sys-hud-v sys-hud-ver">v2.6</span>
-        <button
-          type="button"
-          className="sys-hud-collapse"
-          onClick={toggleCollapse}
-          aria-label={collapsed ? "Expand system panel" : "Collapse system panel"}
-          aria-expanded={!collapsed}
-        >
-          {collapsed ? "+" : "−"}
-        </button>
-      </div>
-      <div className="sys-hud-row">
-        <span className="sys-hud-k">SCENE</span>
-        <span className="sys-hud-v">
-          {String(scene).padStart(2, "0")} · {SCENE_TYPES[scene]}
-        </span>
-      </div>
-      <div className="sys-hud-row">
-        <span className="sys-hud-k">QUAD</span>
-        <span className="sys-hud-v">{SCENE_QUADS[scene]}</span>
-      </div>
-      <div className="sys-hud-row">
-        <span className="sys-hud-k">SHAPE</span>
-        <span className="sys-hud-v">{SCENE_SHAPES[scene]}</span>
-      </div>
-      <div className="sys-hud-row">
-        <span className="sys-hud-k">ATTN</span>
-        <span className="sys-hud-v">6 EDGES · LIVE</span>
-      </div>
-      <div className="sys-hud-row">
-        <span className="sys-hud-k">TIME</span>
-        <span className="sys-hud-v">{dateStr} · {timeStr}</span>
-      </div>
-      <div className="sys-hud-row">
-        <span className="sys-hud-k">UP</span>
-        <span className="sys-hud-v">{uptimeStr} · {fps} FPS</span>
-      </div>
-      <div className="sys-hud-row sys-hud-bar">
-        <span className="sys-hud-k">SIG</span>
-        <div className="sys-hud-meter">
-          {Array.from({ length: 16 }).map((_, i) => {
-            const phase = (i * 0.55) + (tick * 0.45);
-            const level = 0.5 + Math.sin(phase) * 0.5;     // 0..1
-            const on = level > 0.42;
-            return (
-              <span
-                key={i}
-                className={`sys-hud-tick${on ? " on" : ""}`}
-                style={{ height: `${3 + level * 7}px` }}
-              />
-            );
-          })}
-        </div>
-      </div>
-      <div className="sys-hud-row sys-hud-bar">
-        <span className="sys-hud-k">HUE</span>
-        <div className="sys-hud-hue">
-          <span style={{ background: SCENE_HUES[scene].a }} />
-          <span style={{ background: SCENE_HUES[scene].a2 }} />
-          <span style={{ background: SCENE_HUES[scene].a3 }} />
-          <span style={{ background: WARM_HUE }} />
-        </div>
-      </div>
-      <div className="sys-hud-row sys-hud-trace">
-        <span className="sys-hud-k">TRACE</span>
-        <span className="sys-hud-v sys-hud-trace-v">
-          {trace}
-          <span className="sys-hud-caret" aria-hidden="true">_</span>
-        </span>
-      </div>
-    </aside>
-  );
-});
 
-/* Corner widget for socials + theme toggle, anchored bottom-right. */
-const CornerControls = memo(function CornerControls({ theme, toggleTheme }) {
+/* Corner widget for socials anchored bottom-right. */
+const CornerControls = memo(function CornerControls() {
   return (
     <div className="corner-controls">
       <div className="sb-contacts">
@@ -850,9 +465,6 @@ const CornerControls = memo(function CornerControls({ theme, toggleTheme }) {
           <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
         </a>
       </div>
-      <button className="sb-theme" onClick={toggleTheme} aria-label="Toggle dark mode">
-        {theme === "dark" ? "☀" : "☾"}
-      </button>
     </div>
   );
 });
@@ -963,27 +575,6 @@ const CountUp = memo(function CountUp({ target, suffix = "", duration = 2000 }) 
   return <span ref={ref}>{val}{suffix}</span>;
 });
 
-/* ── Dark mode hook ── */
-function useTheme() {
-  const [theme, setTheme] = useState(() => {
-    if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("theme");
-      if (saved === "light" || saved === "dark") return saved;
-      return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
-    }
-    return "light";
-  });
-
-  useEffect(() => {
-    document.documentElement.setAttribute("data-theme", theme);
-    localStorage.setItem("theme", theme);
-  }, [theme]);
-
-  const toggle = useCallback(() => setTheme((t) => (t === "dark" ? "light" : "dark")), []);
-
-  return [theme, toggle];
-}
-
 /* ── Hero scene ──
    First viewport of the page. The page subject's name is rendered HUGE
    in italic serif over the network, the tagline types out below, then
@@ -992,6 +583,7 @@ function useTheme() {
    id="hero" so the scroll-handler's SCENE_IDS picks up its centre as
    the first camera waypoint (the wide-overview shot). */
 const HeroScene = memo(function HeroScene({ onAvatarClick, avatarRef, scrolled }) {
+  const tagline = useTypewriter(D.tagline);
   return (
     <section id="hero" className="hero-scene">
       {/* Hero avatar — bigger, anchored above the name. Click to
@@ -1013,7 +605,7 @@ const HeroScene = memo(function HeroScene({ onAvatarClick, avatarRef, scrolled }
           decoding="async"
         />
       </button>
-      <DecodeText className="hero-kicker" text="Qiankang (Kant) Wang · 2026 portfolio" duration={820} delay={140} retrigger />
+      <DecodeText className="hero-kicker" text="Qiankang (Kant) Wang · 2026 portfolio" duration={820} delay={140} />
       <h1 className="hero-name">
         <span className="hero-name-line">
           {Array.from("Qiankang").map((c, i) => (
@@ -1026,21 +618,17 @@ const HeroScene = memo(function HeroScene({ onAvatarClick, avatarRef, scrolled }
           ))}
         </span>
       </h1>
-      <DecodeText
-        as="p"
-        className="hero-tagline"
-        text={D.tagline}
-        duration={1200}
-        delay={780}
-        retrigger
-      />
+      <p className="hero-tagline">
+        {tagline.text}
+        <span
+          className={`sb-caret${tagline.done ? " sb-caret-done" : ""}`}
+          aria-hidden="true"
+        />
+      </p>
       <div className="hero-meta">
-        <span className="hero-meta-led" aria-hidden="true" />
         <span>UC Berkeley</span>
         <span className="hero-meta-dot" aria-hidden="true">·</span>
         <span>Data Science · 2027</span>
-        <span className="hero-meta-dot" aria-hidden="true">·</span>
-        <span className="hero-meta-dim">RES/0xQK</span>
       </div>
       <a
         href="#about"
@@ -1097,70 +685,15 @@ const LANG_COLORS = {
 };
 
 export default function Portfolio() {
-  const [theme, toggleTheme] = useTheme();
   const [scrolled, setScrolled] = useState(false);
   const [progress, setProgress] = useState(0);
   const [active, setActive] = useState("");
   const [repos, setRepos] = useState([]);
   const [repoLoading, setRepoLoading] = useState(true);
-  const [helpOpen, setHelpOpen] = useState(false);
-  // Each qk-egg trigger bumps this counter so the toast div remounts
-  // and replays its CSS animation. The counter itself never resets.
-  const [eggCount, setEggCount] = useState(0);
-  useEffect(() => {
-    const onEgg = () => setEggCount((c) => c + 1);
-    window.addEventListener("portfolio:qk", onEgg);
-    return () => window.removeEventListener("portfolio:qk", onEgg);
-  }, []);
-
   // Continuous "scene index" — a value in [0, SCENE_IDS.length-1] that
   // tracks the current scroll position as a float. Handed to the
   // ParticleScene every frame to drive the morph between formations.
   const sceneRef = useRef(0);
-
-  // FPS sample from the WebGL render loop. ParticleScene writes the
-  // current frames-per-second here every frame; SystemHUD polls it.
-  const fpsRef = useRef(60);
-
-  // Last interaction timestamp — any mouse move, scroll, key press,
-  // click, or touch resets it. ParticleScene reads idle-ms via this
-  // ref and boosts drift amplitude after 5s so the field "dreams"
-  // when the reader is inactive. Snaps back immediately on any input.
-  const lastInteractRef = useRef(performance.now());
-  useEffect(() => {
-    const bump = () => { lastInteractRef.current = performance.now(); };
-    const events = ["mousemove", "scroll", "keydown", "click", "touchstart", "wheel"];
-    events.forEach((e) => window.addEventListener(e, bump, { passive: true }));
-    return () => events.forEach((e) => window.removeEventListener(e, bump));
-  }, []);
-
-  // Smoothed scroll velocity in pixels-per-second. Sampled on every
-  // scroll event, decayed at ~12 Hz when no scrolling is happening, so
-  // the particle field can boost dispersal / scatter / line brightness
-  // during fast scrolls and settle when the reader stops.
-  const scrollVelRef = useRef(0);
-  useEffect(() => {
-    let lastY = window.scrollY;
-    let lastT = performance.now();
-    const decay = setInterval(() => {
-      scrollVelRef.current *= 0.88;
-      if (scrollVelRef.current < 0.5) scrollVelRef.current = 0;
-    }, 80);
-    const onScroll = () => {
-      const now = performance.now();
-      const dy = window.scrollY - lastY;
-      const dt = Math.max(1, now - lastT) / 1000;
-      lastY = window.scrollY;
-      lastT = now;
-      const vel = Math.abs(dy / dt);
-      scrollVelRef.current = scrollVelRef.current * 0.5 + vel * 0.5;
-    };
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => {
-      window.removeEventListener("scroll", onScroll);
-      clearInterval(decay);
-    };
-  }, []);
 
   useEffect(() => {
     let ticking = false;
@@ -1286,70 +819,6 @@ export default function Portfolio() {
     return () => { document.title = base; };
   }, [active]);
 
-  // Easter egg: typing 'qk' anywhere on the page (outside an input)
-  // dispatches a custom event that ParticleScene picks up and fires
-  // a high-intensity scene flash. Hidden treat for readers who notice
-  // the page is responsive to keyboard input.
-  useEffect(() => {
-    let buffer = "";
-    const onKey = (e) => {
-      const t = e.target;
-      if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable)) return;
-      if (e.altKey || e.ctrlKey || e.metaKey) return;
-      buffer = (buffer + (e.key || "").toLowerCase()).slice(-3);
-      if (buffer.endsWith("qk")) {
-        window.dispatchEvent(new CustomEvent("portfolio:qk"));
-        buffer = "";
-      }
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, []);
-
-  // Vim-style keyboard navigation: j/k = next/prev section,
-  // g/G = top/bottom of document. Ignored while focus is in a form
-  // input so the keys can still be typed.
-  useEffect(() => {
-    const onKey = (e) => {
-      const t = e.target;
-      if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable)) return;
-      if (e.altKey || e.ctrlKey || e.metaKey) return;
-      const winH = window.innerHeight;
-      const findActiveIdx = () => {
-        for (let i = 0; i < SCENE_IDS.length; i++) {
-          const el = document.getElementById(SCENE_IDS[i]);
-          if (!el) continue;
-          const r = el.getBoundingClientRect();
-          if (r.top < winH * 0.45 && r.bottom > winH * 0.35) return i;
-        }
-        return 0;
-      };
-      if (e.key === "j" || (e.key === "ArrowDown" && e.shiftKey)) {
-        e.preventDefault();
-        const idx = Math.min(SCENE_IDS.length - 1, findActiveIdx() + 1);
-        document.getElementById(SCENE_IDS[idx])?.scrollIntoView({ behavior: "smooth", block: "start" });
-      } else if (e.key === "k" || (e.key === "ArrowUp" && e.shiftKey)) {
-        e.preventDefault();
-        const idx = Math.max(0, findActiveIdx() - 1);
-        document.getElementById(SCENE_IDS[idx])?.scrollIntoView({ behavior: "smooth", block: "start" });
-      } else if (e.key === "g") {
-        e.preventDefault();
-        window.scrollTo({ top: 0, behavior: "smooth" });
-      } else if (e.key === "G") {
-        e.preventDefault();
-        window.scrollTo({ top: document.documentElement.scrollHeight, behavior: "smooth" });
-      } else if (e.key === "h" || e.key === "H") {
-        e.preventDefault();
-        window.dispatchEvent(new CustomEvent("portfolio:toggle-hud"));
-      } else if (e.key === "?") {
-        e.preventDefault();
-        setHelpOpen((o) => !o);
-      }
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, []);
-
   const [expRef, expVis] = useInView(0.15);
   const [skillRef, skillVis] = useInView(0.15);
 
@@ -1399,7 +868,7 @@ export default function Portfolio() {
          page's living atmosphere. Identity badge, nav rail, and theme
          controls float in the viewport corners. Content scrolls in a
          single centred column on top — no split panes anywhere. */}
-      <Atmosphere sceneRef={sceneRef} scrollVelRef={scrollVelRef} lastInteractRef={lastInteractRef} fpsRef={fpsRef} />
+      <Atmosphere sceneRef={sceneRef} />
       <div className="edge-glow" aria-hidden="true" />
       {/* Screen-reader-only live region — announces the active section
          when it changes so AT users hear what the canvas is showing
@@ -1407,21 +876,11 @@ export default function Portfolio() {
       <div className="sr-only" aria-live="polite" aria-atomic="true">
         {active ? `Now viewing: ${active}` : "Now viewing: Introduction"}
       </div>
-      {helpOpen && <HelpOverlay onClose={() => setHelpOpen(false)} />}
-      {eggCount > 0 && (
-        <div key={eggCount} className="egg-toast" aria-hidden="true">
-          easter egg · qk
-        </div>
-      )}
       <SceneFlash sceneRef={sceneRef} />
       <CursorSpot />
-      <ClickRipple />
       <SectionWatermark active={active} />
-      <IdentityBadge />
-      <KbdHint />
       <SideRail active={active} scrollTo={scrollTo} visible={scrolled} />
-      <SystemHUD sceneRef={sceneRef} fpsRef={fpsRef} />
-      <CornerControls theme={theme} toggleTheme={toggleTheme} />
+      <CornerControls />
 
       <main className="main">
 
@@ -1436,7 +895,6 @@ export default function Portfolio() {
         <Section id="about" pos="tr">
           <div className="sect-meta">
             <a href="#about" className="sect-n">01 · About</a>
-            <DecodeText className="sect-meta-aux" text={`PROFILE · ${D.focuses.length} FOCUSES`} duration={520} retrigger />
           </div>
           <p className="about-lede">{D.about}</p>
           <div className="about-stats-row">
@@ -1462,9 +920,8 @@ export default function Portfolio() {
         <Section id="research" pos="mr">
           <div className="sect-meta">
             <a href="#research" className="sect-n">02 · Research</a>
-            <DecodeText className="sect-meta-aux" text={`FIELD · ${D.experience.length} LABS`} duration={520} retrigger />
           </div>
-          <DecodeText as="h2" className="sect-title decode-title" text={"Field notes\nfrom three labs."} duration={820} delay={120} retrigger />
+          <DecodeText as="h2" className="sect-title decode-title" text={"Field notes\nfrom three labs."} duration={820} delay={120} />
           <ol className="exp-list" ref={expRef}>
             {D.experience.map((exp, i) => {
               const startYear = exp.period.match(/(\d{4})/)?.[1] ?? "—";
@@ -1498,7 +955,7 @@ export default function Portfolio() {
             rel="noopener noreferrer"
             className="pub-link"
           >
-            <DecodeText as="h2" className="pub-title" text={D.publication.title} duration={820} delay={120} retrigger />
+            <DecodeText as="h2" className="pub-title" text={D.publication.title} duration={820} delay={120} />
             <p className="pub-authors">
               {D.publication.authors} · <em>{D.publication.role}</em>
             </p>
@@ -1513,9 +970,8 @@ export default function Portfolio() {
         <Section id="projects" pos="bl">
           <div className="sect-meta">
             <a href="#projects" className="sect-n">04 · Projects</a>
-            <DecodeText className="sect-meta-aux" text={`REPOS · ${(repos.length > 0 ? repos.length : D.projects.length)} LIVE`} duration={520} retrigger />
           </div>
-          <DecodeText as="h2" className="sect-title decode-title" text="Things I built." duration={820} delay={120} retrigger />
+          <DecodeText as="h2" className="sect-title decode-title" text="Things I built." duration={820} delay={120} />
           {repoLoading ? (
             <div className="projects-loading">
               <div className="spinner" />
@@ -1560,9 +1016,8 @@ export default function Portfolio() {
         <Section id="skills" pos="tl">
           <div className="sect-meta">
             <a href="#skills" className="sect-n">05 · Skills</a>
-            <DecodeText className="sect-meta-aux" text={`TOOLKIT · ${Object.keys(D.skills).length} STACKS`} duration={520} retrigger />
           </div>
-          <DecodeText as="h2" className="sect-title decode-title" text={"Tools of\nthe trade."} duration={820} delay={120} retrigger />
+          <DecodeText as="h2" className="sect-title decode-title" text={"Tools of\nthe trade."} duration={820} delay={120} />
           <div className="skill-groups" ref={skillRef}>
             {Object.entries(D.skills).map(([cat, items], ci) => (
               <StaggerItem key={cat} index={ci} visible={skillVis}>
@@ -1582,25 +1037,6 @@ export default function Portfolio() {
         {/* ── Footer (inside main column so it scrolls with content) ── */}
         <footer className="foot">
           <div className="foot-inner">
-            <div className="foot-sig">
-              <span className="foot-led" aria-hidden="true" />
-              <span className="foot-sig-k">NEURAL_FIELD</span>
-              <span className="foot-sig-sep" aria-hidden="true">·</span>
-              <span className="foot-sig-v">v2.6</span>
-              <span className="foot-sig-sep" aria-hidden="true">·</span>
-              <span className="foot-sig-v foot-sig-dim">
-                BUILD #{(Math.floor(Date.now() / 86400000) % 9999).toString().padStart(4, "0")}
-              </span>
-              <span className="foot-sig-sep" aria-hidden="true">·</span>
-              <a
-                href="https://github.com/qiankangwang/my-portfolio"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="foot-sig-link"
-              >
-                view source
-              </a>
-            </div>
             <div className="foot-copy">© {new Date().getFullYear()} {D.fullName} · Built with React</div>
           </div>
         </footer>

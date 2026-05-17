@@ -29,10 +29,7 @@ import { useEffect, useRef } from "react";
 
 const WORLD_W = 1400; // network total width in world coords
 const WORLD_H = 720;  // network total height
-// Symmetric encoder-decoder — input layer 7 → bottleneck 2 → output 7.
-// The forward-pass wave walking through this reads as an autoencoder
-// compressing into a latent space and expanding back out.
-const WORLD_LAYERS = [7, 5, 3, 2, 3, 5, 7];
+const WORLD_LAYERS = [5, 7, 9, 7, 5, 3];
 
 export default function NeuralNetCanvas({ sceneRef }) {
   const canvasRef = useRef(null);

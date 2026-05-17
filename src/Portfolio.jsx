@@ -481,9 +481,14 @@ export default function Portfolio() {
         <HeroScene onAvatarClick={onAvatarClick} avatarRef={avatarRef} />
 
         {/* ── About — editorial pull-quote intro, stats row, focus list ── */}
+        {/* Text + formation share each quadrant — they fuse via the
+           canvas's mix-blend-mode: multiply. Quadrants drift along a
+           continuous path TR → MR → BR → BL → TL so the camera and
+           text move together as one cluster. */}
         <Section id="about" pos="tr">
           <div className="sect-meta">
             <span className="sect-n">01 · About</span>
+            <span className="sect-meta-aux">PROFILE · BIO_ML</span>
           </div>
           <p className="about-lede">{D.about}</p>
           <div className="about-stats-row">
@@ -506,9 +511,10 @@ export default function Portfolio() {
         </Section>
 
         {/* ── Research — year-led editorial rows, no card chrome ── */}
-        <Section id="research" pos="bl">
+        <Section id="research" pos="mr">
           <div className="sect-meta">
             <span className="sect-n">02 · Research</span>
+            <span className="sect-meta-aux">FIELD · LABS_2024–26</span>
           </div>
           <h2 className="sect-title">Field notes<br/>from three labs.</h2>
           <ol className="exp-list" ref={expRef}>
@@ -533,7 +539,7 @@ export default function Portfolio() {
         </Section>
 
         {/* ── Publication — huge serif title, no card ── */}
-        <Section id="publication" pos="mr">
+        <Section id="publication" pos="br">
           <div className="sect-meta">
             <span className="sect-n">03 · Publication</span>
             <span className="sect-meta-aux">{D.publication.venue} · {D.publication.year}</span>
@@ -556,9 +562,10 @@ export default function Portfolio() {
         </Section>
 
         {/* ── Projects — list rows, hover-revealed underline ── */}
-        <Section id="projects" pos="tl">
+        <Section id="projects" pos="bl">
           <div className="sect-meta">
             <span className="sect-n">04 · Projects</span>
+            <span className="sect-meta-aux">REPOS · OPEN_SRC</span>
           </div>
           <h2 className="sect-title">Things I built.</h2>
           {repoLoading ? (
@@ -590,9 +597,10 @@ export default function Portfolio() {
         </Section>
 
         {/* ── Skills — pill cloud grouped under mono labels ── */}
-        <Section id="skills" pos="br">
+        <Section id="skills" pos="tl">
           <div className="sect-meta">
             <span className="sect-n">05 · Skills</span>
+            <span className="sect-meta-aux">TOOLKIT · INDEX</span>
           </div>
           <h2 className="sect-title">Tools of<br/>the trade.</h2>
           <div className="skill-groups" ref={skillRef}>

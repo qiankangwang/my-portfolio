@@ -295,48 +295,98 @@ export default function ParticleScene({ sceneRef }) {
     const lines = new THREE.LineSegments(lineGeometry, lineMaterial);
     scene.add(lines);
 
+    // ── Signal pulses ──
+    // Warm sparks travelling along the connecting lines, visualising
+    // signal propagation through the network — the universal AI motif
+    // of "data flowing through a neural net". Each pulse is born at
+    // one endpoint of a random line segment, travels to the other
+    // endpoint, then respawns on a fresh line. Coloured with the
+    // active scene's WARM accent so they pop against the navy ink
+    // dots and read as the "live data" flowing through the field.
+    const PULSE_COUNT = 32;
+    const pulsePositions = new Float32Array(PULSE_COUNT * 3);
+    const pulseColors = new Float32Array(PULSE_COUNT * 3);
+    const pulseGeometry = new THREE.BufferGeometry();
+    pulseGeometry.setAttribute("position", new THREE.BufferAttribute(pulsePositions, 3));
+    pulseGeometry.setAttribute("color", new THREE.BufferAttribute(pulseColors, 3));
+    const pulseMaterial = new THREE.PointsMaterial({
+      size: 7.5,
+      map: haloTex,
+      vertexColors: true,
+      transparent: true,
+      opacity: 0.92,
+      blending: THREE.NormalBlending,
+      depthWrite: false,
+      sizeAttenuation: true,
+    });
+    const pulseObj = new THREE.Points(pulseGeometry, pulseMaterial);
+    scene.add(pulseObj);
+
+    const pulseState = Array.from({ length: PULSE_COUNT }, () => ({
+      lineIndex: Math.floor(Math.random() * linePairs.length),
+      t: Math.random(),
+      speed: 0.35 + Math.random() * 0.55,
+    }));
+
+    // ── Attention edges ──
+    // Sparse long-range connections that link far-apart particles for
+    // a beat, then fade. Mirrors how attention is drawn in transformer
+    // visualisations — distant tokens lighting up momentarily as the
+    // model "attends" across the field. Re-roll every ~800ms.
+    const ATTN_COUNT = 6;
+    const attnPositions = new Float32Array(ATTN_COUNT * 2 * 3);
+    const attnGeometry = new THREE.BufferGeometry();
+    attnGeometry.setAttribute("position", new THREE.BufferAttribute(attnPositions, 3));
+    const attnMaterial = new THREE.LineBasicMaterial({
+      color: 0xb45309,
+      transparent: true,
+      opacity: 0.30,
+      blending: THREE.NormalBlending,
+      depthWrite: false,
+    });
+    const attnLines = new THREE.LineSegments(attnGeometry, attnMaterial);
+    scene.add(attnLines);
+
+    const attnState = {
+      pairs: Array.from({ length: ATTN_COUNT }, () => [
+        Math.floor(Math.random() * PARTICLE_COUNT),
+        Math.floor(Math.random() * PARTICLE_COUNT),
+      ]),
+      ageMs: 0,
+      lifeMs: 800,
+    };
+
     // ── Per-scene camera vantage points ────────────────────────────
-    // Each scene has its own (camera pos, lookAt) so the formation is
-    // viewed from a deliberately different angle. `lookX` shifts the
-    // camera target horizontally: negative values move what the camera
-    // looks AT to the left, which pushes the formation visually to the
-    // RIGHT of the viewport — leaving the left side empty for content.
-    // Hero is the exception: lookX 0 so the field stays centred behind
-    // the giant hero text.
-    // Each camera frames its formation so the WHOLE shape is visible
-    // and the centred text sits inside the formation's interior:
-    //   - DNA helix → text inside the helix tube
-    //   - Sphere    → text inside the sphere's projected disc
-    //   - Rings     → text inside the rings' central hole
-    //   - Grid      → text in front of the grid plane
-    //   - Network   → text between the layer columns
-    //   - Hero      → wide overview, text on top of full network
-    // Transitions still add a z-pullback at u=0.5 so the camera flies
-    // out of the current formation, travels open space, then frames
-    // the next one — the "exit → travel → re-enter" beat.
-    // Per-section quadrant layout: text lands in one quadrant (chosen
-    // in Portfolio.jsx via [data-pos]) and the camera's lookAt is
-    // shifted to the OPPOSITE quadrant so the formation occupies the
-    // empty space across from the text.
-    //   lookX > 0  → lookAt right of origin → formation appears LEFT
-    //   lookX < 0  → lookAt left of origin  → formation appears RIGHT
-    //   lookY > 0  → lookAt above origin    → formation appears BELOW
-    //   lookY < 0  → lookAt below origin    → formation appears ABOVE
-    // Hero is the exception — name is huge and centred, camera stays
-    // looking at world origin.
+    // Cinematic camera path. Text + formation occupy the SAME quadrant
+    // each scene — they fuse on a shared paper surface via the canvas's
+    // mix-blend-mode: multiply, so particles read as ink "printing over"
+    // the text rather than as a separate animation layer behind it.
+    //
+    // To put the formation in a given quadrant, point the camera at the
+    // OPPOSITE side of the origin so the origin appears in that quadrant
+    // on screen:
+    //   lookX > 0  → camera looks right of origin → origin appears LEFT
+    //   lookX < 0  → camera looks left of origin  → origin appears RIGHT
+    //   lookY > 0  → camera looks above origin    → origin appears BELOW
+    //   lookY < 0  → camera looks below origin    → origin appears ABOVE
+    //
+    // The camera traces a continuous J-shape path through the page —
+    // top-right → middle-right → bottom-right → bottom-left → top-left.
+    // Each scene is a film cut along that path; text positions in
+    // Portfolio.jsx track the same quadrants.
     const SCENE_CAMS = [
-      // 0 Hero            — centred arrival, no quadrant
+      // 0 Hero       — centred arrival shot, no quadrant
       { x:  0, y:  20, z: 240, lookX:   0, lookY:   0 },
-      // 1 About (text TR)      → formation BOTTOM-LEFT
-      { x: -8, y: -18, z: 260, lookX:  68, lookY:  26 },
-      // 2 Research (text BL)   → formation TOP-RIGHT
-      { x: 14, y:  20, z: 235, lookX: -68, lookY: -24 },
-      // 3 Publication (text MR) → formation MIDDLE-LEFT
-      { x: 18, y:   8, z: 295, lookX:  72, lookY:   0 },
-      // 4 Projects (text TL)   → formation BOTTOM-RIGHT
-      { x:-10, y: -22, z: 255, lookX: -68, lookY:  24 },
-      // 5 Skills (text BR)     → formation TOP-LEFT
-      { x: 18, y:  24, z: 280, lookX:  68, lookY: -22 },
+      // 1 About      — TOP-RIGHT (path begins)
+      { x: 14, y:  22, z: 260, lookX: -65, lookY: -22 },
+      // 2 Research   — MIDDLE-RIGHT (camera drifts down)
+      { x: 14, y:   2, z: 240, lookX: -65, lookY:   0 },
+      // 3 Publication — BOTTOM-RIGHT (camera continues down)
+      { x: 14, y: -22, z: 295, lookX: -65, lookY:  22 },
+      // 4 Projects   — BOTTOM-LEFT (camera swings across)
+      { x:-14, y: -22, z: 250, lookX:  65, lookY:  22 },
+      // 5 Skills     — TOP-LEFT (camera rises to exit)
+      { x:-14, y:  22, z: 280, lookX:  65, lookY: -22 },
     ];
 
     // ── Mouse parallax ─────────────────────────────────────────────
@@ -404,8 +454,9 @@ export default function ParticleScene({ sceneRef }) {
       // middle of each scene transition, then settle back as the next
       // formation comes in. Magnitude peaks at u = 0.5 and is zero at
       // u = 0 and u = 1 so the rest position of each scene is exact.
-      const dispersal = 1 + Math.sin(u * Math.PI) * 0.18;
-      const scatterAmp = Math.sin(u * Math.PI) * 10;
+      // Kept gentle so text + formation stay visually fused mid-cut.
+      const dispersal = 1 + Math.sin(u * Math.PI) * 0.12;
+      const scatterAmp = Math.sin(u * Math.PI) * 7;
       for (let i = 0; i < PARTICLE_COUNT; i++) {
         const idx = i * 3;
         const ax = A[idx],     ay = A[idx + 1],     az = A[idx + 2];
@@ -473,6 +524,70 @@ export default function ParticleScene({ sceneRef }) {
       // particles, instead of mush-mixed vertex colours.
       lineMaterial.color.setRGB(ar, ag, ab);
 
+      // ── Pulse advance ──
+      // Each pulse rides along its assigned line segment from endpoint
+      // A to endpoint B. When it reaches B, it respawns on a fresh
+      // line so the data-flow effect never stalls.
+      for (let p = 0; p < PULSE_COUNT; p++) {
+        const ps = pulseState[p];
+        ps.t += ps.speed * dt;
+        if (ps.t >= 1) {
+          ps.t = 0;
+          ps.lineIndex = Math.floor(Math.random() * linePairs.length);
+          ps.speed = 0.35 + Math.random() * 0.55;
+        }
+        const [pia, pib] = linePairs[ps.lineIndex];
+        const pa3 = pia * 3, pb3 = pib * 3;
+        const pax = posAttr[pa3],     pay = posAttr[pa3 + 1], paz = posAttr[pa3 + 2];
+        const pbx = posAttr[pb3],     pby = posAttr[pb3 + 1], pbz = posAttr[pb3 + 2];
+        const tt = ps.t;
+        pulsePositions[p * 3]     = pax + (pbx - pax) * tt;
+        pulsePositions[p * 3 + 1] = pay + (pby - pay) * tt;
+        pulsePositions[p * 3 + 2] = paz + (pbz - paz) * tt;
+        // Warm accent colour, brighter than the rust used elsewhere
+        // so the pulses clearly read as the "live signal" layer.
+        pulseColors[p * 3]     = Math.min(1, wr * 1.15);
+        pulseColors[p * 3 + 1] = Math.min(1, wg * 1.15);
+        pulseColors[p * 3 + 2] = Math.min(1, wb * 1.15);
+      }
+      pulseGeometry.attributes.position.needsUpdate = true;
+      pulseGeometry.attributes.color.needsUpdate = true;
+
+      // ── Attention edges ──
+      // Periodically re-roll the long-range pairs so a fresh set of
+      // distant particles "lights up" between them. Opacity is sin-
+      // pulsed over the lifetime so each edge fades in and out
+      // smoothly instead of popping.
+      attnState.ageMs += dt * 1000;
+      if (attnState.ageMs >= attnState.lifeMs) {
+        attnState.ageMs = 0;
+        attnState.lifeMs = 700 + Math.random() * 400;
+        for (let a = 0; a < ATTN_COUNT; a++) {
+          attnState.pairs[a][0] = Math.floor(Math.random() * PARTICLE_COUNT);
+          attnState.pairs[a][1] = Math.floor(Math.random() * PARTICLE_COUNT);
+        }
+      }
+      const attnPhase = attnState.ageMs / attnState.lifeMs;
+      attnMaterial.opacity = Math.sin(attnPhase * Math.PI) * 0.34;
+      const attnPos = attnGeometry.attributes.position.array;
+      for (let a = 0; a < ATTN_COUNT; a++) {
+        const [aa, bb] = attnState.pairs[a];
+        const aIdx = aa * 3, bIdx = bb * 3;
+        attnPos[a * 6 + 0] = posAttr[aIdx];
+        attnPos[a * 6 + 1] = posAttr[aIdx + 1];
+        attnPos[a * 6 + 2] = posAttr[aIdx + 2];
+        attnPos[a * 6 + 3] = posAttr[bIdx];
+        attnPos[a * 6 + 4] = posAttr[bIdx + 1];
+        attnPos[a * 6 + 5] = posAttr[bIdx + 2];
+      }
+      attnGeometry.attributes.position.needsUpdate = true;
+      // Match the accent hue lerp so attention edges shift with palette
+      attnMaterial.color.setRGB(
+        Math.min(1, wr * 0.95),
+        Math.min(1, wg * 0.95),
+        Math.min(1, wb * 0.95)
+      );
+
       // Low-pass smoothing on mouse parallax — keeps the cursor follow
       // gentle rather than twitchy.
       mouse.x += (mouse.tx - mouse.x) * (1 - Math.exp(-dt / 0.18));
@@ -487,6 +602,8 @@ export default function ParticleScene({ sceneRef }) {
       tmpQuat.setFromEuler(tmpEuler);
       points.quaternion.copy(tmpQuat);
       lines.quaternion.copy(tmpQuat);
+      pulseObj.quaternion.copy(tmpQuat);
+      attnLines.quaternion.copy(tmpQuat);
 
       // Per-scene camera vantage — lerp toward the scene's base camera
       // position so each formation is viewed from inside. Add a strong
@@ -563,6 +680,10 @@ export default function ParticleScene({ sceneRef }) {
       material.dispose();
       lineGeometry.dispose();
       lineMaterial.dispose();
+      pulseGeometry.dispose();
+      pulseMaterial.dispose();
+      attnGeometry.dispose();
+      attnMaterial.dispose();
       haloTex.dispose();
       renderer.dispose();
     };

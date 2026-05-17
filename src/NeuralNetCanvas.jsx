@@ -29,7 +29,10 @@ import { useEffect, useRef } from "react";
 
 const WORLD_W = 1400; // network total width in world coords
 const WORLD_H = 720;  // network total height
-const WORLD_LAYERS = [5, 7, 9, 7, 5, 3];
+// Symmetric encoder-decoder — input layer 7 → bottleneck 2 → output 7.
+// The forward-pass wave walking through this reads as an autoencoder
+// compressing into a latent space and expanding back out.
+const WORLD_LAYERS = [7, 5, 3, 2, 3, 5, 7];
 
 export default function NeuralNetCanvas({ sceneRef }) {
   const canvasRef = useRef(null);
@@ -370,10 +373,13 @@ export default function NeuralNetCanvas({ sceneRef }) {
       // Network is the headlining element at Hero (0) AND Research (2)
       // — visible at full alpha on either, faded between.
       const visNetwork   = Math.max(motifVis(0), motifVis(2));
-      // Bio motifs: prominent on Hero, very faint on the other scenes
-      // so the page has atmosphere without competing with the primary
-      // motif. Fully suppressed on Research (user wants network alone).
-      const visBio       = (0.16 + 0.74 * motifVis(0)) * (1 - motifVis(2));
+      // Bio motifs: prominent on Hero, smaller but still visible on
+      // sub-sections (so the page has atmosphere), fully suppressed on
+      // Research where the user wants the network alone.
+      const visBio       = (0.34 + 0.56 * motifVis(0)) * (1 - motifVis(2));
+      // Physical scale — Hero gets full size, sub-sections shrink to
+      // 45% so the close-up zoom doesn't blow them up over the text.
+      const sizeBio      = 0.45 + 0.55 * motifVis(0);
       // Research-scene amplifier — same network as Hero but faster
       // pulses, brighter edges, tighter forward-pass sweep so the
       // Research view feels like a working model, not a wide overview.
@@ -420,14 +426,14 @@ export default function NeuralNetCanvas({ sceneRef }) {
       bioMotifs.forEach((m, mi) => {
         const drift = Math.sin(frame * 0.008 + m.phase) * 8;
         if (m.type === "rna") {
-          const step = 22;
+          const step = 22 * sizeBio;
           const dx = Math.cos(m.angle) * step;
           const dy = Math.sin(m.angle) * step;
           for (let i = 0; i < m.len; i++) {
             const wave = Math.sin(frame * 0.014 + i * 0.75 + m.phase);
             const arc  = Math.sin((i / Math.max(1, m.len - 1)) * Math.PI) * (m.bend || 0) * 1.4;
-            const x    = m.x + dx * i + Math.sin(m.angle + Math.PI / 2) * (wave * 9 + arc);
-            const y    = m.y + dy * i + drift + Math.cos(m.angle + Math.PI / 2) * (wave * 9 + arc);
+            const x    = m.x + dx * i + Math.sin(m.angle + Math.PI / 2) * (wave * 9 * sizeBio + arc * sizeBio);
+            const y    = m.y + dy * i + drift + Math.cos(m.angle + Math.PI / 2) * (wave * 9 * sizeBio + arc * sizeBio);
             const hot  = (i / Math.max(1, m.len - 1) + frame * 0.0045 + mi * 0.17) % 1;
             const active = hot > 0.42 && hot < 0.58;
             const alpha  = (active ? (dark ? 0.88 : 0.78) : (dark ? 0.5 : 0.45)) * visBio;
@@ -436,16 +442,16 @@ export default function NeuralNetCanvas({ sceneRef }) {
               ctx.moveTo(x - dx * 0.72, y - dy * 0.72);
               ctx.lineTo(x - dx * 0.25, y - dy * 0.25);
               ctx.strokeStyle = rgba(dim, (dark ? 0.42 : 0.34) * visBio);
-              ctx.lineWidth = active ? 1.5 : 1.1;
+              ctx.lineWidth = (active ? 1.5 : 1.1) * Math.max(0.55, sizeBio);
               ctx.stroke();
             }
             ctx.beginPath();
-            ctx.arc(x, y, active ? 3.6 : 2.4, 0, Math.PI * 2);
+            ctx.arc(x, y, (active ? 3.6 : 2.4) * Math.max(0.55, sizeBio), 0, Math.PI * 2);
             ctx.fillStyle = rgba(i % 2 ? warm : accent, alpha);
             ctx.fill();
           }
         } else if (m.type === "protein") {
-          const s = m.scale * 1.55;
+          const s = m.scale * 1.55 * sizeBio;
           const pts = [];
           for (let i = 0; i < m.len; i++) {
             pts.push({
@@ -456,11 +462,11 @@ export default function NeuralNetCanvas({ sceneRef }) {
           ctx.beginPath();
           pts.forEach((pt, i) => { if (i === 0) ctx.moveTo(pt.x, pt.y); else ctx.lineTo(pt.x, pt.y); });
           ctx.strokeStyle = rgba(warm, (dark ? 0.46 : 0.4) * visBio);
-          ctx.lineWidth = 1.4;
+          ctx.lineWidth = 1.4 * Math.max(0.55, sizeBio);
           ctx.stroke();
           pts.forEach((pt, i) => {
             ctx.beginPath();
-            ctx.arc(pt.x, pt.y, i % 3 === 0 ? 3.2 : 2.3, 0, Math.PI * 2);
+            ctx.arc(pt.x, pt.y, (i % 3 === 0 ? 3.2 : 2.3) * Math.max(0.55, sizeBio), 0, Math.PI * 2);
             ctx.fillStyle = rgba(i % 2 ? warm : accent, (dark ? 0.58 : 0.5) * visBio);
             ctx.fill();
           });

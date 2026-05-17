@@ -156,17 +156,19 @@ body::before { display: none; }
   position: absolute;
   inset: 0;
   pointer-events: none;
-  /* Soft halo around the text-safe centre. Brightens the centre so
-     particles fade out where the title sits — text reads cleanly while
-     particles surround it. */
+  /* Soft halo aligned with the LEFT text column — fades particle
+     density where the copy reads so they don't compete for the same
+     pixels. Particles still appear there (mix-blend-mode keeps the
+     shared-surface feel) but at lower density. */
   background:
-    radial-gradient(ellipse 35% 28% at 50% 50%,
-      rgba(244, 241, 234, .85) 0%,
+    radial-gradient(ellipse 28% 38% at 28% 50%,
+      rgba(244, 241, 234, .92) 0%,
+      rgba(244, 241, 234, .55) 45%,
       rgba(244, 241, 234, .0) 100%),
-    radial-gradient(ellipse 90% 75% at 50% 50%,
+    radial-gradient(ellipse 90% 75% at 65% 50%,
       transparent 0%,
-      transparent 65%,
-      rgba(244, 241, 234, .35) 100%);
+      transparent 70%,
+      rgba(244, 241, 234, .30) 100%);
   mix-blend-mode: lighten;
 }
 
@@ -458,22 +460,28 @@ body::before { display: none; }
 
 .sect-stage {
   position: relative;
-  /* Text is centred — the camera DIVES INTO each formation, so the
-     particles render around / behind / through the text. Reads as the
-     camera flying into each scene and the copy emerging from inside it. */
-  max-width: 480px;
-  margin: 0 auto;
-  padding: 0 clamp(1rem, 3vw, 2rem);
+  /* Text sits in a LEFT reading column. The camera shifts each
+     formation's focal point to the right half via lookX, so text and
+     particles share the same paper (mix-blend-mode keeps them visually
+     fused) but each owns its own zone of attention.
+     Left margin clears the fixed nav rail at its widest label width. */
+  max-width: 460px;
+  margin-left: clamp(8rem, 18vw, 15rem);
+  margin-right: auto;
+  padding-right: clamp(1rem, 3vw, 2rem);
   opacity: 0;
-  transform: translateY(40px);
+  transform: translateX(-24px);
   transition:
     opacity 1s cubic-bezier(.22, 1, .36, 1),
     transform 1s cubic-bezier(.22, 1, .36, 1);
   will-change: opacity, transform;
   text-align: left;
+  /* Faint highlight halo so text reads cleanly against any local
+     particle density. The .atmos-vignette also fades particle density
+     around the text zone so this is rarely doing heavy lifting. */
   text-shadow:
-    0 0 14px color-mix(in srgb, var(--bg) 80%, transparent),
-    0 1px 0 color-mix(in srgb, var(--bg) 60%, transparent);
+    0 0 14px color-mix(in srgb, var(--bg) 88%, transparent),
+    0 1px 0 color-mix(in srgb, var(--bg) 70%, transparent);
 }
 /* Bigger / heavier elements don't need the halo and can look fuzzy
    with one applied — opt them out. */

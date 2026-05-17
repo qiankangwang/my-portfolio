@@ -314,19 +314,23 @@ export default function ParticleScene({ sceneRef }) {
     // Transitions still add a z-pullback at u=0.5 so the camera flies
     // out of the current formation, travels open space, then frames
     // the next one — the "exit → travel → re-enter" beat.
+    // Text reads in the LEFT column; camera lookX is shifted LEFT
+    // (negative) so the formation lands on the RIGHT half of the
+    // viewport. Hero is the exception — text is centred there, camera
+    // looks at world centre too.
     const SCENE_CAMS = [
-      // 0 Hero — wide atmospheric arrival
+      // 0 Hero — wide atmospheric arrival, centred
       { x:  0, y:  20, z: 240, lookX:   0, lookY:  -5 },
-      // 1 About — frame DNA helix (height 260, radius 75) with margin
-      { x: 12, y:   0, z: 260, lookX:   0, lookY:   0 },
-      // 2 Research — frame layered network
-      { x:  0, y:  10, z: 230, lookX:   0, lookY:   0 },
-      // 3 Publication — frame sphere (radius 140 → diameter 280)
-      { x:-12, y:  18, z: 305, lookX:   0, lookY:  -5 },
-      // 4 Projects — frame grid (264 wide × 220 tall), slight low angle
-      { x:  0, y: -38, z: 250, lookX:   0, lookY:  22 },
-      // 5 Skills — frame rings (max radius 160), slight high angle
-      { x: 20, y:  30, z: 285, lookX:   0, lookY: -12 },
+      // 1 About — DNA helix framed on the right
+      { x: 12, y:   0, z: 260, lookX: -65, lookY:   0 },
+      // 2 Research — layered network on the right
+      { x:  0, y:  10, z: 230, lookX: -65, lookY:   0 },
+      // 3 Publication — sphere on the right
+      { x:-12, y:  18, z: 305, lookX: -65, lookY:  -5 },
+      // 4 Projects — grid on the right, slight low angle
+      { x:  0, y: -38, z: 250, lookX: -65, lookY:  22 },
+      // 5 Skills — rings on the right, slight high angle
+      { x: 20, y:  30, z: 285, lookX: -65, lookY: -12 },
     ];
 
     // ── Mouse parallax ─────────────────────────────────────────────

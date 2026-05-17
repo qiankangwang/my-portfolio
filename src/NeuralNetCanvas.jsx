@@ -373,10 +373,10 @@ export default function NeuralNetCanvas({ sceneRef }) {
       // Network is the headlining element at Hero (0) AND Research (2)
       // — visible at full alpha on either, faded between.
       const visNetwork   = Math.max(motifVis(0), motifVis(2));
-      // Bio motifs are atmospheric background — visible at Hero (boost)
-      // and around the other scenes (base 0.5), but fully suppressed on
-      // Research so the network reads cleanly without bio chatter on top.
-      const visBio       = (0.5 + 0.35 * motifVis(0)) * (1 - motifVis(2));
+      // Bio motifs only show during Hero — on every other scene the
+      // bio strands + connecting lines were blocking the primary motif.
+      // Fades smoothly with the Hero camera leaving.
+      const visBio       = 0.85 * motifVis(0);
 
       // Soft radial wash drawn in SCREEN coords (no transform yet).
       const grad = ctx.createRadialGradient(

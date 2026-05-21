@@ -46,7 +46,7 @@ Personal portfolio website showcasing my background in machine learning, scienti
 │   ├── index.html          # HTML template + meta/SEO tags
 │   ├── manifest.json       # PWA manifest
 │   ├── sitemap.xml         # Sitemap for crawlers
-│   └── photo.png           # Avatar / favicon
+│   └── icon.png            # K logo / favicon
 ├── src/
 │   ├── index.js            # React entry point
 │   ├── Portfolio.jsx       # Main page component

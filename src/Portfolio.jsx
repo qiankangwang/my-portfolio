@@ -584,19 +584,42 @@ export default function Portfolio() {
   const sceneRef = useRef(0);
 
   useEffect(() => {
+    // Cache DOM refs once — these elements live for the lifetime of the
+    // page, so re-querying them on every scroll frame is pure overhead.
+    const sceneEls = SCENE_IDS.map((id) => document.getElementById(id));
+    const navEls = NAV.map((n) => document.getElementById(n.toLowerCase()));
+
     let ticking = false;
+    // Last-emitted values so we can skip redundant setStates (each one
+    // is a Portfolio re-render — memo'd children no-op, but the parent
+    // still reconciles).
+    let lastScrolled = null;
+    let lastActive = null;
+    let lastProgress = -1;
+
     const onScroll = () => {
       if (ticking) return;
       ticking = true;
       requestAnimationFrame(() => {
+        ticking = false;
         const winH = window.innerHeight;
         const y = window.scrollY;
-        setScrolled(y > 40);
+
+        const nextScrolled = y > 40;
+        if (nextScrolled !== lastScrolled) {
+          lastScrolled = nextScrolled;
+          setScrolled(nextScrolled);
+        }
+
         const docH = document.documentElement.scrollHeight - winH;
         const p = docH > 0 ? Math.min(y / docH, 1) : 0;
-        setProgress(p);
+        // Progress bar updates are visually indistinguishable below
+        // ~0.1% — gate to keep React out of the hot path on slow drags.
+        if (Math.abs(p - lastProgress) > 0.001) {
+          lastProgress = p;
+          setProgress(p);
+        }
 
-        const sceneEls = SCENE_IDS.map((id) => document.getElementById(id));
         const viewCentre = y + winH * 0.5;
         const centres = sceneEls.map((s) => {
           if (!s) return null;
@@ -620,17 +643,18 @@ export default function Portfolio() {
         }
         sceneRef.current = scene;
 
-        const navEls = NAV.map((n) => document.getElementById(n.toLowerCase()));
         const flipAt = winH * 0.4;
+        let nextActive = "";
         for (let i = navEls.length - 1; i >= 0; i--) {
           if (navEls[i] && navEls[i].getBoundingClientRect().top < flipAt) {
-            setActive(NAV[i]);
-            ticking = false;
-            return;
+            nextActive = NAV[i];
+            break;
           }
         }
-        setActive("");
-        ticking = false;
+        if (nextActive !== lastActive) {
+          lastActive = nextActive;
+          setActive(nextActive);
+        }
       });
     };
     window.addEventListener("scroll", onScroll, { passive: true });

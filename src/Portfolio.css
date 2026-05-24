@@ -50,20 +50,12 @@ html { color-scheme: light; }
 *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
 html {
+  /* `smooth` only affects programmatic / anchor jumps; wheel scrolling
+     stays native. We dropped the previous `scroll-snap-type: proximity`
+     because every section was a snap target, which made upward wheel
+     scrolling feel grabby. */
   scroll-behavior: smooth;
   scroll-padding-top: 4rem;
-  /* Gentle scroll-snap so deliberate scrolling near a section
-     boundary lands on it cleanly, without forcing every flick to
-     snap (mandatory would fight with mouse-wheel exploration). */
-  scroll-snap-type: y proximity;
-}
-.hero-scene,
-.sect {
-  scroll-snap-align: start;
-  scroll-snap-stop: normal;
-}
-@media (prefers-reduced-motion: reduce) {
-  html { scroll-snap-type: none; }
 }
 
 /* Custom scrollbar — thin, accent-tinted, matches the page palette.

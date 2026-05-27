@@ -816,8 +816,8 @@ export default function Portfolio() {
                       <div className="exp-role">{exp.role}</div>
                       <div className="exp-org">{exp.org}</div>
                       <div className="exp-period">{exp.period}</div>
-                      <p className="exp-desc">{exp.desc}</p>
-                      <span className="exp-tag">{exp.tag}</span>
+                      {exp.desc && <p className="exp-desc">{exp.desc}</p>}
+                      {exp.tag && <span className="exp-tag">{exp.tag}</span>}
                     </div>
                   </li>
                 </StaggerItem>

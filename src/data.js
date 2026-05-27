@@ -7,12 +7,12 @@ const D = {
   avatar: "https://github.com/qiankangwang.png",
 
   tagline:
-    "Machine learning for biology — representation learning, generative modeling, and scientific computing.",
+    "Machine learning for biology — representation learning, foundation models, and scientific computing.",
 
-  focuses: ["Representation Learning", "Generative Models", "Scientific Computing", "Open to Research"],
+  focuses: ["Representation Learning", "Foundation Models", "Scientific Computing", "Open to Research"],
 
   about:
-    "Undergraduate at UC Berkeley studying Data Science. I work at the intersection of modern machine learning and biophysics, with interests in representation learning, scientific software, and reliable computing for biological data.",
+    "Undergraduate at UC Berkeley studying Data Science. I work at the intersection of modern machine learning and biophysics, with interests in representation learning, foundation models, and scientific computing for biological data.",
 
   stats: [
     { n: "ML", l: "Scientific Data" },
@@ -22,18 +22,11 @@ const D = {
 
   experience: [
     {
-      org: "Berkeley AI Research (BAIR)",
+      org: "Stanford University",
       role: "Research Assistant",
       period: "Mar 2026 — Present",
-      tag: "self-supervised learning",
-      desc: "Self-supervised representation learning on scientific data, building on SimCLR-style contrastive frameworks.",
-    },
-    {
-      org: "AMBER pGM Collaboration",
-      role: "Research Assistant",
-      period: "Nov 2025 — Mar 2026",
-      tag: "scientific software",
-      desc: "Acceleration project for the AMBER / PMEMD codebase — code integration, regression testing, and numerical-consistency analysis.",
+      tag: "",
+      desc: "",
     },
     {
       org: "Computational Biophysics Lab · UC Irvine",
@@ -85,7 +78,7 @@ const D = {
 
   skills: {
     "Machine Learning": [
-      "PyTorch", "LibTorch", "Contrastive / SSL", "Diffusion models", "Transformers",
+      "PyTorch", "LibTorch", "Contrastive / SSL", "Foundation models", "Transformers",
     ],
     "Scientific Computing": [
       "GPU optimization", "CG / BiCG solvers", "Poisson–Boltzmann / PBSA", "Molecular simulation",

@@ -9,15 +9,15 @@ const D = {
   tagline:
     "Machine learning for biology — representation learning, foundation models, and scientific computing.",
 
-  focuses: ["Representation Learning", "Foundation Models", "Scientific Computing", "Open to Research"],
+  focuses: ["Representation Learning", "Foundation Models", "Scientific Computing", "Open to Collaboration"],
 
   about:
-    "Undergraduate at UC Berkeley studying Data Science. I work at the intersection of modern machine learning and biophysics, with interests in representation learning, foundation models, and scientific computing for biological data.",
+    "Undergraduate at UC Berkeley in Data Science. Working at the intersection of machine learning and biophysics — representation learning, foundation models, and scientific computing for biological data.",
 
   stats: [
     { n: "ML", l: "Scientific Data" },
     { n: "HPC", l: "Research Compute" },
-    { n: "2026", l: "JCTC Paper" },
+    { n: "2026", l: "JCTC '26" },
   ],
 
   experience: [
@@ -78,7 +78,7 @@ const D = {
 
   skills: {
     "Machine Learning": [
-      "PyTorch", "LibTorch", "Contrastive / SSL", "Foundation models", "Transformers",
+      "Foundation models", "Transformers", "Self-supervised learning", "PyTorch", "LibTorch",
     ],
     "Scientific Computing": [
       "GPU optimization", "CG / BiCG solvers", "Poisson–Boltzmann / PBSA", "Molecular simulation",

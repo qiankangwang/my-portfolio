@@ -436,7 +436,7 @@ export default function NeuralNetCanvas({ sceneRef }) {
       };
       const RES_INTENSITY = {
         pulseEvery: 16, edgeBoost: 1.18, lineBoost: 1.06,
-        wavePeriod: 200, wavePeak: 0.5,
+        wavePeriod: 300, wavePeak: 0.5,
         haloAlpha: 0.06, haloRBoost: 0.5,
         // Hourglass-specific: when the wave hits a bottleneck layer (<=2
         // nodes), nodes pulse harder so the compression beat is felt.
@@ -996,7 +996,7 @@ export default function NeuralNetCanvas({ sceneRef }) {
               const bandW = 38;
               const g = ctx.createLinearGradient(frontX - bandW, 0, frontX + bandW, 0);
               g.addColorStop(0, rgba(accent, 0));
-              g.addColorStop(0.5, rgba(accent, (0.10 + 0.20 * bProx) * flowVis * alphaScale));
+              g.addColorStop(0.5, rgba(accent, (0.06 + 0.12 * bProx) * flowVis * alphaScale));
               g.addColorStop(1, rgba(accent, 0));
               ctx.fillStyle = g;
               ctx.fillRect(frontX - bandW, -frontHalfH, bandW * 2, frontHalfH * 2);
@@ -1006,8 +1006,8 @@ export default function NeuralNetCanvas({ sceneRef }) {
             ctx.beginPath();
             ctx.moveTo(frontX, -frontHalfH);
             ctx.lineTo(frontX, frontHalfH);
-            ctx.strokeStyle = rgba(accent, (0.28 + 0.42 * bProx) * flowVis * alphaScale);
-            ctx.lineWidth = 1.1 + bProx * 1.6;
+            ctx.strokeStyle = rgba(accent, (0.16 + 0.26 * bProx) * flowVis * alphaScale);
+            ctx.lineWidth = 0.9 + bProx * 1.3;
             ctx.stroke();
             // Latent compression bloom at the bottleneck box.
             if (!lowPerf && bProx > 0.45) {
@@ -1015,7 +1015,7 @@ export default function NeuralNetCanvas({ sceneRef }) {
               const bx = fStartX + fGap * fBIdx;
               const r = 20 + flash * 22;
               const fg = ctx.createRadialGradient(bx, 0, 0, bx, 0, r);
-              fg.addColorStop(0, rgba(warm, 0.55 * flash * flowVis * alphaScale));
+              fg.addColorStop(0, rgba(warm, 0.34 * flash * flowVis * alphaScale));
               fg.addColorStop(1, rgba(warm, 0));
               ctx.fillStyle = fg;
               ctx.beginPath();

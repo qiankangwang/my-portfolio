@@ -283,8 +283,13 @@ export default function NeuralNetCanvas({ sceneRef }) {
       canvas.width = w * dpr;
       canvas.height = h * dpr;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      buildNetwork();
     };
+    // Network + motifs live in fixed WORLD coordinates (the camera transform
+    // maps them onto the viewport), so geometry is independent of canvas
+    // pixel size — build it ONCE here, not on every resize. Rebuilding on
+    // resize would re-randomize node phases + the ambient field, causing a
+    // visible "pop" and GC churn on mobile address-bar show/hide and drags.
+    buildNetwork();
     resize();
     const onResize = () => {
       resize();
@@ -396,7 +401,7 @@ export default function NeuralNetCanvas({ sceneRef }) {
       const cool   = dark ? [80, 105, 140]  : [70, 95, 130];
       const dim    = dark ? [48, 60, 80]    : [115, 130, 150];
       const warm   = dark ? [220, 158, 115] : [200, 105, 55];
-      const t = frame * (reducedMotion ? 0.012 : 0.025);
+      const t = frame * (reducedMotion ? 0.012 : 0.020);
 
       // ── Per-motif visibility ──
       // Each scene has a primary motif (DNA at About, equations at

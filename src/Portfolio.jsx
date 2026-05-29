@@ -350,6 +350,16 @@ const CursorSpot = memo(function CursorSpot() {
     let tx = -9999, ty = -9999;
     let x = -9999, y = -9999;
     let seen = false;
+    const tick = () => {
+      x += (tx - x) * 0.16;
+      y += (ty - y) * 0.16;
+      const el = ref.current;
+      if (el) el.style.transform = `translate3d(${x}px, ${y}px, 0)`;
+      // Settle: once the halo has caught the cursor, stop scheduling — a new
+      // mousemove restarts it. Avoids a forever-running idle rAF.
+      if (Math.abs(tx - x) < 0.1 && Math.abs(ty - y) < 0.1) { raf = 0; return; }
+      raf = requestAnimationFrame(tick);
+    };
     const onMove = (e) => {
       tx = e.clientX;
       ty = e.clientY;
@@ -358,18 +368,11 @@ const CursorSpot = memo(function CursorSpot() {
         y = ty;
         seen = true;
       }
+      if (!raf) raf = requestAnimationFrame(tick); // restart if idle
     };
-    const tick = () => {
-      x += (tx - x) * 0.16;
-      y += (ty - y) * 0.16;
-      const el = ref.current;
-      if (el) el.style.transform = `translate3d(${x}px, ${y}px, 0)`;
-      raf = requestAnimationFrame(tick);
-    };
-    raf = requestAnimationFrame(tick);
     window.addEventListener("mousemove", onMove, { passive: true });
     return () => {
-      cancelAnimationFrame(raf);
+      if (raf) cancelAnimationFrame(raf);
       window.removeEventListener("mousemove", onMove);
     };
   }, []);

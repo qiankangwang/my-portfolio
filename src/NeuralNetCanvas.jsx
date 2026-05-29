@@ -441,6 +441,10 @@ export default function NeuralNetCanvas({ sceneRef }) {
         // Hourglass-specific: when the wave hits a bottleneck layer (<=2
         // nodes), nodes pulse harder so the compression beat is felt.
         bottleneckBoost: 1.55,
+        // Draw the directional encode→latent→decode "signal front" (a
+        // luminous band that sweeps left→right and pinches at the
+        // bottleneck) — only on the encoder-decoder, not the hero net.
+        flow: true,
       };
 
       // Soft radial wash drawn in SCREEN coords. Skipped on low-spec
@@ -955,6 +959,71 @@ export default function NeuralNetCanvas({ sceneRef }) {
             n.activation = Math.max(n.activation, peak * (1 - layerDist / 0.45));
           }
         });
+
+        // ── Encode → latent → decode signal front (encoder-decoder only) ──
+        // A luminous vertical front sweeps left→right tracking the forward
+        // wave; its height follows the hourglass envelope, so it visibly
+        // PINCHES into the 2-node latent (compression) and EXPANDS back out
+        // (reconstruction). A warm bloom fires at the latent as it crosses.
+        // Drawn here — under the edges/pulses/nodes — so the bright network
+        // still reads on top while the front sweeps behind it.
+        if (params.flow) {
+          const fNetW = WORLD_W * (net.worldScale || 1);
+          const fNetH = WORLD_H * (net.worldScale || 1);
+          const fMax = Math.max(...ls);
+          const fGap = fNetW / (ls.length - 1);
+          const fStartX = -fNetW / 2;
+          const fBIdx = ls.indexOf(Math.min(...ls));
+          const halfHAt = (fl) => {
+            const lo = Math.max(0, Math.min(ls.length - 1, Math.floor(fl)));
+            const hi = Math.min(ls.length - 1, lo + 1);
+            const f = Math.max(0, Math.min(1, fl - lo));
+            const hh = (L) => fNetH * 0.78 * Math.pow(ls[L] / fMax, 1.6) / 2;
+            return hh(lo) + (hh(hi) - hh(lo)) * f;
+          };
+          // Front position over the layers; fade out once it passes the
+          // output so each cycle reads as one clean left→right pass.
+          const fl = Math.max(0, Math.min(ls.length - 1, waveLayer));
+          const flowVis = waveLayer > ls.length - 1
+            ? Math.max(0, 1 - (waveLayer - (ls.length - 1)) / 0.5)
+            : 1;
+          const frontX = fStartX + fGap * fl;
+          const frontHalfH = Math.max(16, halfHAt(fl) + 10);
+          const bProx = Math.max(0, 1 - Math.abs(fl - fBIdx) / 1.2); // peaks at latent
+          if (flowVis > 0) {
+            // Soft trailing glow band (skipped on low-spec — it's a gradient).
+            if (!lowPerf) {
+              const bandW = 38;
+              const g = ctx.createLinearGradient(frontX - bandW, 0, frontX + bandW, 0);
+              g.addColorStop(0, rgba(accent, 0));
+              g.addColorStop(0.5, rgba(accent, (0.10 + 0.20 * bProx) * flowVis * alphaScale));
+              g.addColorStop(1, rgba(accent, 0));
+              ctx.fillStyle = g;
+              ctx.fillRect(frontX - bandW, -frontHalfH, bandW * 2, frontHalfH * 2);
+            }
+            // Bright leading edge — height = the envelope, so the line itself
+            // shrinks into the latent then grows back on decode. Cheap; always on.
+            ctx.beginPath();
+            ctx.moveTo(frontX, -frontHalfH);
+            ctx.lineTo(frontX, frontHalfH);
+            ctx.strokeStyle = rgba(accent, (0.28 + 0.42 * bProx) * flowVis * alphaScale);
+            ctx.lineWidth = 1.1 + bProx * 1.6;
+            ctx.stroke();
+            // Latent compression bloom at the bottleneck box.
+            if (!lowPerf && bProx > 0.45) {
+              const flash = (bProx - 0.45) / 0.55;
+              const bx = fStartX + fGap * fBIdx;
+              const r = 20 + flash * 22;
+              const fg = ctx.createRadialGradient(bx, 0, 0, bx, 0, r);
+              fg.addColorStop(0, rgba(warm, 0.55 * flash * flowVis * alphaScale));
+              fg.addColorStop(1, rgba(warm, 0));
+              ctx.fillStyle = fg;
+              ctx.beginPath();
+              ctx.arc(bx, 0, r, 0, Math.PI * 2);
+              ctx.fill();
+            }
+          }
+        }
 
         // Edges
         net.edges.forEach((e) => {

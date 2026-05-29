@@ -11,12 +11,12 @@
   --bg3:         #DDD7C9;
   --fg:          #1B1F26;             /* deep ink (slight blue) */
   --fg2:         #3F4753;
-  --fg3:         #6B7280;
-  --fg4:         #9BA3AE;
+  --fg3:         #5C636E;             /* darkened for WCAG AA on cream */
+  --fg4:         #767D8A;             /* decorative / large-text only — body text uses --fg3 for AA */
   --accent:      #1E3A8A;             /* deep journal navy */
   --accent2:     #2754C2;
   --accent3:     #1E2A5E;
-  --warm:        #B45309;             /* warm rust for hand-noted accents */
+  --warm:        #9A4708;             /* warm rust for hand-noted accents (darkened for AA) */
   /* Derived from --accent so per-section overrides actually propagate
      (the old hardcoded rgba values stayed pinned to the base navy
      regardless of --accent). color-mix with transparent gives the
@@ -102,9 +102,11 @@ input, textarea, [contenteditable] { cursor: text; }
    users, not on every mouse click. */
 :focus { outline: none; }
 :focus-visible {
-  outline: 2px dashed var(--accent);
-  outline-offset: 4px;
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
   border-radius: 4px;
+  /* Cream halo so the ring stays visible over the busy canvas/motifs. */
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--bg) 85%, transparent);
 }
 a:focus-visible,
 button:focus-visible {
@@ -115,6 +117,19 @@ button:focus-visible {
 .sb-nav-item:focus-visible {
   outline-offset: 6px;
 }
+
+/* Error-boundary fallback — minimal static card if the app throws. */
+.error-fallback {
+  max-width: 40rem;
+  margin: 4rem auto;
+  padding: 0 1.5rem;
+  position: relative;
+  z-index: 2;
+  color: var(--fg);
+}
+.error-fallback h1 { font-size: clamp(1.8rem, 5vw, 2.4rem); margin-bottom: .5rem; }
+.error-fallback p { margin: .5rem 0; color: var(--fg2); line-height: 1.6; }
+.error-fallback a { color: var(--accent); }
 
 /* Faint research-paper grid behind everything else — two-tier:
    major lines every 250px, minor lines every 50px, both very low
@@ -708,7 +723,8 @@ body::after {
 /* ── Quadrant variants — text in one quadrant, motif on opposite side. ── */
 .sect[data-pos="tl"],
 .sect[data-pos="tr"] { align-items: flex-start; padding-top: clamp(5rem, 10vh, 7rem); }
-.sect[data-pos="ml"] { align-items: center; }
+.sect[data-pos="ml"],
+.sect[data-pos="mr"] { align-items: center; }
 .sect[data-pos="bl"],
 .sect[data-pos="br"] { align-items: flex-end; padding-bottom: clamp(5rem, 10vh, 7rem); }
 
@@ -719,6 +735,7 @@ body::after {
   margin-right: auto;
 }
 .sect[data-pos="tr"] .sect-stage,
+.sect[data-pos="mr"] .sect-stage,
 .sect[data-pos="br"] .sect-stage {
   margin-left: auto;
   margin-right: clamp(4rem, 10vw, 9rem);
@@ -1504,7 +1521,7 @@ a.sect-n:hover {
   text-align: center;
 }
 .foot-copy {
-  color: var(--fg4);
+  color: var(--fg3);
   font-size: .75rem;
   margin-top: .5rem;
 }

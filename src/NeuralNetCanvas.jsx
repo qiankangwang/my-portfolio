@@ -44,7 +44,11 @@ export default function NeuralNetCanvas({ sceneRef }) {
 
   useEffect(() => {
     const canvas = canvasRef.current;
+    if (!canvas) return;
+    // Guard against a null 2D context (very old / headless browsers,
+    // context-creation failure). Without this, the first frame throws.
     const ctx = canvas.getContext("2d");
+    if (!ctx) return;
     let w = 0;
     let h = 0;
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -76,10 +80,12 @@ export default function NeuralNetCanvas({ sceneRef }) {
     let ambient = [];
     let frame = 0;
 
-    const darkMq = window.matchMedia("(prefers-color-scheme: dark)");
-    let dark = darkMq.matches;
-    const onDarkMq = (e) => { dark = e.matches; };
-    darkMq.addEventListener("change", onDarkMq);
+    // The document is committed to a single light theme (html{color-scheme:
+    // light}, theme-color cream). A dark-tuned palette composited via
+    // multiply over cream read lower-contrast and inconsistent, so the
+    // canvas is hardcoded to its light palette — no prefers-color-scheme
+    // listener.
+    const dark = false;
     const rgba = (rgb, a) => `rgba(${rgb[0]},${rgb[1]},${rgb[2]},${a})`;
 
     // Build one network into the given container. layout=="centered"
@@ -280,7 +286,17 @@ export default function NeuralNetCanvas({ sceneRef }) {
       buildNetwork();
     };
     resize();
-    window.addEventListener("resize", resize);
+    const onResize = () => {
+      resize();
+      // The reduced-motion path renders a single static frame and stops
+      // the rAF loop, so a resize (which clears the backing store) needs
+      // an explicit one-shot redraw.
+      if (reducedMotion) {
+        cancelAnimationFrame(raf.current);
+        raf.current = requestAnimationFrame(draw);
+      }
+    };
+    window.addEventListener("resize", onResize);
 
     const spawnPulse = (net) => {
       if (!net.edges.length || net.pulses.length > 18) return;
@@ -1026,7 +1042,10 @@ export default function NeuralNetCanvas({ sceneRef }) {
       drawOneNetwork(researchNet, visResearchNet, RES_INTENSITY);
 
       ctx.restore();
-      raf.current = requestAnimationFrame(draw);
+      // Under prefers-reduced-motion we render exactly one static frame
+      // and do NOT schedule the next — no auto-playing motion (WCAG
+      // 2.2.2 / 2.3.3). Re-render is driven only by resize / visibility.
+      if (!reducedMotion) raf.current = requestAnimationFrame(draw);
     };
     draw();
 
@@ -1034,6 +1053,7 @@ export default function NeuralNetCanvas({ sceneRef }) {
       running = !document.hidden;
       if (running) {
         lastTime = performance.now();
+        cancelAnimationFrame(raf.current); // avoid stacking a second loop
         raf.current = requestAnimationFrame(draw);
       } else if (raf.current) {
         cancelAnimationFrame(raf.current);
@@ -1044,8 +1064,7 @@ export default function NeuralNetCanvas({ sceneRef }) {
     return () => {
       running = false;
       cancelAnimationFrame(raf.current);
-      window.removeEventListener("resize", resize);
-      darkMq.removeEventListener("change", onDarkMq);
+      window.removeEventListener("resize", onResize);
       document.removeEventListener("visibilitychange", onVisibility);
     };
   }, [sceneRef]);

@@ -1,7 +1,12 @@
-import { useState, useEffect, useRef, useCallback, memo } from "react";
+import { useState, useEffect, useRef, useCallback, memo, lazy, Suspense } from "react";
 import D from "./data";
-import NeuralNetCanvas from "./NeuralNetCanvas";
 import "./Portfolio.css";
+
+// Lazy-load the decorative hero canvas (large, aria-hidden, non-critical)
+// so it code-splits out of the initial bundle and the hero text paints
+// first. Suspense fallback is null — the background simply appears once
+// its chunk loads.
+const NeuralNetCanvas = lazy(() => import("./NeuralNetCanvas"));
 
 /* ── DecodeText — left-to-right glitch reveal. Charset mixes Greek +
    math symbols so the scramble passes through ∇ ∂ Σ before resolving,
@@ -91,7 +96,9 @@ function useTypewriter(text, speed = 28) {
 const Atmosphere = memo(function Atmosphere({ sceneRef }) {
   return (
     <div className="atmos" aria-hidden="true">
-      <NeuralNetCanvas sceneRef={sceneRef} />
+      <Suspense fallback={null}>
+        <NeuralNetCanvas sceneRef={sceneRef} />
+      </Suspense>
       <div className="atmos-vignette" />
     </div>
   );
@@ -736,6 +743,9 @@ export default function Portfolio() {
 
     const el = avatarRef.current;
     if (!el) return;
+    // Web Animations API isn't covered by the global CSS reduced-motion
+    // reset, so guard it explicitly.
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     const s = Math.min(0.55 + nextCount * 0.05, 0.88);
     const t = Math.min(6 + nextCount * 2, 22);
     el.animate(
@@ -752,7 +762,7 @@ export default function Portfolio() {
     <>
       <IntroSplash />
       <GlyphRain />
-      <a className="skip" href="#about">Skip to content</a>
+      <a className="skip" href="#main-content">Skip to content</a>
 
       <div className="scroll-progress" aria-hidden="true">
         <div
@@ -772,7 +782,7 @@ export default function Portfolio() {
       <SideRail active={active} scrollTo={scrollTo} visible={scrolled} />
       <CornerControls />
 
-      <main className="main">
+      <main id="main-content" className="main" tabIndex={-1}>
         <HeroScene onAvatarClick={onAvatarClick} avatarRef={avatarRef} scrolled={scrolled} />
 
         <Section id="about" pos="tr">

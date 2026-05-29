@@ -1,12 +1,12 @@
 # Kant's Portfolio
 
-[![Live Site](https://img.shields.io/badge/Live%20Site-Visit-2563EB?style=flat-square&logo=github)](https://qiankangwang.github.io/my-portfolio/)
+[![Live Site](https://img.shields.io/badge/Live%20Site-Visit-2563EB?style=flat-square&logo=github)](https://kantwang.com/)
 
 Personal portfolio website showcasing my background in machine learning, scientific computing, and biophysics research. Built with performance and design in mind.
 
 ## Live Site
 
-**[qiankangwang.github.io/my-portfolio](https://qiankangwang.github.io/my-portfolio/)**
+**[kantwang.com](https://kantwang.com/)**
 
 ## Features
 
@@ -15,8 +15,8 @@ Personal portfolio website showcasing my background in machine learning, scienti
 - **Scroll Animations** — Sections fade in with staggered timing as you scroll
 - **3D Tilt Cards** — Publication, timeline, and skill cards respond to mouse movement with 3D perspective
 - **Auto-fetched GitHub Projects** — Dynamically pulls my latest repositories via the GitHub API, with a static fallback and per-session caching
-- **Dark / Light Mode** — Auto-detects system preference with manual toggle; preference persists across sessions
 - **Responsive Design** — Fully adapted for mobile, tablet, and desktop
+- **Reduced-Motion Aware** — Honors `prefers-reduced-motion`: the canvas renders a single static frame and all animation stops
 - **Smooth Scroll Navigation** — Click nav links to smoothly scroll to each section
 - **Back to Top Button** — Appears after scrolling down
 
@@ -26,7 +26,7 @@ Personal portfolio website showcasing my background in machine learning, scienti
 |---------|-------------|
 | **Hero** | Name, avatar, tagline, email / GitHub / LinkedIn links |
 | **About** | Bio + animated stat cards + focus highlights |
-| **Research** | Timeline of research experiences (BAIR, AMBER, UCI) |
+| **Research** | Timeline of research experiences (Stanford, UC Irvine) |
 | **Publication** | Paper card linking to the DOI |
 | **Projects** | Auto-fetched GitHub repositories |
 | **Skills** | Bento-grid skill cards with hover effects |
@@ -34,7 +34,7 @@ Personal portfolio website showcasing my background in machine learning, scienti
 ## Tech Stack
 
 - **React 19** — UI framework
-- **Create React App** (`react-scripts`) — Build tooling
+- **Vite** — Build tooling and dev server
 - **JavaScript** — Core language
 - **CSS** — Custom styling with CSS variables for theming
 - **GitHub Pages** — Hosting (deployed via GitHub Actions)
@@ -42,13 +42,16 @@ Personal portfolio website showcasing my background in machine learning, scienti
 ## Project Structure
 
 ```
-├── public/
-│   ├── index.html          # HTML template + meta/SEO tags
+├── index.html              # Vite entry — HTML template + meta/SEO tags
+├── vite.config.js          # Vite build config (base, outDir: build/)
+├── public/                 # Static assets copied verbatim into build/
+│   ├── CNAME               # Custom domain (kantwang.com)
 │   ├── manifest.json       # PWA manifest
 │   ├── sitemap.xml         # Sitemap for crawlers
 │   └── icon.png            # K logo / favicon
 ├── src/
-│   ├── index.js            # React entry point
+│   ├── index.jsx           # React entry point
+│   ├── ErrorBoundary.jsx   # Top-level error boundary + static fallback
 │   ├── Portfolio.jsx       # Main page component
 │   ├── Portfolio.css       # Global styles + theming
 │   ├── data.js             # Personal data (name, bio, experience, etc.)

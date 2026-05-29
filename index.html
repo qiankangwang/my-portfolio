@@ -5,7 +5,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,500;0,8..60,600;1,8..60,400;1,8..60,500&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
-    <link rel="icon" type="image/png" href="%PUBLIC_URL%/icon.png?v=26" />
+    <link rel="icon" type="image/png" href="/icon.png?v=26" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#F4F1EA" />
     <meta name="google-site-verification" content="SiyMkF9fSee2wM6pTVWWgYUSYMU9_7SU8xJCDJEpOqg" />
@@ -14,9 +14,9 @@
     <title>Qiankang (Kant) Wang · Personal Website</title>
     <meta name="title" content="Qiankang (Kant) Wang · Personal Website" />
     <meta name="description"
-          content="Personal website of Qiankang (Kant) Wang, a UC Berkeley Data Science student interested in machine learning, AI for biology, and scientific computing." />
+          content="Personal website of Qiankang (Kant) Wang, a UC Berkeley Data Science undergraduate working on machine learning for biology — representation learning, foundation models, and scientific computing." />
     <meta name="keywords"
-          content="Qiankang Wang, Kant Wang, UC Berkeley, Data Science, machine learning, AI for biology, scientific computing" />
+          content="Qiankang Wang, Kant Wang, UC Berkeley, Stanford, Data Science, machine learning, representation learning, foundation models, scientific computing, AI for biology" />
     <meta name="author" content="Qiankang (Kant) Wang" />
     <meta name="robots" content="index, follow" />
 
@@ -28,10 +28,11 @@
     <meta property="og:url" content="https://kantwang.com/" />
     <meta property="og:title" content="Qiankang (Kant) Wang · Personal Website" />
     <meta property="og:description"
-          content="Personal website of Qiankang (Kant) Wang, a UC Berkeley Data Science student interested in machine learning, AI for biology, and scientific computing." />
+          content="UC Berkeley Data Science undergraduate working on machine learning for biology — representation learning, foundation models, and scientific computing." />
     <meta property="og:image" content="https://kantwang.com/og-image.png" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Qiankang (Kant) Wang — personal website" />
     <meta property="og:site_name" content="Qiankang (Kant) Wang" />
     <meta property="og:locale" content="en_US" />
 
@@ -40,12 +41,12 @@
     <meta name="twitter:url" content="https://kantwang.com/" />
     <meta name="twitter:title" content="Qiankang (Kant) Wang · Personal Website" />
     <meta name="twitter:description"
-          content="Personal website of Qiankang (Kant) Wang, a UC Berkeley Data Science student interested in machine learning, AI for biology, and scientific computing." />
+          content="UC Berkeley Data Science undergraduate working on machine learning for biology — representation learning, foundation models, and scientific computing." />
     <meta name="twitter:image" content="https://kantwang.com/og-image.png" />
 
     <!-- Icons & Manifest -->
-    <link rel="apple-touch-icon" href="%PUBLIC_URL%/icon.png?v=26" />
-    <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
+    <link rel="apple-touch-icon" href="/icon.png?v=26" />
+    <link rel="manifest" href="/manifest.json" />
 
     <!-- Structured Data: Person -->
     <script type="application/ld+json">
@@ -60,11 +61,16 @@
             "@type": "CollegeOrUniversity",
             "name": "University of California, Berkeley"
           },
+          "worksFor": [
+            { "@type": "Organization", "name": "Stanford University" },
+            { "@type": "Organization", "name": "Computational Biophysics Lab, University of California, Irvine" }
+          ],
           "knowsAbout": [
             "Machine Learning",
-            "AI for Biology",
+            "Representation Learning",
+            "Foundation Models",
             "Scientific Computing",
-            "Data Science"
+            "AI for Biology"
           ],
           "sameAs": [
             "https://github.com/qiankangwang",
@@ -102,7 +108,7 @@
         </style>
         <div class="nojs-fallback">
             <h1>Qiankang (Kant) Wang</h1>
-            <p><em>Machine learning for biology — representation learning, generative modeling, and scientific computing.</em></p>
+            <p><em>Machine learning for biology — representation learning, foundation models, and scientific computing.</em></p>
             <p>
                 <a href="mailto:qkwang@berkeley.edu">qkwang@berkeley.edu</a> ·
                 <a href="https://github.com/qiankangwang">GitHub</a> ·
@@ -114,8 +120,7 @@
 
             <h2>Research</h2>
             <ul>
-                <li><strong>Berkeley AI Research (BAIR)</strong> — Research Assistant, Mar 2026 – Present. Self-supervised representation learning on scientific data; SimCLR-style contrastive frameworks.</li>
-                <li><strong>AMBER pGM Collaboration</strong> — Research Assistant, Nov 2025 – Mar 2026. Acceleration of the AMBER / PMEMD codebase: integration, regression testing, numerical-consistency analysis.</li>
+                <li><strong>Stanford University</strong> — Research Assistant, Mar 2026 – Present.</li>
                 <li><strong>Computational Biophysics Lab, UC Irvine</strong> — Research Assistant, Jul 2024 – Nov 2025. GPU-accelerated solvers and Slurm workflow infrastructure for PBSA-style biomolecular simulations.</li>
             </ul>
 
@@ -134,7 +139,7 @@
             </ul>
 
             <h2>Skills</h2>
-            <p><strong>ML:</strong> PyTorch, LibTorch, contrastive / SSL, diffusion models, transformers.</p>
+            <p><strong>ML:</strong> Foundation models, transformers, self-supervised learning, PyTorch, LibTorch.</p>
             <p><strong>Scientific computing:</strong> GPU optimization, CG / BiCG solvers, Poisson–Boltzmann / PBSA, molecular simulation.</p>
             <p><strong>Languages:</strong> Python, C++, Bash, SQL.</p>
             <p><strong>Tools:</strong> Linux, Git, Slurm, CMake, LaTeX.</p>
@@ -143,5 +148,6 @@
         </div>
     </noscript>
     <div id="root"></div>
+    <script type="module" src="/src/index.jsx"></script>
 </body>
 </html>

@@ -642,6 +642,13 @@ body::after {
   background: var(--accent-soft);
   transform: translateY(-2px);
 }
+
+/* Tactile press feedback on tap/click so touch taps and clicks register
+   with a quick "press" instead of only a hover state. */
+.sb-icon:active,
+.sb-nav-item:active,
+.hero-cue:active { transform: scale(.94); }
+.proj-link:active { background: color-mix(in srgb, var(--accent) 5%, transparent); }
 /* ════════════════════════════════════════════════════════════════════
    Main column — full-width container. Hero centres itself; per-
    section content floats in one of five quadrants on top of the
@@ -805,6 +812,24 @@ body::after {
   /* Big italic watermark is too big for narrow screens; the bottom
      nav pill stays (it's compact and below text). */
   .section-watermark { display: none; }
+}
+
+/* Tablet / small-laptop band (969–1180px): above the 968px collapse the
+   quadrant offsets still apply, but the big left/right margins plus the
+   460px stage cram the floated column against the viewport edge and
+   squeeze the canvas motif. Pull the margins in so both the text column
+   and the motif get room — without collapsing to the centred mobile layout. */
+@media (min-width: 969px) and (max-width: 1180px) {
+  .sect[data-pos="tl"] .sect-stage,
+  .sect[data-pos="ml"] .sect-stage,
+  .sect[data-pos="bl"] .sect-stage {
+    margin-left: clamp(2rem, 6vw, 5rem);
+  }
+  .sect[data-pos="tr"] .sect-stage,
+  .sect[data-pos="mr"] .sect-stage,
+  .sect[data-pos="br"] .sect-stage {
+    margin-right: clamp(2rem, 6vw, 5rem);
+  }
 }
 
 /* ════════════════════════════════════════════════════════════════════

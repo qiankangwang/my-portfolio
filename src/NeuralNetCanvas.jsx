@@ -430,12 +430,12 @@ export default function NeuralNetCanvas({ sceneRef }) {
       const visLabels    = motifVis(5);
       // Per-network alpha — Hero net dimmed so the giant name stays
       // legible behind it; Research net keeps full punch.
-      const visHeroNet     = 0.55 * motifVis(0);
+      const visHeroNet     = 0.42 * motifVis(0); // was 0.55 — dimmer so fewer network lines cross the hero name (legibility)
       const visResearchNet = motifVis(2);
       // Bio motifs: prominent on Hero, clearly visible-but-smaller on
       // sub-sections so they read as atmosphere instead of disappearing.
       // Fully suppressed on Research where the user wants network alone.
-      const visBio       = (0.0 + 0.5 * motifVis(0)) * (1 - motifVis(2)); // was: (0.6 + 0.35 * motifVis(0)) * (1 - motifVis(2))
+      const visBio       = (0.0 + 0.38 * motifVis(0)) * (1 - motifVis(2)); // was 0.5*; lower so bio strands don't muddy the hero text
       // Physical scale — Hero full, sub-sections at 60% so the close-up
       // camera zoom doesn't blow them up over the text.
       const sizeBio      = 0.6 + 0.4 * motifVis(0);
@@ -467,7 +467,7 @@ export default function NeuralNetCanvas({ sceneRef }) {
           w * 0.5, h * 0.45, 0,
           w * 0.5, h * 0.45, Math.max(w, h) * 0.55
         );
-        grad.addColorStop(0, rgba(accent, dark ? 0.055 : 0.045));
+        grad.addColorStop(0, rgba(accent, dark ? 0.055 : 0.028)); // light wash softened (0.045→0.028) for hero text clarity
         grad.addColorStop(1, rgba(accent, 0));
         ctx.fillStyle = grad;
         ctx.fillRect(0, 0, w, h);

@@ -743,19 +743,19 @@ export default function NeuralNetCanvas({ sceneRef }) {
               y: m.y + Math.sin(theta) * it.r * 0.6, // squashed orbit
             };
           });
-          // Orbit ring — a single faint elliptical guide at a
-          // representative mid radius, so the "orbit" metaphor reads
-          // visually instead of just from motion. (Was: one ring per
-          // distinct label radius + the O(n^2) knowledge-graph lines,
-          // both removed in the refined-minimal pass for legibility.)
-          {
-            const midR = 90;
+          // Orbit rings — one faint elliptical track per distinct label
+          // radius, so every orbiting label visibly RIDES a ring instead of
+          // floating past a lone mismatched guide. (The O(n^2) knowledge-
+          // graph connecting lines stay removed — those were the real
+          // clutter; concentric tracks read clean.)
+          const radii = Array.from(new Set(m.items.map((it) => it.r))).sort((a, b) => a - b);
+          radii.forEach((r) => {
             ctx.beginPath();
-            ctx.ellipse(m.x, m.y, midR, midR * 0.6, 0, 0, Math.PI * 2);
-            ctx.strokeStyle = rgba(accent, 0.10 * vM);
+            ctx.ellipse(m.x, m.y, r, r * 0.6, 0, 0, Math.PI * 2);
+            ctx.strokeStyle = rgba(accent, 0.09 * vM);
             ctx.lineWidth = 0.6;
             ctx.stroke();
-          }
+          });
           // Labels themselves with a soft glow halo under each
           ctx.font = `600 13px ui-monospace, Menlo, monospace`;
           ctx.textAlign = "center";

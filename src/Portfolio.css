@@ -29,7 +29,7 @@
   --card:        rgba(244, 241, 234, .80);
   --card2:       rgba(236, 231, 220, .85);
   --glass:       rgba(244, 241, 234, .72);
-  --serif: 'Source Serif 4', 'Instrument Serif', Georgia, serif;
+  --serif: 'Source Serif 4', Georgia, serif;
   --sans:  'Space Grotesk', system-ui, -apple-system, sans-serif;
   --mono:  'JetBrains Mono', ui-monospace, monospace;
   --r:     12px;

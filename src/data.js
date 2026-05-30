@@ -4,7 +4,7 @@ const D = {
   email: "qkwang@berkeley.edu",
   linkedin: "https://linkedin.com/in/qiankang-wang-737b97279",
   github: "https://github.com/qiankangwang",
-  avatar: "https://github.com/qiankangwang.png",
+  avatar: "/avatar.png",
 
   tagline:
     "Machine learning for biology — representation learning, foundation models, and scientific computing.",

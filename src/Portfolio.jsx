@@ -210,82 +210,6 @@ const SideRail = memo(function SideRail({ active, scrollTo, visible }) {
   );
 });
 
-/* ── IntroSplash — first-visit-only NEURAL_FIELD boot screen. ── */
-const SPLASH_LOG = [
-  [0.00, "[INFO] booting neural_field.v2.6"],
-  [0.18, "[INFO] loading checkpoint.bin · 100%"],
-  [0.36, "[INFO] warm_pass · ATTN/6 · PULSE/32"],
-  [0.54, "[INFO] palette · navy.research-paper"],
-  [0.72, "[INFO] camera · J-path · 6 scenes"],
-  [0.92, "[ OK ] ready"],
-];
-const IntroSplash = memo(function IntroSplash() {
-  const SEEN_KEY = "intro-splash-seen-v2";
-  const [skip] = useState(() => {
-    try { return localStorage.getItem(SEEN_KEY) === "1"; } catch { return false; }
-  });
-  const [progress, setProgress] = useState(0);
-  const [fading, setFading] = useState(false);
-  const [unmount, setUnmount] = useState(skip);
-  useEffect(() => {
-    if (skip) return;
-    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const duration = reduced ? 400 : 1700;
-    const startT = performance.now();
-    let raf = 0;
-    const tick = (now) => {
-      const p = Math.min((now - startT) / duration, 1);
-      setProgress(p);
-      if (p < 1) {
-        raf = requestAnimationFrame(tick);
-      } else {
-        try { localStorage.setItem(SEEN_KEY, "1"); } catch {}
-        setFading(true);
-        setTimeout(() => setUnmount(true), 520);
-      }
-    };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
-  }, [skip]);
-  if (unmount) return null;
-  const visibleLines = SPLASH_LOG.filter(([t]) => progress >= t);
-  const isDone = progress >= 1;
-  return (
-    <div
-      className={`intro-splash${fading ? " intro-splash-fade" : ""}`}
-      aria-hidden="true"
-    >
-      <div className="intro-splash-inner">
-        <div className="intro-splash-header">
-          <span className="intro-splash-led" />
-          <span className="intro-splash-title">NEURAL_FIELD · v2.6</span>
-        </div>
-        <div className="intro-splash-log">
-          {visibleLines.map(([, line], i) => (
-            <div
-              key={i}
-              className={`intro-splash-log-line${line.startsWith("[ OK") ? " ok" : ""}`}
-            >
-              {line}
-            </div>
-          ))}
-          {!isDone && <span className="intro-splash-caret">_</span>}
-        </div>
-        <div className="intro-splash-bar">
-          <div
-            className="intro-splash-bar-fill"
-            style={{ transform: `scaleX(${progress})` }}
-          />
-        </div>
-        <div className="intro-splash-meta">
-          {String(Math.round(progress * 100)).padStart(3, "0")}%
-          <span className="intro-splash-meta-dim"> · qiankang.field</span>
-        </div>
-      </div>
-    </div>
-  );
-});
-
 /* ── CursorSpot — soft warm halo drifting under the cursor. ── */
 const CursorSpot = memo(function CursorSpot() {
   const ref = useRef(null);
@@ -710,7 +634,6 @@ export default function Portfolio() {
 
   return (
     <>
-      <IntroSplash />
       <a className="skip" href="#main-content">Skip to content</a>
 
       <div className="scroll-progress" aria-hidden="true">

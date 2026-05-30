@@ -6,7 +6,12 @@
          doesn't block on fonts.googleapis.com, which is slow/blocked on
          mainland-China networks. -->
     <link rel="icon" href="/favicon.ico" sizes="any" />
-    <link rel="icon" type="image/png" href="/icon.png?v=27" />
+    <!-- Preload the 3 critical (subset) latin fonts — body sans + serif
+         normal/italic — so first paint doesn't wait on the CSS round-trip.
+         crossorigin is required for font preload even same-origin. -->
+    <link rel="preload" as="font" type="font/woff2" crossorigin href="/fonts/f20.woff2" />
+    <link rel="preload" as="font" type="font/woff2" crossorigin href="/fonts/f10.woff2" />
+    <link rel="preload" as="font" type="font/woff2" crossorigin href="/fonts/f13.woff2" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#F4F1EA" />
     <meta name="google-site-verification" content="SiyMkF9fSee2wM6pTVWWgYUSYMU9_7SU8xJCDJEpOqg" />

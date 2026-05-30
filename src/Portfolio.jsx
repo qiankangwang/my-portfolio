@@ -27,7 +27,7 @@ function decodeScramble(target) {
   }
   return out;
 }
-function DecodeText({ text, duration = 720, delay = 0, threshold = 0.25, className, as: Tag = "span" }) {
+function DecodeText({ text, duration = 720, delay = 0, threshold = 0.25, className, as: Tag = "span", id }) {
   const ref = useRef(null);
   const [out, setOut] = useState(text);
   const startedRef = useRef(false);
@@ -69,7 +69,7 @@ function DecodeText({ text, duration = 720, delay = 0, threshold = 0.25, classNa
     };
   }, [text, delay, duration, threshold]);
 
-  return <Tag ref={ref} className={className}>{out}</Tag>;
+  return <Tag ref={ref} id={id} aria-label={text} className={className}>{out}</Tag>;
 }
 
 function useTypewriter(text, speed = 28) {
@@ -392,8 +392,8 @@ const HeroScene = memo(function HeroScene({ onAvatarClick, avatarRef, scrolled }
         <span className="hero-name-word">(Kant)</span>{" "}
         <span className="hero-name-word">Wang.</span>
       </h1>
-      <p className="hero-tagline">
-        {tagline.text}
+      <p className="hero-tagline" aria-label={D.tagline}>
+        <span aria-hidden="true">{tagline.text}</span>
         <span
           className={`sb-caret${tagline.done ? " sb-caret-done" : ""}`}
           aria-hidden="true"
@@ -458,7 +458,7 @@ export default function Portfolio() {
   const [progress, setProgress] = useState(0);
   const [active, setActive] = useState("");
   const [repos, setRepos] = useState([]);
-  const [repoLoading, setRepoLoading] = useState(true);
+  const [repoLoading, setRepoLoading] = useState(false);
   // Continuous scroll-position scene index [0, SCENE_IDS.length-1] →
   // NeuralNetCanvas camera. Ref instead of state so we don't re-render
   // per frame.
@@ -656,11 +656,11 @@ export default function Portfolio() {
       <main id="main-content" className="main" tabIndex={-1}>
         <HeroScene onAvatarClick={onAvatarClick} avatarRef={avatarRef} scrolled={scrolled} />
 
-        <Section id="about" pos="tr">
+        <Section id="about" pos="tr" aria-labelledby="about-title">
           <div className="sect-meta">
             <a href="#about" className="sect-n">01 · About</a>
           </div>
-          <DecodeText as="h2" className="sect-title decode-title" text="About me." duration={620} delay={120} />
+          <DecodeText as="h2" id="about-title" className="sect-title decode-title" text="About me." duration={620} delay={120} />
           <p className="about-lede">{D.about}</p>
           <div className="about-stats-row">
             {D.stats.map((s) => (
@@ -681,11 +681,11 @@ export default function Portfolio() {
           </ul>
         </Section>
 
-        <Section id="research" pos="mr">
+        <Section id="research" pos="mr" aria-labelledby="research-title">
           <div className="sect-meta">
             <a href="#research" className="sect-n">02 · Research</a>
           </div>
-          <DecodeText as="h2" className="sect-title decode-title" text="Research experience." duration={620} delay={120} />
+          <DecodeText as="h2" id="research-title" className="sect-title decode-title" text="Research experience." duration={620} delay={120} />
           <ol className="exp-list" ref={expRef}>
             {D.experience.map((exp, i) => {
               const startYear = exp.period.match(/(\d{4})/)?.[1] ?? "—";
@@ -707,12 +707,12 @@ export default function Portfolio() {
           </ol>
         </Section>
 
-        <Section id="publication" pos="bl">
+        <Section id="publication" pos="bl" aria-labelledby="publication-title">
           <div className="sect-meta">
             <a href="#publication" className="sect-n">03 · Publication</a>
             <span className="sect-meta-aux">{D.publication.venue} · {D.publication.year}</span>
           </div>
-          <DecodeText as="h2" className="sect-title decode-title" text="Selected publication." duration={620} delay={120} />
+          <DecodeText as="h2" id="publication-title" className="sect-title decode-title" text="Selected publication." duration={620} delay={120} />
           <a
             href={D.publication.links[0]?.url || "#"}
             target="_blank"
@@ -730,11 +730,11 @@ export default function Portfolio() {
           </a>
         </Section>
 
-        <Section id="projects" pos="br">
+        <Section id="projects" pos="br" aria-labelledby="projects-title">
           <div className="sect-meta">
             <a href="#projects" className="sect-n">04 · Projects</a>
           </div>
-          <DecodeText as="h2" className="sect-title decode-title" text="Selected projects." duration={620} delay={120} />
+          <DecodeText as="h2" id="projects-title" className="sect-title decode-title" text="Selected projects." duration={620} delay={120} />
           {repoLoading ? (
             <div className="projects-loading">
               <div className="spinner" />
@@ -775,11 +775,11 @@ export default function Portfolio() {
           )}
         </Section>
 
-        <Section id="skills" pos="tl">
+        <Section id="skills" pos="tl" aria-labelledby="skills-title">
           <div className="sect-meta">
             <a href="#skills" className="sect-n">05 · Skills</a>
           </div>
-          <DecodeText as="h2" className="sect-title decode-title" text="Skills & tools." duration={620} delay={120} />
+          <DecodeText as="h2" id="skills-title" className="sect-title decode-title" text="Skills & tools." duration={620} delay={120} />
           <div className="skill-groups" ref={skillRef}>
             {Object.entries(D.skills).map(([cat, items], ci) => (
               <StaggerItem key={cat} index={ci} visible={skillVis}>

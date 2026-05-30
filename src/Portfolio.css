@@ -286,113 +286,10 @@ body::after {
   .section-watermark { animation: none; }
 }
 
-/* ── Intro splash ──
-   First-visit-only boot screen. Solid cream over everything, mono
-   header + staged status + progress bar + percent readout. Fades to
-   transparent at end, then unmounts. Subsequent visits skip the
-   splash entirely (localStorage). */
-.intro-splash {
-  position: fixed;
-  inset: 0;
-  z-index: 1000;
-  background: var(--bg);
-  display: grid;
-  place-items: center;
-  pointer-events: none;
-  transition: opacity .48s cubic-bezier(.22, 1, .36, 1);
-}
-.intro-splash-fade { opacity: 0; }
-.intro-splash-inner {
-  display: flex;
-  flex-direction: column;
-  gap: 1.05rem;
-  align-items: stretch;
-  font-family: var(--mono);
-  width: clamp(360px, 50vw, 480px);
-}
-.intro-splash-header {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: .65rem;
-  margin-bottom: .25rem;
-}
-.intro-splash-led {
-  width: 7px; height: 7px;
-  border-radius: 50%;
-  background: var(--accent);
-  box-shadow:
-    0 0 0 1px color-mix(in srgb, var(--accent) 30%, transparent),
-    0 0 14px color-mix(in srgb, var(--accent) 70%, transparent);
-  animation: pulse-dot 1.4s ease-in-out infinite;
-}
+/* ── pulse-dot — small breathing status LED (used by live chrome). ── */
 @keyframes pulse-dot {
   0%, 100% { opacity: 1;   transform: scale(1); }
   50%      { opacity: .35; transform: scale(.82); }
-}
-.intro-splash-title {
-  font-size: .8rem;
-  letter-spacing: .26em;
-  text-transform: uppercase;
-  color: var(--fg);
-  font-weight: 600;
-}
-.intro-splash-log {
-  display: flex;
-  flex-direction: column;
-  gap: .2rem;
-  min-height: 6.2em;
-  font-size: .58rem;
-  letter-spacing: .04em;
-  color: var(--fg3);
-  font-variant-numeric: tabular-nums;
-  text-transform: uppercase;
-  padding-left: 1px;
-}
-.intro-splash-log-line {
-  white-space: pre;
-  animation: intro-log-fade .28s cubic-bezier(.22, 1, .36, 1);
-}
-.intro-splash-log-line.ok {
-  color: var(--accent);
-  font-weight: 600;
-}
-@keyframes intro-log-fade {
-  from { opacity: 0; transform: translateX(-4px); }
-  to   { opacity: 1; transform: none; }
-}
-.intro-splash-caret {
-  align-self: flex-start;
-  color: var(--warm);
-  animation: caret-blink 1s steps(2, end) infinite;
-}
-.intro-splash-bar {
-  width: 280px;
-  height: 2px;
-  background: color-mix(in srgb, var(--fg) 14%, transparent);
-  position: relative;
-  overflow: hidden;
-}
-.intro-splash-bar-fill {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(90deg, var(--accent), var(--accent2));
-  transform-origin: left center;
-  transform: scaleX(0);
-  will-change: transform;
-}
-.intro-splash-meta {
-  font-size: .55rem;
-  letter-spacing: .22em;
-  color: var(--fg3);
-  font-weight: 500;
-  font-variant-numeric: tabular-nums;
-}
-.intro-splash-meta-dim {
-  color: var(--fg4);
-}
-@media (prefers-reduced-motion: reduce) {
-  .intro-splash-led { animation: none; }
 }
 
 /* ── Edge glow ──
@@ -1579,7 +1476,6 @@ a.sect-n:hover {
   .atmos,
   .scroll-progress,
   .cursor-spot,
-  .intro-splash,
   .section-watermark,
   .side-rail,
   .corner-controls,

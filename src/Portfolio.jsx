@@ -210,34 +210,6 @@ const SideRail = memo(function SideRail({ active, scrollTo, visible }) {
   );
 });
 
-/* ── GlyphRain — sparse math glyphs drifting top-to-bottom behind content. ── */
-const GLYPH_CHARS = ["∇", "∂", "Σ", "λ", "π", "θ", "∫", "ϕ", "ψ", "ξ", "∞", "∑", "η", "μ"];
-const GlyphRain = memo(function GlyphRain() {
-  const ref = useRef(null);
-  useEffect(() => {
-    const container = ref.current;
-    if (!container) return;
-    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if (reduced) return;
-    const N = 14;
-    const created = [];
-    for (let i = 0; i < N; i++) {
-      const span = document.createElement("span");
-      span.className = "glyph-rain-item";
-      span.textContent = GLYPH_CHARS[Math.floor(Math.random() * GLYPH_CHARS.length)];
-      span.style.left = `${Math.random() * 100}%`;
-      span.style.fontSize = `${0.9 + Math.random() * 1.7}rem`;
-      const dur = 36 + Math.random() * 28;
-      span.style.animationDuration = `${dur}s`;
-      span.style.animationDelay = `-${Math.random() * dur}s`;
-      container.appendChild(span);
-      created.push(span);
-    }
-    return () => created.forEach((el) => el.remove());
-  }, []);
-  return <div ref={ref} className="glyph-rain" aria-hidden="true" />;
-});
-
 /* ── IntroSplash — first-visit-only NEURAL_FIELD boot screen. ── */
 const SPLASH_LOG = [
   [0.00, "[INFO] booting neural_field.v2.6"],
@@ -312,31 +284,6 @@ const IntroSplash = memo(function IntroSplash() {
       </div>
     </div>
   );
-});
-
-/* ── SceneFlash — horizontal scan band on scene-index change, debounced. ── */
-const SceneFlash = memo(function SceneFlash({ sceneRef }) {
-  const [key, setKey] = useState(0);
-  const prevInt = useRef(-1);
-  const lastFlashAt = useRef(0);
-  useEffect(() => {
-    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if (reduced) return;
-    const id = setInterval(() => {
-      const raw = sceneRef?.current ?? 0;
-      const rounded = Math.round(raw);
-      if (rounded === prevInt.current) return;
-      const now = performance.now();
-      if (prevInt.current !== -1 && now - lastFlashAt.current > 600) {
-        setKey((k) => k + 1);
-        lastFlashAt.current = now;
-      }
-      prevInt.current = rounded;
-    }, 80);
-    return () => clearInterval(id);
-  }, [sceneRef]);
-  if (key === 0) return null;
-  return <div key={key} className="scene-flash" aria-hidden="true" />;
 });
 
 /* ── CursorSpot — soft warm halo drifting under the cursor. ── */
@@ -764,7 +711,6 @@ export default function Portfolio() {
   return (
     <>
       <IntroSplash />
-      <GlyphRain />
       <a className="skip" href="#main-content">Skip to content</a>
 
       <div className="scroll-progress" aria-hidden="true">
@@ -779,7 +725,6 @@ export default function Portfolio() {
       <div className="sr-only" aria-live="polite" aria-atomic="true">
         {active ? `Now viewing: ${active}` : "Now viewing: Introduction"}
       </div>
-      <SceneFlash sceneRef={sceneRef} />
       <CursorSpot />
       <SectionWatermark active={active} />
       <SideRail active={active} scrollTo={scrollTo} visible={scrolled} />

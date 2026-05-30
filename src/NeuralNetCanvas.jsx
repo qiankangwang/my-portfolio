@@ -88,6 +88,15 @@ export default function NeuralNetCanvas({ sceneRef }) {
     const dark = false;
     const rgba = (rgb, a) => `rgba(${rgb[0]},${rgb[1]},${rgb[2]},${a})`;
 
+    // Bio identity alphabets — shared by the encoder-decoder schematic
+    // (drawHourglassFrame) AND the scroll-driven data tracer. Hoisted to
+    // useEffect scope so both read the same arrays.
+    //   bases   — DNA letters, purines (A/G) warm, pyrimidines (C/T) accent
+    //   aminos  — amino-acid one-letter codes the decoder reconstructs
+    const bases  = ["A", "C", "G", "T", "A", "G", "C", "T", "A"];
+    const aminos = ["M", "K", "F", "R", "L", "Y", "P", "W", "I"];
+    const isPurine = (b) => b === "A" || b === "G";
+
     // Build one network into the given container. layout=="centered"
     // makes narrow layers compress toward y=0 — required for the
     // hourglass shape so the bottleneck reads as a centred pinch.
@@ -195,15 +204,14 @@ export default function NeuralNetCanvas({ sceneRef }) {
           type: "equations",
           x: 480,
           y: -160,
+          // was 8 glyphs — removed π, ψ, ∞ in the refined-minimal pass so
+          // the cluster reads as one quoted expression, not a constellation.
           glyphs: [
             { ch: "∇",   ox: -70, oy: -32, size: 38, phase: 0.0 },
             { ch: "∂",   ox:  10, oy: -50, size: 32, phase: 1.2 },
             { ch: "Σ",   ox:  80, oy: -10, size: 44, phase: 2.4 },
             { ch: "∫",   ox: -40, oy:  30, size: 42, phase: 3.1 },
-            { ch: "π",   ox:  60, oy:  46, size: 28, phase: 4.0 },
-            { ch: "ψ",   ox: -90, oy:  10, size: 30, phase: 5.2 },
             { ch: "⟨ψ⟩", ox:   0, oy:  -2, size: 24, phase: 0.7 },
-            { ch: "∞",   ox:  35, oy: -36, size: 26, phase: 6.0 },
           ],
         },
 
@@ -231,13 +239,13 @@ export default function NeuralNetCanvas({ sceneRef }) {
       // Ambient particle field — slow drifting dots across the whole
       // world. Faint, just adds depth so the bg never feels empty.
       ambient = [];
-      const ambientCount = reducedMotion ? 0 : (lowPerf ? 26 : 70);
+      const ambientCount = reducedMotion ? 0 : (lowPerf ? 12 : 34); // was: (lowPerf ? 26 : 70)
       for (let i = 0; i < ambientCount; i++) {
         ambient.push({
           x: -netW * 0.6 + Math.random() * netW * 1.2,
           y: -netH * 0.6 + Math.random() * netH * 1.2,
           r: 0.6 + Math.random() * 1.3,
-          alpha: 0.18 + Math.random() * 0.32,
+          alpha: 0.10 + Math.random() * 0.16, // was: 0.18 + Math.random() * 0.32
           drift: 0.08 + Math.random() * 0.14,
           phase: Math.random() * Math.PI * 2,
         });
@@ -329,7 +337,7 @@ export default function NeuralNetCanvas({ sceneRef }) {
       // so wheel-tick scroll doesn't transmit as a visible camera kick.
       const segCount = waypoints.length - 1;
       const targetScene = Math.max(0, Math.min(segCount, sceneRef?.current ?? 0));
-      const kS = 1 - Math.exp(-dt / 0.12);
+      const kS = 1 - Math.exp(-dt / 0.16); // was: dt / 0.12 (slower, more luxurious settle)
       smoothedScene += (targetScene - smoothedScene) * kS;
 
       // Interpolate the target waypoint from the smoothed scene index —
@@ -360,7 +368,7 @@ export default function NeuralNetCanvas({ sceneRef }) {
       if (segLen > 5) {
         const nx = -dy / segLen;
         const ny = dx / segLen;
-        const arcMag = Math.min(segLen * 0.18, 180);
+        const arcMag = Math.min(segLen * 0.12, 120); // was: Math.min(segLen * 0.18, 180)
         const arcCurve = Math.sin(eased * Math.PI);
         const arcSign = lo % 2 === 0 ? 1 : -1;
         arcDX = nx * arcMag * arcCurve * arcSign;
@@ -380,7 +388,7 @@ export default function NeuralNetCanvas({ sceneRef }) {
       //    transition, like a director using an establishing shot
       //    between two close-ups. Creates depth motion that flat panning
       //    can't produce.
-      const dollyMag = 0.45;
+      const dollyMag = 0.30; // was: 0.45 (gentler establishing-shot pullback)
       const dollyOffset = Math.sin(eased * Math.PI) * dollyMag;
 
       const targetX = linX + arcDX;
@@ -390,7 +398,7 @@ export default function NeuralNetCanvas({ sceneRef }) {
 
       // 4) Camera follow — critically-damped lerp so the move feels like a
       //    cinematic glide settling into place, not a snap.
-      const kC = 1 - Math.exp(-dt / 0.30);
+      const kC = 1 - Math.exp(-dt / 0.42); // was: dt / 0.30 (more cinematic glide)
       cam.x += (targetX - cam.x) * kC;
       cam.y += (targetY - cam.y) * kC;
       cam.zoom += (targetZoom - cam.zoom) * kC;
@@ -411,9 +419,9 @@ export default function NeuralNetCanvas({ sceneRef }) {
       // fully gone, not lingering at 50%.
       const motifVis = (target) => {
         const d = Math.abs(smoothedScene - target);
-        if (d <= 0.15) return 1.0;
+        if (d <= 0.22) return 1.0; // was: d <= 0.15
         if (d >= 0.85) return 0.0;
-        const t = (0.85 - d) / 0.7;
+        const t = (0.85 - d) / 0.63; // was: (0.85 - d) / 0.7
         return t * t * (3 - 2 * t);
       };
       const visDNA       = motifVis(1);
@@ -427,7 +435,7 @@ export default function NeuralNetCanvas({ sceneRef }) {
       // Bio motifs: prominent on Hero, clearly visible-but-smaller on
       // sub-sections so they read as atmosphere instead of disappearing.
       // Fully suppressed on Research where the user wants network alone.
-      const visBio       = (0.6 + 0.35 * motifVis(0)) * (1 - motifVis(2));
+      const visBio       = (0.0 + 0.5 * motifVis(0)) * (1 - motifVis(2)); // was: (0.6 + 0.35 * motifVis(0)) * (1 - motifVis(2))
       // Physical scale — Hero full, sub-sections at 60% so the close-up
       // camera zoom doesn't blow them up over the text.
       const sizeBio      = 0.6 + 0.4 * motifVis(0);
@@ -662,16 +670,8 @@ export default function NeuralNetCanvas({ sceneRef }) {
             y: m.y + g.oy + Math.cos(frame * 0.006 + g.phase * 1.3) * 5,
             pulse: 1 + Math.sin(frame * 0.018 + g.phase) * 0.07,
           }));
-          // Subtle linking lines first (drawn under the glyphs)
-          for (let i = 0; i < glyphPos.length - 1; i++) {
-            const a = glyphPos[i], b = glyphPos[i + 1];
-            ctx.beginPath();
-            ctx.moveTo(a.x, a.y);
-            ctx.lineTo(b.x, b.y);
-            ctx.strokeStyle = rgba(accent, 0.14 * vM);
-            ctx.lineWidth = 0.6;
-            ctx.stroke();
-          }
+          // (Inter-glyph linking lines removed in the refined-minimal pass —
+          //  the angle-bracket frame already groups the cluster.)
           // Each glyph: soft accent halo + the glyph itself in italic
           // serif. The halo gives the cluster "live ink" energy.
           glyphPos.forEach(({ g, x, y, pulse }) => {
@@ -698,11 +698,10 @@ export default function NeuralNetCanvas({ sceneRef }) {
             ctx.restore();
           });
         } else if (m.type === "grid") {
-          // GitHub-style contribution grid with two overlaid diagonal
-          // waves (different angles + phases) so the surface reads as
-          // a richer interference pattern, not a single repeating
-          // marquee. Bright cells get extruded with a fake light-from-
-          // top-left shadow so they look raised off the grid.
+          // GitHub-style contribution grid with a single diagonal wave
+          // sweeping across it. (Was: two overlaid interference waves +
+          // a fake top-left-light extrude shadow + an accent glow-halo;
+          // simplified in the refined-minimal pass to one calmer wave.)
           const totalW = m.cols * (m.cell + m.gap) - m.gap;
           const totalH = m.rows * (m.cell + m.gap) - m.gap;
           const x0 = m.x - totalW / 2;
@@ -710,34 +709,25 @@ export default function NeuralNetCanvas({ sceneRef }) {
           for (let c = 0; c < m.cols; c++) {
             for (let r = 0; r < m.rows; r++) {
               const base = ((c * 31 + r * 17) % 7) / 6;
-              // Two waves: one sweeps SE, one sweeps NE, different
-              // speeds, so cells light up in moving interference fronts.
+              // Single wave sweeping SE — cells light up in one moving front.
               const w1 = Math.sin(c * 0.35 + r * 0.45 + frame * 0.020);
-              const w2 = Math.sin(c * 0.30 - r * 0.42 + frame * 0.013 + 1.7);
-              const wave = Math.max(0, w1 * 0.45 + w2 * 0.35);
+              const wave = Math.max(0, w1 * 0.6); // was: w1 * 0.45 + w2 * 0.35
               const intensity = Math.min(1, base * 0.5 + wave);
               const x = x0 + c * (m.cell + m.gap);
               const y = y0 + r * (m.cell + m.gap);
-              // Drop shadow under bright cells (extrude illusion).
-              // Light from top-left → shadow falls bottom-right.
-              if (intensity > 0.55) {
-                const lift = (intensity - 0.55) * 2.4; // 0..1
-                ctx.fillStyle = rgba([20, 25, 35], 0.18 * lift * vM);
-                ctx.fillRect(x + 1.5 * lift, y + 1.5 * lift, m.cell, m.cell);
-              }
+              // (Drop-shadow extrude block removed — was here, gated intensity>0.55)
               // Main cell
               const ar = Math.round(cool[0] + (accent[0] - cool[0]) * intensity);
               const ag = Math.round(cool[1] + (accent[1] - cool[1]) * intensity);
               const ab = Math.round(cool[2] + (accent[2] - cool[2]) * intensity);
               ctx.fillStyle = rgba([ar, ag, ab], (0.32 + intensity * 0.55) * vM);
               ctx.fillRect(x, y, m.cell, m.cell);
-              // Bright cells get a top-left highlight + soft glow halo
+              // Bright cells keep just the top-left white highlight
+              // (the accent glow-halo rect was removed).
               if (intensity > 0.7) {
                 ctx.fillStyle = rgba([255, 255, 255], (intensity - 0.7) * 0.6 * vM);
                 ctx.fillRect(x, y, m.cell, 1.2);
                 ctx.fillRect(x, y, 1.2, m.cell);
-                ctx.fillStyle = rgba(accent, (intensity - 0.7) * 0.22 * vM);
-                ctx.fillRect(x - 2, y - 2, m.cell + 4, m.cell + 4);
               }
             }
           }
@@ -753,37 +743,18 @@ export default function NeuralNetCanvas({ sceneRef }) {
               y: m.y + Math.sin(theta) * it.r * 0.6, // squashed orbit
             };
           });
-          // Orbit rings — three faint elliptical guides at the
-          // distinct radii used by the labels, so the "orbit"
-          // metaphor reads visually instead of just from motion.
-          const radii = Array.from(new Set(m.items.map((it) => it.r)))
-            .sort((a, b) => a - b);
-          radii.forEach((r) => {
+          // Orbit ring — a single faint elliptical guide at a
+          // representative mid radius, so the "orbit" metaphor reads
+          // visually instead of just from motion. (Was: one ring per
+          // distinct label radius + the O(n^2) knowledge-graph lines,
+          // both removed in the refined-minimal pass for legibility.)
+          {
+            const midR = 90;
             ctx.beginPath();
-            ctx.ellipse(m.x, m.y, r, r * 0.6, 0, 0, Math.PI * 2);
+            ctx.ellipse(m.x, m.y, midR, midR * 0.6, 0, 0, Math.PI * 2);
             ctx.strokeStyle = rgba(accent, 0.10 * vM);
             ctx.lineWidth = 0.6;
             ctx.stroke();
-          });
-          // Knowledge-graph lines — connect each label to its two
-          // nearest neighbours. Recomputed each frame so the graph
-          // breathes with the orbits.
-          for (let i = 0; i < pos.length; i++) {
-            const p = pos[i];
-            // Find two closest
-            const dists = pos.map((q, j) => ({ j, d: j === i ? Infinity : Math.hypot(q.x - p.x, q.y - p.y) }))
-              .sort((a, b) => a.d - b.d).slice(0, 2);
-            dists.forEach(({ j, d }) => {
-              if (j <= i) return; // avoid duplicate (i,j)+(j,i)
-              const fade = Math.max(0, 1 - d / 180);
-              if (fade <= 0) return;
-              ctx.beginPath();
-              ctx.moveTo(p.x, p.y);
-              ctx.lineTo(pos[j].x, pos[j].y);
-              ctx.strokeStyle = rgba(accent, 0.14 * fade * vM);
-              ctx.lineWidth = 0.6;
-              ctx.stroke();
-            });
           }
           // Labels themselves with a soft glow halo under each
           ctx.font = `600 13px ui-monospace, Menlo, monospace`;
@@ -892,9 +863,8 @@ export default function NeuralNetCanvas({ sceneRef }) {
         // Output: amino-acid one-letter codes per output node with a
         // faint backbone — reads as a folded primary sequence emerging
         // from the latent.
-        const bases  = ["A", "C", "G", "T", "A", "G", "C", "T", "A"];
-        const aminos = ["M", "K", "F", "R", "L", "Y", "P", "W", "I"];
-        const isPurine = (b) => b === "A" || b === "G";
+        // (bases/aminos/isPurine are hoisted to useEffect scope so the
+        //  data tracer shares the same identity alphabets.)
 
         ctx.save();
         ctx.textBaseline = "middle";
@@ -1114,6 +1084,170 @@ export default function NeuralNetCanvas({ sceneRef }) {
 
       drawOneNetwork(heroNet,     visHeroNet,     HERO_INTENSITY);
       drawOneNetwork(researchNet, visResearchNet, RES_INTENSITY);
+
+      // ── Data tracer ─────────────────────────────────────────────────
+      // A single scroll-driven dot that rides the line between the two
+      // motif anchors the camera is currently framing, so its on-screen
+      // path is fully predictable. It is a PURE function of smoothedScene
+      // (read-only) — no new state, clock, rAF, or timers. Its identity
+      // glyph transforms along the journey (DNA base → latent dot → amino
+      // acid → plain dot), reading as "sequence in → latent → reconstructed
+      // sequence" — the ML-for-bio story, told without prose.
+      //
+      // Anchors (world coords, indexed by scene). scene0 originates near
+      // the hero input column so the tracer enters from the network:
+      //   0 hero-input(-490,0) · 1 DNA(-480,-160) · 2 latent(0,0)
+      //   3 equations(480,-160) · 4 grid(-480,230) · 5 labels(480,230)
+      {
+        const tracerAnchors = [
+          { x: -490, y: 0    }, // 0 — hero input column
+          { x: -480, y: -160 }, // 1 — DNA (About)
+          { x: 0,    y: 0    }, // 2 — latent / network centre (Research)
+          { x: 480,  y: -160 }, // 3 — equations (Publication)
+          { x: -480, y: 230  }, // 4 — contribution grid (Projects)
+          { x: 480,  y: 230  }, // 5 — skill labels (Skills)
+        ];
+        const tSeg = tracerAnchors.length - 1;       // 5 segments
+        const tLo = Math.max(0, Math.min(tSeg - 1, Math.floor(smoothedScene)));
+        const tU = Math.max(0, Math.min(1, smoothedScene - tLo));
+        const tEased = tU * tU * (3 - 2 * tU);        // same smoothstep the camera uses
+        const A = tracerAnchors[tLo];
+        const B = tracerAnchors[tLo + 1];
+        // Linear (eased) position along the current segment.
+        const tLinX = A.x + (B.x - A.x) * tEased;
+        const tLinY = A.y + (B.y - A.y) * tEased;
+        // Arc handoff — mid-leg, swing perpendicular to the A→B line using
+        // the SAME math + arcSign as the camera (lo % 2 === 0 ? 1 : -1) so
+        // the tracer arcs WITH the camera, never against it. Skipped under
+        // reducedMotion (static = linear position only).
+        let tX = tLinX;
+        let tY = tLinY;
+        const tDX = B.x - A.x;
+        const tDY = B.y - A.y;
+        const tSegLen = Math.hypot(tDX, tDY);
+        if (!reducedMotion && tSegLen > 5 && tU > 0.25 && tU < 0.75) {
+          const tnx = -tDY / tSegLen;
+          const tny = tDX / tSegLen;
+          const tArcMag = Math.min(tSegLen * 0.12, 90); // gentle, world-space
+          const tArcCurve = Math.sin(tEased * Math.PI);
+          const tArcSign = tLo % 2 === 0 ? 1 : -1;       // matches camera arcSign
+          tX = tLinX + tnx * tArcMag * tArcCurve * tArcSign;
+          tY = tLinY + tny * tArcMag * tArcCurve * tArcSign;
+        }
+        // Tail — trails a short way back along the path toward the segment
+        // origin, fading out. Animated (not reduced-motion) via the same
+        // linear-gradient idiom as spawnPulse. Under multiply, "glow" is a
+        // larger soft-alpha radius — never additive light.
+        if (!reducedMotion) {
+          const tailFrac = 0.18;
+          const tBackEased = Math.max(0, tEased - tailFrac);
+          const tTailX = A.x + (B.x - A.x) * tBackEased;
+          const tTailY = A.y + (B.y - A.y) * tBackEased;
+          if (!lowPerf) {
+            const tg = ctx.createLinearGradient(tTailX, tTailY, tX, tY);
+            tg.addColorStop(0, rgba(accent, 0));
+            tg.addColorStop(1, rgba(accent, 0.6));
+            ctx.beginPath();
+            ctx.moveTo(tTailX, tTailY);
+            ctx.lineTo(tX, tY);
+            ctx.strokeStyle = tg;
+            ctx.lineWidth = 1.6;
+            ctx.lineCap = "round";
+            ctx.stroke();
+          } else {
+            // lowPerf: one solid low-alpha tail segment (no gradient).
+            ctx.beginPath();
+            ctx.moveTo(tTailX, tTailY);
+            ctx.lineTo(tX, tY);
+            ctx.strokeStyle = rgba(accent, 0.28);
+            ctx.lineWidth = 1.4;
+            ctx.lineCap = "round";
+            ctx.stroke();
+          }
+        }
+        // Soft halo behind the core dot — bigger soft-alpha radius (multiply-
+        // safe). Skipped on lowPerf via the existing if(!lowPerf) pattern.
+        if (!lowPerf) {
+          ctx.beginPath();
+          ctx.arc(tX, tY, 9, 0, Math.PI * 2);
+          ctx.fillStyle = rgba(accent, 0.07);
+          ctx.fill();
+        }
+        // Core dot — always on.
+        ctx.beginPath();
+        ctx.arc(tX, tY, 3, 0, Math.PI * 2);
+        ctx.fillStyle = rgba(accent, 0.9);
+        ctx.fill();
+        // Identity glyph — transforms along the journey:
+        //   scene 0→2 (entering / encoding): a DNA base letter
+        //   scene ~2  (latent):              a bare warm dot (no letter)
+        //   scene 2→3 (decoding):            an amino-acid letter
+        //   scene 3→5 (grid / labels):       a plain accent dot
+        // One fillText — cheap, kept on lowPerf. Reuses the Georgia-italic
+        // font + isPurine() warm/accent coloring from the encoder schematic.
+        const tPos = smoothedScene; // 0..5
+        if (tPos < 1.7) {
+          // DNA base letter — index by progress so it cycles through bases[].
+          const bi = Math.floor(tPos * 2) % bases.length;
+          const bch = bases[bi];
+          ctx.save();
+          ctx.fillStyle = rgba(isPurine(bch) ? warm : accent, 0.92);
+          ctx.font = `italic 700 16px Georgia, 'Times New Roman', serif`;
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.fillText(bch, tX, tY - 12);
+          ctx.restore();
+        } else if (tPos < 2.3) {
+          // Latent — a bare warm dot (the compressed code, no letter).
+          ctx.beginPath();
+          ctx.arc(tX, tY - 12, 2.4, 0, Math.PI * 2);
+          ctx.fillStyle = rgba(warm, 0.88);
+          ctx.fill();
+        } else if (tPos < 3.3) {
+          // Amino-acid letter — the reconstructed primary sequence.
+          const ai = Math.floor((tPos - 2.3) * 3) % aminos.length;
+          const ach = aminos[ai];
+          ctx.save();
+          ctx.fillStyle = rgba(ai % 2 ? accent : warm, 0.92);
+          ctx.font = `italic 700 16px Georgia, 'Times New Roman', serif`;
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.fillText(ach, tX, tY - 12);
+          ctx.restore();
+        }
+        // (scene 3→5: no glyph — the plain core dot above carries it.)
+
+        // ── Inlet / outlet guide stubs ──────────────────────────────────
+        // A very faint short line at each motif pointing OUT toward the next
+        // anchor, so handoffs read as connected, not teleported. Each is
+        // gated by the matching motifVis so it only appears near its scene.
+        // Skipped under reducedMotion (decorative motion-narrative cue).
+        if (!reducedMotion) {
+          const stub = (fromIdx, toIdx, vis) => {
+            if (vis < 0.04) return;
+            const f = tracerAnchors[fromIdx];
+            const tt = tracerAnchors[toIdx];
+            const ddx = tt.x - f.x;
+            const ddy = tt.y - f.y;
+            const len = Math.hypot(ddx, ddy) || 1;
+            const ux = ddx / len;
+            const uy = ddy / len;
+            const start = 22;  // leave the motif a touch outside its body
+            const reach = 16;  // 12–20px stub
+            ctx.beginPath();
+            ctx.moveTo(f.x + ux * start, f.y + uy * start);
+            ctx.lineTo(f.x + ux * (start + reach), f.y + uy * (start + reach));
+            ctx.strokeStyle = rgba(accent, 0.12 * vis);
+            ctx.lineWidth = 1.1;
+            ctx.lineCap = "round";
+            ctx.stroke();
+          };
+          stub(1, 2, visDNA);       // DNA → network
+          stub(2, 3, visResearchNet); // latent → equations (decoder output)
+          stub(3, 4, visEquations); // equations → grid
+          stub(4, 5, visGrid);      // grid → labels
+        }
+      }
 
       ctx.restore();
       // Under prefers-reduced-motion we render exactly one static frame

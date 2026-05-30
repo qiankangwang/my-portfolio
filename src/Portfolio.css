@@ -135,8 +135,7 @@ button:focus-visible {
    major lines every 250px, minor lines every 50px, both very low
    opacity so the page reads as cream paper with the lab-notebook
    gridding only just visible on close inspection. Sits at z 0 so
-   the glyph rain (z 1), content (z 2), and atmos canvas (z 4) all
-   layer over it. */
+   the content (z 2) and atmos canvas (z 4) layer over it. */
 body::before {
   content: '';
   position: fixed;
@@ -287,39 +286,6 @@ body::after {
   .section-watermark { animation: none; }
 }
 
-/* ── Glyph rain ──
-   Ambient math glyphs (∇ ∂ Σ λ π θ ...) drift top-to-bottom behind
-   the content column. z-index 1 puts them under .main (z 2) — the
-   atmos canvas (z 4) sits above with mix-blend-mode: multiply so
-   the glyphs get cohesively darkened where particles overlap, which
-   ties the whole layer stack together. Very low opacity. */
-.glyph-rain {
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  z-index: 1;
-  overflow: hidden;
-}
-.glyph-rain-item {
-  position: absolute;
-  top: -120px;
-  font-family: var(--mono);
-  color: var(--fg);
-  font-variant-numeric: tabular-nums;
-  opacity: 0;
-  animation: glyph-rain-drift linear infinite;
-  will-change: transform, opacity;
-}
-@keyframes glyph-rain-drift {
-  0%   { transform: translateY(0);                   opacity: 0; }
-  8%   { opacity: 0.075; }
-  92%  { opacity: 0.075; }
-  100% { transform: translateY(calc(100vh + 140px)); opacity: 0; }
-}
-@media (max-width: 768px), (prefers-reduced-motion: reduce) {
-  .glyph-rain-item { display: none; }
-}
-
 /* ── Intro splash ──
    First-visit-only boot screen. Solid cream over everything, mono
    header + staged status + progress bar + percent readout. Fades to
@@ -431,9 +397,8 @@ body::after {
 
 /* ── Edge glow ──
    Faint inset accent shadow framing the viewport — reads as the
-   bezel of a lab monitor. Pulses on a 6s breath in sync with
-   nothing else, intentionally — slow enough to read as ambient
-   atmosphere rather than 'something is happening'. */
+   bezel of a lab monitor. Static (the 6s breathing was removed in the
+   refined-minimal pass) so nothing pulses ambiently. */
 .edge-glow {
   position: fixed;
   inset: 0;
@@ -445,47 +410,8 @@ body::after {
   box-shadow:
     inset 0 0 60px color-mix(in srgb, var(--scene-accent, var(--accent)) 8%, transparent),
     inset 0 0 0 1px color-mix(in srgb, var(--scene-accent, var(--accent)) 6%, transparent);
-  animation: edge-glow-pulse 6s ease-in-out infinite;
+  opacity: .7; /* was: animation edge-glow-pulse 6s + opacity .55..1 */
   transition: box-shadow .8s ease;
-}
-@keyframes edge-glow-pulse {
-  0%, 100% { opacity: .55; }
-  50%      { opacity: 1; }
-}
-@media (prefers-reduced-motion: reduce) {
-  .edge-glow { animation: none; opacity: .7; }
-}
-
-/* ── Scene flash ──
-   Horizontal scan band that sweeps top-to-bottom whenever the camera
-   crosses a scene boundary. Reads as a film-projector frame change /
-   shutter punctuation between cuts. Sits at z 6 (above atmos canvas
-   and cursor spot, below all UI chrome). */
-.scene-flash {
-  position: fixed;
-  inset: 0;
-  z-index: 6;
-  pointer-events: none;
-  background: linear-gradient(180deg,
-    transparent 0%,
-    transparent 42%,
-    color-mix(in srgb, var(--warm) 26%, transparent) 49%,
-    color-mix(in srgb, var(--accent) 16%, transparent) 51%,
-    color-mix(in srgb, var(--warm) 22%, transparent) 53%,
-    transparent 60%,
-    transparent 100%);
-  mix-blend-mode: lighten;
-  opacity: 0;
-  animation: scene-flash 720ms cubic-bezier(.22, 1, .36, 1) forwards;
-}
-@keyframes scene-flash {
-  0%   { opacity: 0;   transform: translateY(-110%); }
-  18%  { opacity: 1; }
-  82%  { opacity: 1; }
-  100% { opacity: 0;   transform: translateY(110%); }
-}
-@media (prefers-reduced-motion: reduce) {
-  .scene-flash { display: none; }
 }
 
 /* ── Cursor spotlight — soft warm halo drifting under the cursor.
@@ -1651,9 +1577,7 @@ a.sect-n:hover {
   body::before,
   body::after,
   .atmos,
-  .glyph-rain,
   .scroll-progress,
-  .scene-flash,
   .cursor-spot,
   .intro-splash,
   .section-watermark,

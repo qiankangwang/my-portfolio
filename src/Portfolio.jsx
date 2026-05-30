@@ -332,7 +332,7 @@ const SCENE_HUES = [
   { a: "#1E3A8A" }, // Hero (root)
   { a: "#1E3A8A" }, // About
   { a: "#1E40AF" }, // Research
-  { a: "#334155" }, // Publication
+  { a: "#2A3D7A" }, // Publication
   { a: "#4338CA" }, // Projects
   { a: "#1F3D8E" }, // Skills
 ];

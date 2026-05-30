@@ -643,8 +643,8 @@ body::after {
 .sect[data-pos="mr"] {           /* Research — slightly brighter navy */
   --accent: #1E40AF; --accent2: #2563EB; --accent3: #1D3491;
 }
-.sect[data-pos="bl"] {           /* Publication — graphite manuscript */
-  --accent: #334155; --accent2: #475569; --accent3: #1F2937;
+.sect[data-pos="bl"] {           /* Publication — deep navy (kept in the blue family like the others, was graphite #334155) */
+  --accent: #2A3D7A; --accent2: #3E57B0; --accent3: #1E2A5E;
 }
 .sect[data-pos="br"] {           /* Projects — engineer indigo */
   --accent: #4338CA; --accent2: #4F46E5; --accent3: #3730A3;

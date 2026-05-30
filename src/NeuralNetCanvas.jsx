@@ -1086,6 +1086,36 @@ export default function NeuralNetCanvas({ sceneRef }) {
       drawOneNetwork(researchNet, visResearchNet, RES_INTENSITY);
 
       ctx.restore();
+
+      // ── Hero text "clear zone" (soft frosted backplate) ──────────────
+      // The canvas composites over the page via mix-blend MULTIPLY, so
+      // painting the page colour (cream) here ERASES the network in that
+      // region (cream × page ≈ page — multiply can't brighten past the
+      // paper, so this reads as clean paper, never a bright spot). Drawn in
+      // SCREEN space after the camera restore: a soft cream ellipse behind
+      // the hero name carves a calm safe-zone so the text reads crisp, with
+      // a frosted-glass-like falloff. Gated by the Hero motif visibility, so
+      // it fades out as the reader scrolls into the sections.
+      const heroClear = motifVis(0);
+      if (heroClear > 0.02) {
+        const cx = w * 0.5;
+        const cy = h * 0.47;
+        const rx = Math.min(w * 0.44, 580);
+        const ry = Math.min(h * 0.27, 290);
+        ctx.save();
+        ctx.translate(cx, cy);
+        ctx.scale(rx, ry); // unit circle → ellipse matching the text block
+        const cg = ctx.createRadialGradient(0, 0, 0, 0, 0, 1);
+        cg.addColorStop(0,    rgba([244, 241, 234], 0.90 * heroClear));
+        cg.addColorStop(0.55, rgba([244, 241, 234], 0.52 * heroClear));
+        cg.addColorStop(1,    rgba([244, 241, 234], 0));
+        ctx.fillStyle = cg;
+        ctx.beginPath();
+        ctx.arc(0, 0, 1, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+
       // Under prefers-reduced-motion we render exactly one static frame
       // and do NOT schedule the next — no auto-playing motion (WCAG
       // 2.2.2 / 2.3.3). Re-render is driven only by resize / visibility.
